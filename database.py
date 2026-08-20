@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 def conectar():
     try:
         conn = psycopg2.connect(
