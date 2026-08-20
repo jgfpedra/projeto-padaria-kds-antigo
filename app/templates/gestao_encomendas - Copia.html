@@ -1,0 +1,520 @@
+<!-- gestao_encomendas.html FINALIZADO -->
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Encomendas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/gestao_encomendas.css') }}">
+</head>
+<body>
+  <div class="container mt-4">
+    <div class="row mb-3">
+        <div class="col-md-12 text-start">
+            <div class="d-inline-flex" style="gap: 10px;">
+                <a href="/dashboard" class="btn btn-secondary">Voltar</a>
+            </div>
+        </div>
+    </div>
+<div class="container mt-4">
+    <h2 class="mb-4">Gestão de Encomendas</h2>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label">Filtrar por</label>
+                    <select id="data_tipo" class="form-select">
+                        <option value="data_pedido">Data do Pedido</option>
+                        <option value="data_entrega">Data de Entrega</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Data Início</label>
+                    <input type="date" id="data_inicio" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Data Fim</label>
+                    <input type="date" id="data_fim" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Tipo Entrega</label>
+                    <select id="tipo_entrega" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="retirada">Retirada</option>
+                        <option value="entrega">Entrega</option>
+                        <option value="balcao">Balcão</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Loja</label>
+                    <select id="loja" class="form-select"></select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select id="status" class="form-select"></select>
+                </div>
+            </div>
+            <div class="row g-3 mt-3">
+                <div class="col-md-4 position-relative">
+                    <label class="form-label">Cliente</label>
+                    <input type="text" id="cliente" class="form-control" placeholder="Nome, telefone ou código">
+                    <input type="hidden" id="id_cliente_real">
+                    <div id="sugestoes-clientes" class="list-group position-absolute w-100"></div>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" onclick="pesquisarEncomendas()">Pesquisar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="cards-container" class="row g-4"></div>
+</div>
+
+<div id="modais"></div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+let clientesCache = [];
+async function carregarClientes() {
+    const response = await fetch('/api/clientes');
+    const clientes = await response.json();
+    clientesCache = clientes.map(c => ({
+        ...c,
+        nome_normalizado: c.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    }));
+}
+function formatarDataHora(dataIso) {
+    if (!dataIso) return "";
+    const d = new Date(dataIso);
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+}
+
+function formatarData(dataIso) {
+    if (!dataIso) return "";
+    const partes = dataIso.split("-");
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
+
+$(document).ready(function () {
+    carregarLojas();
+    carregarStatus();
+    carregarClientes();
+
+    $('#cliente').on('input', function () {
+        if (clientesCache.length === 0) return;
+
+        let buscaOriginal = $(this).val();
+        let busca = buscaOriginal.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        let buscaNumerica = buscaOriginal.replace(/\D/g, '');
+
+        if (buscaOriginal.trim() === "") {
+            $('#id_cliente_real').val('');
+            $('#sugestoes-clientes').empty();
+            return;
+        }
+
+        if (busca.length < 3 && buscaNumerica.length < 3) {
+            $('#sugestoes-clientes').empty();
+            return;
+        }
+
+        let sugestoesFiltradas = clientesCache.filter(c => {
+            const telefoneLimpo = c.telefone.replace(/\D/g, '');
+            return busca && c.nome_normalizado.includes(busca) || buscaNumerica && telefoneLimpo.includes(buscaNumerica);
+        }).slice(0, 10);
+
+        $('#sugestoes-clientes').empty();
+        sugestoesFiltradas.forEach(c => {
+            $('#sugestoes-clientes').append(`<button type="button" class="list-group-item list-group-item-action" data-id="${c.id}" data-nome="${c.nome}">${c.nome} - ${c.telefone}</button>`);
+        });
+    });
+
+    $('#sugestoes-clientes').on('click', 'button', function () {
+        const idCliente = $(this).data('id');
+        const nomeCliente = $(this).data('nome');
+        $('#cliente').val(nomeCliente);
+        $('#id_cliente_real').val(idCliente);
+        $('#sugestoes-clientes').empty();
+    });
+});
+
+async function carregarLojas() {
+    const response = await fetch('/api/lojas');
+    const lojas = await response.json();
+    const select = document.getElementById('loja');
+    select.innerHTML = '<option value="">Todas</option>';
+    lojas.forEach(loja => {
+        const option = document.createElement('option');
+        option.value = loja.id;
+        option.textContent = loja.descricao;
+        select.appendChild(option);
+    });
+}
+async function carregarStatus() {
+    const response = await fetch('/api/status');
+    const status = await response.json();
+    const select = document.getElementById('status');
+    select.innerHTML = '<option value="">Todos</option>';
+    status.forEach(s => {
+        const option = document.createElement('option');
+        option.value = s.id;
+        option.textContent = s.descricao;
+        select.appendChild(option);
+    });
+}
+
+async function pesquisarEncomendas() {
+    $('#cards-container').html('');
+    const filtros = {
+        data_tipo: document.getElementById('data_tipo').value,
+        data_inicio: document.getElementById('data_inicio').value,
+        data_fim: document.getElementById('data_fim').value,
+        tipo_entrega: document.getElementById('tipo_entrega').value,
+        id_loja: document.getElementById('loja').value,
+        id_cliente: document.getElementById('id_cliente_real').value,
+        status: document.getElementById('status').value
+    };
+    try {
+        const response = await fetch('/api/encomendas/consulta', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(filtros)
+        });
+
+        const pedidos = await response.json();
+        if (!pedidos.length) {
+            $('#cards-container').html('<p class="text-center">Nenhum pedido encontrado.</p>');
+            return;
+        }
+
+        pedidos.sort((a, b) => new Date(a.data_entrega) - new Date(b.data_entrega));
+
+        pedidos.forEach(pedido => {
+            const hoje = new Date();
+            hoje.setHours(0,0,0,0);
+            const dataEntrega = new Date(pedido.data_entrega);
+
+            let faixa = '';
+            if (pedido.data_entrega === new Date().toISOString().split('T')[0]) {
+                faixa = '<span class="badge bg-success">HOJE</span>';
+            } else if (dataEntrega < hoje) {
+                faixa = '<span class="badge bg-danger">ATRASADO</span>';
+              }
+
+            const valorTotalFormatado = (pedido.valor_total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            const itensHtml = pedido.itens.map(item => `
+                <li>📋 ${item.quantidade_un} UN - ${item.descricao} ${item.observacao ? '(<em>' + item.observacao + '</em>)' : ''}</li>
+            `).join('');
+
+            const enderecoHtml = pedido.tipo_entrega === 'entrega' ? `<p><strong>Endereço:</strong> ${pedido.endereco}</p>` : '';
+
+            const card = `
+            <div class="col-md-4">
+                <div class="card-pedido">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div><span class="badge bg-primary">Pedido #${pedido.id}</span></div>
+                        <div><i class="bi bi-clock"></i> ${formatarDataHora(pedido.data_pedido)}</div>
+                    </div>
+                    <p><i class="bi bi-shop"></i> ${pedido.nome_loja}</p>
+                    <p><i class="bi bi-person"></i> ${pedido.nome_cliente} - ${pedido.telefone}</p>
+                    <p><strong>Tipo Entrega:</strong> ${pedido.tipo_entrega.toUpperCase()}</p>
+                    ${enderecoHtml}
+                    <p><strong>Status Atual:</strong> ${pedido.status_descricao || ''}</p>
+                    ${pedido.observacoes ? `<p><strong>Observação:</strong> ${pedido.observacoes}</p>` : ''}
+                    <ul>${itensHtml}</ul>
+                    <hr>
+                    <p><i class="bi bi-calendar-event"></i> Entrega: ${formatarData(pedido.data_entrega)} - ${pedido.hora_entrega || ''} ${faixa}</p>
+                    <p><strong>Valor Total:</strong> ${valorTotalFormatado}</p>
+                    <div class="botoes">
+                        <button class="btn botao-status" onclick="abrirModalStatus(${pedido.id})">Status</button>
+                        <button class="btn botao-editar" onclick="abrirModalEditar(${pedido.id})">Editar</button>
+                        <button class="btn botao-finalizar" onclick="abrirModalFinalizar(${pedido.id})">Finalizar</button>
+                    </div>
+                </div>
+            </div>`;
+
+            $('#cards-container').append(card);
+            pedidosCache = pedidos;
+        });
+
+    } catch (error) {
+        console.error('Erro ao buscar encomendas:', error);
+        $('#cards-container').html('<p class="text-center text-danger">Erro ao buscar pedidos.</p>');
+    }
+}
+async function abrirModalStatus(idPedido) {
+    try {
+        const response = await fetch('/api/status');
+        const statusList = await response.json();
+
+        const pedido = pedidosCache.find(p => p.id === idPedido); // buscamos o pedido do cache carregado
+        const statusAtual = pedido ? pedido.id_status : "";
+
+        let options = statusList.map(s => `
+            <option value="${s.id}" ${s.id === statusAtual ? 'selected' : ''}>${s.descricao}</option>
+        `).join('');
+
+        const modalHtml = `
+            <div class="modal fade" id="modalStatus" tabindex="-1" aria-labelledby="modalStatusLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalStatusLabel">Alterar Status do Pedido</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        </div>
+                        <div class="modal-body">
+                            <label for="novoStatus" class="form-label">Novo Status</label>
+                            <select id="novoStatus" class="form-select">
+                                ${options}
+                            </select>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-primary" onclick="salvarStatus(${idPedido})">Salvar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        $('#modais').html(modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('modalStatus'));
+        modal.show();
+    } catch (error) {
+        console.error('Erro ao abrir modal de status:', error);
+    }
+}
+async function salvarStatus(idPedido) {
+    const novoStatus = document.getElementById('novoStatus').value;
+
+    try {
+        const response = await fetch('/api/encomenda/status', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                id_pedido: idPedido,
+                id_status: novoStatus
+            })
+        });
+
+        const resultado = await response.json();
+
+        if (response.ok) {
+            alert('Status alterado com sucesso!');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalStatus'));
+            modal.hide();
+            pesquisarEncomendas(); // recarrega a lista
+        } else {
+            alert('Erro ao alterar status: ' + (resultado.erro || ''));
+        }
+    } catch (error) {
+        console.error('Erro ao salvar status:', error);
+        alert('Erro ao alterar status.');
+    }
+}
+async function abrirModalEditar(idPedido) {
+    try {
+        const response = await fetch(`/api/pedido/${idPedido}`);
+        const pedido = await response.json();
+
+        if (!pedido || pedido.erro) {
+            alert("Erro ao buscar pedido para edição.");
+            return;
+        }
+        let totalPedido = 0;
+        let linhasProdutos = pedido.itens.map(item => {
+          const precoVenda = parseFloat(item.preco_venda) || 0;
+          const quantidade = parseFloat(item.quantidade) || 0;
+          const quantidadeUn = Math.round(quantidade);
+          const total = precoVenda * quantidade;
+          totalPedido += total;
+
+          return `
+    <tr data-id-produto="${item.cod_produto}">
+        <td>${item.cod_produto}</td>
+        <td>${item.descricao}</td>
+        <td><input type="number" class="form-control form-control-sm quantidade" style="width: 80px;" value="${quantidade}" onchange="atualizarValorTotal(this)" /></td>
+        <td>${quantidadeUn}</td>
+        <td>${precoVenda.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
+        <td class="valor-total">${total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
+    </tr>`;
+}).join('');
+
+
+        const modalHtml = `
+            <div class="modal fade" id="modalEditar" tabindex="-1" aria-labelledby="modalEditarLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalEditarLabel">Editar Produtos do Pedido</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        </div>
+                        <div class="modal-body">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Cod</th>
+                                        <th>Descrição</th>
+                                        <th>Qtd Kg</th>
+                                        <th>Qtd UN</th>
+                                        <th>Preço Venda</th>
+                                        <th>Valor Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itensEditar">
+                                    ${linhasProdutos}
+                                </tbody>
+                            </table>
+                        </div>
+                       <div class="d-flex justify-content-end mt-3 pe-5">
+                            <h5 id="valorTotalPedido">Valor Total: ${totalPedido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</h5>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-success" onclick="salvarEdicaoPedido(${idPedido})">Salvar Alterações</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        $('#modais').html(modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('modalEditar'));
+        modal.show();
+    } catch (error) {
+        console.error('Erro ao abrir modal de edição:', error);
+        alert('Erro ao abrir pedido para edição.');
+    }
+}
+function atualizarValorTotal(input) {
+    const linha = input.closest('tr');
+    const precoVenda = parseFloat(linha.querySelectorAll('td')[4].innerText.replace('R$', '').replace('.', '').replace(',', '.'));
+    const novaQuantidade = parseFloat(input.value) || 0;
+    const novoTotal = precoVenda * novaQuantidade;
+    linha.querySelector('.valor-total').innerText = novoTotal.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+    atualizarValorTotalPedido();
+}
+function atualizarValorTotalPedido() {
+    let totalPedido = 0;
+    document.querySelectorAll('#itensEditar tr').forEach(linha => {
+        const precoVenda = parseFloat(linha.querySelectorAll('td')[4].innerText.replace('R$', '').replace('.', '').replace(',', '.'));
+        const quantidade = parseFloat(linha.querySelector('.quantidade').value) || 0;
+        totalPedido += precoVenda * quantidade;
+    });
+
+    document.getElementById('valorTotalPedido').innerText = 'Valor Total: ' + totalPedido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+async function salvarEdicaoPedido(idPedido) {
+    const linhas = document.querySelectorAll('#itensEditar tr');
+    const itensAtualizados = [];
+
+    linhas.forEach(linha => {
+        const idProduto = linha.getAttribute('data-id-produto');
+        const quantidade = parseFloat(linha.querySelector('.quantidade').value) || 0;
+        const quantidadeUn = Math.round(quantidade);
+
+        itensAtualizados.push({
+            cod_produto: idProduto,
+            quantidade: quantidade,        // Salvar com decimal
+            quantidade_un: quantidadeUn     // Salvar inteiro
+        });
+    });
+
+    try {
+        const response = await fetch('/api/encomenda/editar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                id_pedido: idPedido,
+                itens: itensAtualizados
+            })
+        });
+
+        const resultado = await response.json();
+
+        if (response.ok) {
+            alert('Pedido editado com sucesso!');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditar'));
+            modal.hide();
+            pesquisarEncomendas(); // Recarrega a tela
+        } else {
+            alert('Erro ao editar pedido: ' + (resultado.erro || ''));
+        }
+    } catch (error) {
+        console.error('Erro ao salvar edição:', error);
+        alert('Erro ao salvar edição.');
+    }
+}
+async function abrirModalFinalizar(idPedido) {
+    const modalHtml = `
+        <div class="modal fade" id="modalFinalizar" tabindex="-1" aria-labelledby="modalFinalizarLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalFinalizarLabel">Finalizar Pedido</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label for="numeroFicha" class="form-label">Número da Ficha</label>
+                        <input type="text" id="numeroFicha" class="form-control" placeholder="Digite o número da ficha">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-success" onclick="salvarFinalizacaoPedido(${idPedido})">Finalizar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    $('#modais').html(modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('modalFinalizar'));
+    modal.show();
+}
+async function salvarFinalizacaoPedido(idPedido) {
+    const numeroFicha = document.getElementById('numeroFicha').value.trim();
+
+    if (!numeroFicha) {
+        alert("Por favor, digite o número da ficha.");
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/encomenda/finalizar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                id_pedido: idPedido,
+                numero_ficha: numeroFicha
+            })
+        });
+
+        const resultado = await response.json();
+
+        if (response.ok) {
+            alert('Pedido finalizado com sucesso!');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalFinalizar'));
+            modal.hide();
+            pesquisarEncomendas(); // Recarrega a tela
+        } else {
+            alert('Erro ao finalizar pedido: ' + (resultado.erro || ''));
+        }
+    } catch (error) {
+        console.error('Erro ao finalizar pedido:', error);
+        alert('Erro ao finalizar pedido.');
+    }
+}
+
+
+</script>
+</body>
+</html>

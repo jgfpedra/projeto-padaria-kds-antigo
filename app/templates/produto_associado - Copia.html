@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Vincular Produtos Principais e Opções</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+<div class="container mt-4">
+  <h3>Vincular Produtos Principais aos Produtos de Opção</h3>
+  <hr>
+ <!-- Campo para código do grupo -->
+<div class="mb-4">
+  <label class="form-label">Código do Grupo</label>
+  <input type="text" class="form-control" id="id_produtoopcoes" readonly style="width: 120px;">
+</div>
+<!-- Campo para descrição do grupo -->
+<div class="mb-4">
+  <label class="form-label">Descrição do Grupo</label>
+  <input type="text" class="form-control" id="descricao_grupo">
+</div>
+
+  <!-- Seção de seleção da Loja -->
+  <div class="mb-4">
+    <label class="form-label">Selecionar Loja</label>
+    <select class="form-select" id="select_loja" onchange="definirLoja(this.value)">
+      <option value="">Selecione uma loja...</option>
+    </select>
+  </div>
+
+  <!-- Seção de Produtos Principais -->
+  <div class="mb-4">
+    <h5>Produtos Principais</h5>
+    <div class="row g-2 align-items-end">
+      <div class="col-md-2">
+        <label class="form-label">Código</label>
+        <input type="text" class="form-control" id="codigo_principal">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Descrição</label>
+        <input type="text" class="form-control" id="descricao_principal" readonly>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Setor</label>
+        <input type="text" class="form-control" id="setor_principal" readonly>
+      </div>
+    </div>
+    <button class="btn btn-primary mt-2" onclick="adicionarPrincipal()">Adicionar Produto Principal</button>
+    <table class="table table-sm mt-3">
+      <thead>
+        <tr><th>Código</th><th>Descrição</th><th>Setor</th><th>Ação</th></tr>
+      </thead>
+      <tbody id="tabela_principais"></tbody>
+    </table>
+  </div>
+
+  <!-- Seção de Produtos Opção -->
+  <div class="mb-4">
+    <h5>Produtos Opção</h5>
+    <div class="row g-2 align-items-end">
+      <div class="col-md-2">
+        <label class="form-label">Código</label>
+        <input type="text" class="form-control" id="codigo_opcao">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Descrição</label>
+        <input type="text" class="form-control" id="descricao_opcao" readonly>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Setor</label>
+        <input type="text" class="form-control" id="setor_opcao" readonly>
+      </div>
+    </div>
+    <button class="btn btn-primary mt-2" onclick="adicionarOpcao()">Adicionar Produto Opção</button>
+    <table class="table table-sm mt-3">
+      <thead>
+        <tr><th>Código</th><th>Descrição</th><th>Setor</th><th>Ação</th></tr>
+      </thead>
+      <tbody id="tabela_opcoes"></tbody>
+    </table>
+  </div>
+
+  <div class="d-flex justify-content-between mt-4">
+    <a href="/consulta_associado" class="btn btn-secondary">Voltar</a>
+    <button class="btn btn-success" onclick="salvarVinculos()">Salvar Vínculos</button>
+  </div>
+</div>
+
+<script>
+let produtosPrincipais = [];
+let produtosOpcoes = [];
+let idLojaSelecionada = null;
+
+function definirLoja(id) {
+  idLojaSelecionada = id;
+
+  // Buscar descrições após selecionar loja
+  produtosPrincipais.forEach((produto, index) => {
+    buscarProdutoVR(produto.cod, dados => {
+      produtosPrincipais[index].desc = dados.descricao_produto || '';
+      produtosPrincipais[index].setor = dados.descricao_setor || '';
+      renderTabelaPrincipais();
+    });
+  });
+
+  produtosOpcoes.forEach((produto, index) => {
+    buscarProdutoVR(produto.cod, dados => {
+      produtosOpcoes[index].desc = dados.descricao_produto || '';
+      produtosOpcoes[index].setor = dados.descricao_setor || '';
+      renderTabelaOpcoes();
+    });
+  });
+
+  $('#codigo_principal').prop('disabled', false);
+  $('#codigo_opcao').prop('disabled', false);
+} 
+
+
+function buscarProdutoVR(codigo, callback) {
+  if (!idLojaSelecionada) {
+    alert("Selecione uma loja antes de consultar produtos.");
+    return;
+  }
+
+  // Primeiro busca o setor e preço
+  fetch(`/api/preco/${codigo}/${idLojaSelecionada}`)
+    .then(res => res.json())
+    .then(dados => {
+      // Depois busca a descrição completa
+      fetch(`/api/produto_vr/${codigo}`)
+        .then(res => res.json())
+        .then(desc => {
+          dados.descricao_produto = desc.descricao || '';
+          callback(dados);
+        })
+        .catch(() => {
+          dados.descricao_produto = '';
+          callback(dados);
+        });
+    })
+    .catch(() => alert('Produto não encontrado'));
+}
+
+// Evento ENTER para buscar produto principal
+$('#codigo_principal').on('keydown', function (e) {
+  if (e.key === 'Enter') {
+
+    const codigo = this.value.trim();
+    buscarProdutoVR(codigo, data => {
+      $('#descricao_principal').val(data.descricao_produto || '');
+      $('#setor_principal').val(data.descricao_setor || '');
+    });
+  }
+});
+
+// Evento ENTER para buscar produto opção
+$('#codigo_opcao').on('keydown', function (e) {
+  if (e.key === 'Enter') {
+    const codigo = this.value.trim();
+    buscarProdutoVR(codigo, data => {
+      $('#descricao_opcao').val(data.descricao_produto || '');
+      $('#setor_opcao').val(data.descricao_setor || '');
+    });
+  }
+});
+
+
+
+function adicionarPrincipal() {
+
+  const cod = $('#codigo_principal').val();
+  const desc = $('#descricao_principal').val();
+  const setor = $('#setor_principal').val();
+  if (!cod || !desc) return alert('Informe um produto principal válido');
+  produtosPrincipais.push({ cod, desc, setor });
+  renderTabelaPrincipais();
+  $('#codigo_principal, #descricao_principal, #setor_principal').val('');
+}
+
+function adicionarOpcao() {
+  const cod = $('#codigo_opcao').val();
+  const desc = $('#descricao_opcao').val();
+  const setor = $('#setor_opcao').val();
+  if (!cod || !desc) return alert('Informe um produto de opção válido');
+  produtosOpcoes.push({ cod, desc, setor });
+  renderTabelaOpcoes();
+  $('#codigo_opcao, #descricao_opcao, #setor_opcao').val('');
+}
+
+function removerPrincipal(index) {
+  produtosPrincipais.splice(index, 1);
+  renderTabelaPrincipais();
+}
+
+function removerOpcao(index) {
+  produtosOpcoes.splice(index, 1);
+  renderTabelaOpcoes();
+}
+
+function renderTabelaPrincipais() {
+  $('#tabela_principais').html(produtosPrincipais.map((p, i) => `
+    <tr><td>${p.cod}</td><td>${p.desc}</td><td>${p.setor}</td>
+    <td><button class='btn btn-sm btn-danger' onclick='removerPrincipal(${i})'>Remover</button></td></tr>
+  `).join(''));
+}
+
+function renderTabelaOpcoes() {
+  $('#tabela_opcoes').html(produtosOpcoes.map((p, i) => `
+    <tr><td>${p.cod}</td><td>${p.desc}</td><td>${p.setor}</td>
+    <td><button class='btn btn-sm btn-danger' onclick='removerOpcao(${i})'>Remover</button></td></tr>
+  `).join(''));
+}
+
+function salvarVinculos() {
+  if (produtosPrincipais.length === 0 || produtosOpcoes.length === 0)
+    return alert('Adicione ao menos um produto principal e uma opção.');
+
+  const idLoja = $('#select_loja').val();
+  const descricaoGrupo = $('#descricao_grupo').val();
+  const idGrupo = $('#id_produtoopcoes').val();
+
+  const principais = produtosPrincipais.map(p => p.cod);
+  const opcoes = produtosOpcoes.map(p => p.cod);
+
+  const payload = {
+    descricao_grupo: descricaoGrupo,
+    id_loja: idLoja,
+    principais: principais,
+    opcoes: opcoes
+  };
+
+  let url, method;
+
+  if (idGrupo) { // Edição
+    url = `/api/produto_associado/editar/${parseInt(idGrupo,10)}`;
+    method = 'PUT';
+  } else { // Novo
+    url = '/api/produto_associado/salvar';
+    method = 'POST';
+  }
+
+  fetch(url, {
+    method: method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(data => {
+    alert('Vínculos salvos com sucesso.');
+    if (data.id_produtoopcoes) {
+      $('#id_produtoopcoes').val(data.id_produtoopcoes.toString().padStart(6, '0'));
+    }
+    produtosPrincipais = [];
+    produtosOpcoes = [];
+    renderTabelaPrincipais();
+    renderTabelaOpcoes();
+  })
+  .catch(() => alert('Erro de comunicação com o servidor.'));
+}
+
+
+function getParametroURL(nome) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(nome);
+}
+function carregarGrupoVinculo(idGrupo) {
+  fetch(`/api/produto_associado/grupo/${idGrupo}`)
+    .then(res => res.json())
+    .then(data => {
+      $('#id_produtoopcoes').val(data.id.toString().padStart(6, '0'));
+      $('#descricao_grupo').val(data.descricao);
+
+      carregarLojasESelecionar(data.id_loja).then(() => {
+        produtosPrincipais = data.principais.map(p => ({ cod: p.cod, desc: '', setor: '' }));
+        produtosOpcoes = data.opcoes.map(p => ({ cod: p.cod, desc: '', setor: '' }));
+        renderTabelaPrincipais();
+        renderTabelaOpcoes();
+        definirLoja(data.id_loja); // Agora sim, tudo certo!
+      });
+    })
+    .catch(() => alert('Erro ao carregar dados do grupo'));
+}
+
+const idGrupo = getParametroURL('id');
+if (idGrupo) {
+  carregarGrupoVinculo(idGrupo);
+}
+if (!idGrupo) {
+  carregarLojasESelecionar();
+}
+function atualizarDescricoesProdutos() {
+  if (!idLojaSelecionada) return;
+
+  produtosPrincipais.forEach((produto, index) => {
+    buscarProdutoVR(produto.cod, dados => {
+      produtosPrincipais[index].desc = dados.descricao_produto || '';
+      produtosPrincipais[index].setor = dados.descricao_setor || '';
+      renderTabelaPrincipais();
+    });
+  });
+
+  produtosOpcoes.forEach((produto, index) => {
+    buscarProdutoVR(produto.cod, dados => {
+      produtosOpcoes[index].desc = dados.descricao_produto || '';
+      produtosOpcoes[index].setor = dados.descricao_setor || '';
+      renderTabelaOpcoes();
+    });
+  });
+}
+function carregarLojasESelecionar(idSelecionada = null) {
+  return fetch('/api/lojas')
+    .then(res => res.json())
+    .then(lojas => {
+      const $sel = $('#select_loja');
+      $sel.empty().append('<option value="">Selecione uma loja...</option>');
+      lojas.forEach(loja => {
+        $sel.append(`<option value="${loja.id}">${loja.descricao}</option>`);
+      });
+      if (idSelecionada) {
+        $sel.val(idSelecionada);
+      }
+    });
+}
+
+
+</script>
+</body>
+</html>

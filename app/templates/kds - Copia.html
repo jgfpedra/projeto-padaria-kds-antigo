@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>KDS Gestão de Setores</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body { background: #e7f1fa; }
+        .kanban-board { display: flex; gap: 1.5rem; padding: 2rem;}
+        .kanban-column { flex: 1; background: #fff; border-radius: 12px; padding: 1rem; min-height: 80vh; box-shadow: 0 2px 8px #0001; }
+        .kanban-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 1rem; text-align: center; }
+        .kds-card { background: #f7faff; border-radius: 10px; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 1px 4px #0002; position: relative;}
+        .kds-card.novo { border-left: 5px solid #33cc33; background: #eaffea; }
+        .kds-card.balcao { border-left: 5px solid #6633cc; background: #efeaff; }
+        .kds-card.finalizado { border-left: 5px solid #999; opacity: 0.7; }
+        .kds-btn { width: 100%; margin-top: 8px; }
+        .quantidade-total { font-size: 1.4rem; font-weight: bold; color: #006622; }
+        .card-observacao { background: #fff7e6; border-left: 5px solid #ffaa33; }
+		.badge.bg-purple { background: #8e24aa !important;    color: #fff !important;}
+		.kds-card.emproducao { border-left: 5px solid #ffe066 !important;    background: #fffbe9 !important;}
+		.kds-card.finalizado { background: #ececec !important; border-left: 5px solid #bbb !important; }
+    </style>
+</head>
+<body>
+<div class="row mb-4">
+    <div class="col-md-5">
+        <label for="selectLoja" class="form-label">Loja</label>
+        <select id="selectLoja" class="form-select"></select>
+    </div>
+    <div class="col-md-5">
+        <label for="selectSetor" class="form-label">Setor</label>
+        <select id="selectSetor" class="form-select"></select>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-outline-secondary w-100" type="button" onclick="atualizarPedidos()" title="Atualizar agora">
+            <i class="fas fa-sync-alt"></i> Atualizar
+        </button>
+    </div>
+</div>
+
+
+<div class="kanban-board" id="kanban-board">
+    <!-- Coluna Aguardando -->
+    <div class="kanban-column" id="col-aguardando">
+        <div class="kanban-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Aguardando</span>
+            <button class="btn btn-sm btn-primary" onclick="produzirTodos()">Produzir Todos</button>
+        </div>
+        <!-- JS INSERE OS CARDS AQUI -->
+    </div>
+
+    <!-- Coluna Em Produção -->
+    <div class="kanban-column" id="col-producao">
+        <div class="kanban-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Em Produção</span>
+            <button class="btn btn-sm btn-success" onclick="finalizarTodos()">Finalizar Todos</button>
+        </div>
+        <!-- JS INSERE OS CARDS AQUI -->
+    </div>
+
+    <!-- Coluna Finalizado -->
+    <div class="kanban-column" id="col-finalizado">
+        <div class="kanban-title">Finalizado</div>
+        <!-- JS INSERE OS CARDS AQUI -->
+    </div>
+</div>
+
+<script>
+let lojaSelecionada = null;
+let setorSelecionado = null;
+let produtosSemHorario = [];
+let pedidos = [];
+
+let snapshotUltimosPedidos = ""; // guarda o id dos pedidos aguardando
+
+function chegouNovoPedido(listaAtual) {
+    // Gera um "snapshot" dos ids atuais, ordenado
+    let novoSnapshot = listaAtual.map(p => p.id).sort().join('-');
+    // Se mudou em relação ao último snapshot, é novo!
+    let novo = (novoSnapshot !== snapshotUltimosPedidos);
+    return novo;
+}
+
+// Funções utilitárias para comparar datas
+
+function getHojeObj() {
+    const hoje = new Date();
+    // Fixa hora 0 para evitar bug de fuso
+    return new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+}
+
+function getDataObj(dataIso) {
+    // Garante sempre data local, sem timezone!
+    const [ano, mes, dia] = dataIso.split('-');
+    return new Date(Number(ano), Number(mes)-1, Number(dia));
+}
+
+function isHoje(dataIso) {
+    const data = getDataObj(dataIso);
+    const hoje = getHojeObj();
+    return data.getTime() === hoje.getTime();
+}
+function isAmanha(dataIso) {
+    const data = getDataObj(dataIso);
+    const amanha = getHojeObj();
+    amanha.setDate(amanha.getDate() + 1);
+    return data.getTime() === amanha.getTime();
+}
+
+
+// Carrega lojas no select ao abrir a tela
+async function carregarLojas() {
+    let res = await fetch('/api/lojas');
+    let lojas = await res.json();
+    let select = document.getElementById('selectLoja');
+    select.innerHTML = '<option value="">Selecione a Loja</option>';
+    lojas.forEach(loja => {
+        select.innerHTML += `<option value="${loja.id}">${loja.descricao}</option>`;
+    });
+
+    select.onchange = async function() {
+        lojaSelecionada = this.value;
+        await carregarSetores();
+        setorSelecionado = null;
+        pedidos = [];
+        renderCards();
+    };
+}
+
+// Só carrega setores da loja selecionada
+async function carregarSetores() {
+    let selectSetor = document.getElementById('selectSetor');
+    selectSetor.innerHTML = '<option value="">Selecione o Setor</option>';
+    if (!lojaSelecionada) {
+        return;
+    }
+    let res = await fetch(`/api/loja/${lojaSelecionada}/setores`);
+    let setores = await res.json();
+    setores.forEach(setor => {
+        selectSetor.innerHTML += `<option value="${setor.id}">${setor.descricao}</option>`;
+    });
+
+    selectSetor.onchange = function() {
+        setorSelecionado = this.value;
+        atualizarPedidos();
+    };
+}
+let timerAtualizacao = null;
+// Atualiza os pedidos conforme o filtro selecionado
+async function atualizarPedidos(auto = false) {
+    let loja = document.getElementById('selectLoja').value;
+    let setor = document.getElementById('selectSetor').value;
+    if (!loja || !setor) {
+        pedidos = [];
+        renderCards();
+        return;
+    }
+    let res = await fetch(`/api/kds/pedidos?loja=${loja}&setor=${setor}`);
+    let novosPedidos = await res.json();
+    // Verifica e toca o som se chegou pedido novo (só se não for auto = false)
+    if (auto && chegouNovoPedido(novosPedidos)) {
+        tocarSomNovoPedido();
+    }
+    pedidos = novosPedidos;
+    renderCards();
+    // Atualiza o snapshot para próxima comparação
+    snapshotUltimosPedidos = pedidos.map(p => p.id).sort().join('-');
+}
+
+function agendarAtualizacaoAutomatica() {
+    if (timerAtualizacao) clearInterval(timerAtualizacao);
+    timerAtualizacao = setInterval(() => {
+        atualizarPedidos(true);
+    }, 60000); // 1 minuto
+}
+
+// Inicia tudo ao carregar página
+window.onload = async function() {
+    await carregarLojas();
+	await carregarProdutosSemHorario();
+    agendarAtualizacaoAutomatica();
+	atualizarPedidos(); // carrega a primeira vez
+};
+async function carregarProdutosSemHorario() {
+    const res = await fetch("/api/produtos_ocultar_horario");
+    produtosSemHorario = await res.json(); // lista de IDs
+}
+
+function formatarDataBr(dataIso) {
+    if (!dataIso) return "";
+    const dias = ['DOMINGO','SEGUNDA','TERÇA','QUARTA','QUINTA','SEXTA','SÁBADO'];
+    const [ano, mes, dia] = dataIso.split('-');
+    const dataObj = new Date(Number(ano), Number(mes) - 1, Number(dia));
+    const diaSemana = dias[dataObj.getDay()];
+    return `${dia}/${mes}/${ano} - ${diaSemana}`;
+}
+
+
+function formatarHora(hora) {
+    if (!hora) return "";
+    // Aceita formatos "HH:MM:SS" ou "HH:MM"
+    return hora.slice(0,5);
+}
+
+// Renderiza os cards
+function renderCards() {
+    // Funções utilitárias para datas
+    function getHojeObj() {
+        const hoje = new Date();
+        return new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+    }
+    function getDataObj(dataIso) {
+        const [ano, mes, dia] = dataIso.split('-');
+        return new Date(Number(ano), Number(mes)-1, Number(dia));
+    }
+    function isHoje(dataIso) {
+        const data = getDataObj(dataIso);
+        const hoje = getHojeObj();
+        return data.getTime() === hoje.getTime();
+    }
+    function isAmanha(dataIso) {
+        const data = getDataObj(dataIso);
+        const amanha = getHojeObj();
+        amanha.setDate(amanha.getDate() + 1);
+        return data.getTime() === amanha.getTime();
+    }
+
+
+// Limpa as colunas
+document.getElementById('col-aguardando').innerHTML = `
+    <div class="kanban-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Aguardando</span>
+        <button class="btn btn-sm btn-primary" onclick="produzirTodos()">Produzir Todos</button>
+    </div>
+`;
+
+document.getElementById('col-producao').innerHTML = `
+    <div class="kanban-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Em Produção</span>
+        <button class="btn btn-sm btn-success" onclick="finalizarTodos()">Finalizar Todos</button>
+    </div>
+`;
+
+document.getElementById('col-finalizado').innerHTML = `
+    <div class="kanban-title">Finalizado</div>
+`;
+
+
+// Diagnóstico: veja os pedidos do backend
+console.log("PEDIDOS RECEBIDOS DO BACKEND:", pedidos);
+
+if (!pedidos || pedidos.length === 0) {
+    document.getElementById('col-aguardando').innerHTML +=
+        '<div class="text-center text-muted mt-3">Sem pedidos para este setor/loja.</div>';
+    return;
+}
+
+// Agrupa por produto + observacao
+let agrupados = {};
+pedidos.forEach(p => {
+    const chave = (p.descricao || p.produto || p.id_produto) + '|' + (p.observacao || '');
+    if (!agrupados[chave]) agrupados[chave] = [];
+    agrupados[chave].push(p);
+});
+
+Object.keys(agrupados).forEach(chave => {
+    const lista = agrupados[chave];
+    const produto = lista[0].descricao || lista[0].produto || lista[0].id_produto;
+    const observacao = lista[0].observacao || "";
+    const idProduto = lista[0].id_produto;
+    const ocultarHorario = produtosSemHorario.includes(idProduto);
+
+    [0, 1, 2].forEach(status => {
+        const pedidosHoje = lista.filter(p => p.id_status == status && isHoje(p.data));
+        const pedidosAmanha = lista.filter(p => p.id_status == status && isAmanha(p.data));
+
+        if (pedidosHoje.length === 0 && pedidosAmanha.length === 0) return;
+
+        const total = [...pedidosHoje, ...pedidosAmanha].reduce((s, p) => s + parseFloat(p.quantidade || 0), 0);
+        const totalFormatado = total.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+
+        const horariosHoje = pedidosHoje.sort((a, b) => (a.hora > b.hora ? 1 : -1)).map(item => {
+            let etiquetaBalcao = item.tipo_entrega?.toLowerCase() === "balcao"
+                ? '<span class="badge bg-purple text-white ms-2">BALCÃO</span>' : '';
+            let quantidadeFormatada = Number(item.quantidade).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+            return `<div style="font-size:1.1em;">
+                <b>${formatarHora(item.hora)}</b> - ${quantidadeFormatada} UN ${etiquetaBalcao}
+            </div>`;
+        }).join('');
+
+        const horariosAmanha = pedidosAmanha.sort((a, b) => (a.hora > b.hora ? 1 : -1)).map(item => {
+            let etiquetaBalcao = item.tipo_entrega?.toLowerCase() === "balcao"
+                ? '<span class="badge bg-purple text-white ms-2">BALCÃO</span>' : '';
+            let quantidadeFormatada = Number(item.quantidade).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+            return `<div style="font-size:1.1em;">
+                <b>${formatarHora(item.hora)}</b> - ${quantidadeFormatada} UN ${etiquetaBalcao}
+            </div>`;
+        }).join('');
+
+        const hojeLabel = pedidosHoje.length > 0
+            ? `${formatarDataBr(pedidosHoje[0].data)} - <span style="color:#d00;font-weight:bold;">HOJE</span>` : "";
+        const amanhaLabel = pedidosAmanha.length > 0
+            ? `${formatarDataBr(pedidosAmanha[0].data)} - <span style="color:#d00;font-weight:bold;">AMANHÃ</span>` : "";
+
+        let blocos = "";
+        if (!ocultarHorario) {
+            blocos = `
+            <div style="display:flex; gap:16px;">
+                <div style="flex:1; border:1px solid #222; border-radius:6px; min-height:70px; padding:7px; background:#f5fff5;">
+                    ${hojeLabel ? `<div style="font-weight:500; margin-bottom:3px; color:#333;">${hojeLabel}</div>` : ""}
+                    ${horariosHoje || "<div style='color:#bbb;'>-</div>"}
+                </div>
+                <div style="flex:1; border:1px solid #222; border-radius:6px; min-height:70px; padding:7px; background:#f5fff5;">
+                    ${amanhaLabel ? `<div style="font-weight:500; margin-bottom:3px; color:#333;">${amanhaLabel}</div>` : ""}
+                    ${horariosAmanha || "<div style='color:#bbb;'>-</div>"}
+                </div>
+            </div>`;
+        }
+
+        let cardClass = "kds-card novo";
+        if (status == 1) cardClass = "kds-card emproducao";
+        if (status == 2) cardClass = "kds-card finalizado";
+        if (observacao) cardClass += " card-observacao";
+
+        const card = `<div class="${cardClass}">
+            <div class="quantidade-total" style="font-size:1.4em;font-weight:bold;">
+                ${produto}
+                <span class="badge bg-success" style="margin-left:10px;">TOTAL: ${totalFormatado} UN</span>
+            </div>
+            ${observacao ? `<div style="margin: 4px 0 2px 2px;"><span class="badge bg-warning text-dark" style="font-size:0.93em; font-weight:400; padding: 3px 10px;">${observacao}</span></div>` : ''}
+            <div style="margin: 6px 0 0 0;">
+                ${blocos}
+            </div>
+            ${
+                status == 0 
+                ? `<button class="btn btn-primary kds-btn mt-2" onclick="produzirPedidos('${chave}')">Produzir</button>`
+                : status == 1 
+                ? `<button class="btn btn-success kds-btn mt-2" onclick="finalizarPedidos('${chave}')">Finalizar</button>`
+                : ""
+            }
+        </div>`;
+
+        if (status == 0) {
+            document.getElementById('col-aguardando').innerHTML += card;
+        } else if (status == 1) {
+            document.getElementById('col-producao').innerHTML += card;
+        } else {
+            document.getElementById('col-finalizado').innerHTML += card;
+        }
+    });
+});
+agrupadosGlobal = agrupados;
+}
+function moverParaProducao(id) {
+    alert("Em produção! (implementar integração backend)");
+    // Aqui você faz o fetch/POST para atualizar o status no banco, depois chama atualizarPedidos()
+}
+function tocarSomNovoPedido() {
+    let audio = document.getElementById('alertaAudio');
+    if (audio) {
+        audio.currentTime = 0; // Sempre toca do começo
+        audio.play();
+    }
+}
+async function produzirPedidos(chave) {
+    // Chave é produto|observacao, pegue todos IDs desses pedidos em "aguardando"
+    let lista = [];
+    // Agrupa novamente igual renderCards
+    pedidos.forEach(p => {
+        const k = (p.descricao || p.produto || p.id_produto) + '|' + (p.observacao || '');
+        if (k === chave && (p.id_status == null || p.id_status == 0)) { // status aguardando
+            lista.push(p.id_item);
+        }
+    });
+
+    if (lista.length === 0) return;
+
+    // Atualiza no backend (agora por item!)
+    let res = await fetch('/api/kds/item/produzir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: lista })
+    });
+    let ret = await res.json();
+    if (ret.success) {
+        // Atualiza tela após mudar status
+        await atualizarPedidos();
+    } else {
+        alert("Falha ao atualizar itens!");
+    }
+}
+
+async function finalizarPedidos(chave) {
+    // Pega todos os IDs desse produto+observacao que estão em produção
+    let lista = [];
+    pedidos.forEach(p => {
+        const k = (p.descricao || p.produto || p.id_produto) + '|' + (p.observacao || '');
+        if (k === chave && p.id_status == 1) { // status em produção
+            lista.push(p.id_item);
+        }
+    });
+
+    if (lista.length === 0) return;
+
+    // Atualiza no backend (agora por item!)
+    let res = await fetch('/api/kds/item/finalizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: lista })
+    });
+    let ret = await res.json();
+    if (ret.success) {
+        await atualizarPedidos();
+    } else {
+        alert("Falha ao finalizar itens!");
+    }
+}
+
+let agrupadosGlobal = {};
+
+async function produzirTodos() {
+    const chaves = Object.keys(agrupadosGlobal).filter(chave => {
+        const lista = agrupadosGlobal[chave];
+        return lista.some(item => item.id_status == 0);
+    });
+
+    for (const chave of chaves) {
+        await produzirPedidos(chave);
+    }
+
+    await atualizarPedidos();
+}
+
+async function finalizarTodos() {
+    const chaves = Object.keys(agrupadosGlobal).filter(chave => {
+        const lista = agrupadosGlobal[chave];
+        return lista.some(item => item.id_status == 1);
+    });
+
+    for (const chave of chaves) {
+        await finalizarPedidos(chave);
+    }
+
+    await atualizarPedidos();
+}
+
+
+</script>
+<audio id="alertaAudio" src="/static/som_alerta.mp3"></audio>
+
+</body>
+</html>

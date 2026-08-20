@@ -1,0 +1,1046 @@
+{% extends "layout_base.html" %}
+{% block conteudo_central %}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2 id="titulo_pedido" class="mb-4">Pedido</h2>
+        </div>
+    </div>
+
+    <!-- Seção: Dados do Cliente -->
+    <form id="form-pedido" onsubmit="event.preventDefault(); salvarPedido();">
+        <div class="mb-3">
+            <label for="cliente" class="form-label">Cliente</label>
+            <input type="text" class="form-control" id="cliente" name="cliente" placeholder="Nome ou telefone..." autocomplete="off">
+            <div id="sugestoes-clientes" class="list-group"></div>
+        </div>
+        <div class="mb-3">
+            <label for="telefone" class="form-label">Telefone</label>
+            <input type="text" class="form-control" id="telefone" name="telefone" readonly>
+        </div>
+        <!-- Tipo de Entrega -->
+        <div class="mb-3">
+            <label class="form-label">Tipo de Entrega</label><br>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="tipo_entrega" id="retirada" value="retirada" checked>
+                <label class="form-check-label" for="retirada">Retirada na loja</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="tipo_entrega" id="entrega" value="entrega">
+                <label class="form-check-label" for="entrega">Entrega</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="tipo_entrega" id="balcao" value="balcao">
+                <label class="form-check-label" for="balcao">Balcão</label>
+            </div>
+        </div>
+        <!-- Endereço (somente se for entrega) -->
+        <div id="endereco-container" style="display: none;">
+            <div class="mb-3">
+                <label class="form-label">Endereço</label>
+                <input type="text" class="form-control" id="endereco" name="endereco" readonly>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Observações</label>
+                <input type="text" class="form-control" id="obs_endereco" name="obs_endereco">
+            </div>
+        </div>
+        <!-- Loja e Data de Entrega -->
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="loja" class="form-label">Loja</label>
+                <select class="form-select" id="loja" name="loja">
+                    <option selected>Selecione...</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="data" class="form-label">Data entrega</label>
+                <input type="date" class="form-control" id="data" name="data">
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="hora" class="form-label">Hora entrega</label>
+                <input type="time" class="form-control" id="hora" name="hora">
+            </div>
+        </div>
+        <!-- Observação geral -->
+        <div class="mb-4">
+            <label class="form-label">Observações do pedido</label>
+            <textarea class="form-control" name="observacoes" rows="2"></textarea>
+        </div>
+
+        <!-- Seção: Itens do Pedido -->
+        <h5>Itens do Pedido</h5>
+        <div class="row mb-3">
+            <div class="col-md-2">
+                <label for="cod_produto" class="form-label">Cód Produto</label>
+                <input type="text" class="form-control" id="cod_produto" name="cod_produto" placeholder="Código...">
+            </div>
+			<div class="col-md-4">
+				<label for="desc_produto" class="form-label">Descrição Produto</label>
+				<input type="text" class="form-control" id="desc_produto" name="desc_produto" placeholder="Descrição...">
+				<div id="sugestoes-produtos" class="list-group"></div>
+			</div>
+            <div class="col-md-4" id="div-item-associado" style="display:none; margin-top: 10px;">
+                <label for="item-associado">Item Produção</label>
+                <select id="item-associado" class="form-control"></select>
+            </div>
+            <div id="campo-opcoes"></div>
+            <div class="col-md-2">
+                <label for="tipo_embalagem" class="form-label">Tipo Embalagem</label>
+                <input type="text" class="form-control" id="tipo_embalagem" name="tipo_embalagem" placeholder="Tipo Embalagem..." readonly>
+            </div>
+            <div class="col-md-2">
+                <label for="peso_bruto" class="form-label">Peso Un</label>
+                <input type="text" class="form-control" id="peso_bruto" name="peso_bruto" placeholder="Peso...">
+            </div>
+            <div class="col-md-2">
+                <label for="setor" class="form-label">Setor</label>
+                <input type="text" class="form-control" id="setor" name="setor" placeholder="Setor..." readonly>
+            </div>
+			<input type="hidden" id="id_setor_hidden">
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-2">
+                <label for="quantidade" class="form-label">Qtd</label>
+                <input type="number" class="form-control" id="quantidade" name="quantidade" placeholder="Qtd" oninput="calcularTotal()">
+            </div>
+            <div class="col-md-2">
+                <label for="quantidade_un" class="form-label">Qtd Unidades</label>
+                <input type="number" class="form-control" id="quantidade_un" name="quantidade_un" placeholder="Qtd Un" oninput="sincronizarCampos(event)">
+            </div>
+            <div class="col-md-2">
+                <label for="preco_venda" class="form-label">Preço Venda</label>
+                <input type="text" class="form-control" id="preco_venda" name="preco_venda" placeholder="Preço" readonly>
+            </div>
+            <div class="col-md-2">
+                <label for="total" class="form-label">Total</label>
+                <input type="text" class="form-control" id="total" name="total" placeholder="Total" readonly>
+            </div>
+        </div>
+        <!-- Campo Observação do Produto -->
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label for="obs_item" class="form-label">Observação</label>
+                <input type="text" class="form-control" id="obs_item" name="obs_item" placeholder="Detalhes do item...">
+            </div>
+        </div>
+        <!-- Botão Adicionar Item -->
+        <div class="row mb-3">
+            <div class="col-md-12 text-end">
+                <button type="button" class="btn btn-primary" onclick="adicionarItem()">Adicionar Produto</button>
+            </div>
+        </div>
+        <!-- Tabela de Itens -->
+        <table class="table table-bordered" id="tabela_itens">
+            <thead>
+                <tr>
+                    <th>Cód</th>
+                    <th>Descrição</th>
+                    <th>Item Produção</th>
+                    <th>Embalagem</th>
+                    <th>Peso</th>
+                    <th>Setor</th>
+                    <th>Qtd</th>
+                    <th>Qtd Un</th>
+                    <th>Preço</th>
+                    <th>Total</th>
+                    <th>Obs</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <div class="row mb-3">
+            <div class="col-md-2 offset-md-10 text-end">
+                <label class="form-label"><strong>Valor Total do Pedido</strong></label>
+                <input type="text" class="form-control" id="valor_total_pedido" readonly>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-12 text-end">
+                <div class="d-inline-flex" style="gap: 10px;">
+                    <a href="/pedidos/consulta" class="btn btn-secondary">Voltar</a>
+                    <button type="button" class="btn btn-success" onclick="salvarPedido()">Salvar Pedido</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Modal Produto Opções Associadas -->
+<div class="modal fade" id="modalProdutoOpcoes" tabindex="-1" aria-labelledby="modalProdutoOpcoesLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalProdutoOpcoesLabel">Produto Opções Associadas</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>ID Produto</th>
+              <th>Descrição</th>
+              <th>Setor</th>
+              <th>Observação</th>
+            </tr>
+          </thead>
+          <tbody id="tabela_opcoes_produto">
+            <!-- Linhas vão aqui -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const idPedido = urlParams.get('id');
+let mapaProdutos = {};
+window.sincronizarCampos = function(evt = null) {
+    const quantidade = parseFloat(document.getElementById('quantidade').value.replace(',', '.')) || 0;
+    const pesoBruto = parseFloat(document.getElementById('peso_bruto').value.replace(',', '.')) || 0;
+    const qtdUn = parseFloat(document.getElementById('quantidade_un').value.replace(',', '.')) || 0;
+
+    const origem = evt ? evt.target.id : null;
+
+    if (origem === 'quantidade') {
+        if (pesoBruto > 0) {
+            document.getElementById('quantidade_un').value = (quantidade / pesoBruto).toFixed(0);
+        }
+    }
+
+    if (origem === 'quantidade_un') {
+        if (pesoBruto > 0) {
+            const pesoTotal = qtdUn * pesoBruto;
+            document.getElementById('quantidade').value = pesoTotal.toFixed(3);
+        }
+    }
+
+    if (origem === 'peso_bruto') {
+        if (qtdUn > 0) {
+            const pesoTotal = qtdUn * pesoBruto;
+            document.getElementById('quantidade').value = pesoTotal.toFixed(3);
+        } else if (quantidade > 0) {
+            document.getElementById('quantidade_un').value = (quantidade / pesoBruto).toFixed(0);
+        }
+    }
+
+    calcularTotal();
+}
+
+function calcularTotal() {
+    const quantidade = parseFloat(document.getElementById('quantidade').value.replace(',', '.')) || 0;
+    const precoVenda = parseFloat(document.getElementById('preco_venda').value.replace(',', '.')) || 0;
+    const total = quantidade * precoVenda;
+    document.getElementById('total').value = total.toFixed(2);
+}
+
+async function preencherProduto(produto) {
+	console.log(produto)
+    document.getElementById('cod_produto').value = produto.id_produto;
+    document.getElementById('desc_produto').value = produto.descricaocompleta;
+    document.getElementById('tipo_embalagem').value = produto.tipoembalagem;
+    document.getElementById('peso_bruto').value = produto.pesobruto ?? '';
+    document.getElementById('setor').value = produto.setor ?? '';
+
+    let idProduto = produto.id_produto;
+    let idLoja = document.getElementById('loja').value;
+
+    let idSetor = '';
+
+    console.log('-> ID SETOR inicial do produto:', produto.id_setor ?? '');
+
+    if (idProduto && idLoja) {
+        try {
+            const response = await fetch(`/api/preco/${idProduto}/${idLoja}`);
+            const data = await response.json();
+
+            console.log('-> Dados retornados da rota /api/preco:', data);
+
+            idSetor = data.id_setor ?? '';
+            document.getElementById('setor').value = data.descricao_setor ?? '';
+            document.getElementById('preco_venda').value = data.precovenda ?? 0;
+
+            // Agora sim: atribui id_setor após o fetch
+            document.getElementById('id_setor_hidden').value = idSetor;
+			if (mapaProdutos[produto.id_produto]) {
+				mapaProdutos[produto.id_produto].id_setor = idSetor;
+			}
+            console.log('-> ID SETOR final atribuído:', idSetor);
+        } catch (error) {
+            console.error('Erro ao buscar dados do produto:', error);
+            document.getElementById('preco_venda').value = 0;
+        }
+    } else {
+        console.warn('Produto ou loja não definidos para buscar id_setor.');
+    }
+
+    sincronizarCampos();
+    exibirDropdownAssociado(produto.id_produto, '');
+	// Delay para garantir que id_setor foi atribuído
+	setTimeout(() => {
+		const idSetorVerifica = document.getElementById('id_setor_hidden').value;
+		console.log('-> ID SETOR final atribuído (forçado com timeout):', idSetorVerifica);
+	}, 100);
+
+}
+
+
+$('#cod_produto').on('keydown', function (e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+		carregarProdutoDoCampo();
+        let codigo = $('#cod_produto').val().trim();
+        let lojaSelecionada = $('#loja').val();
+
+        if (!codigo || !lojaSelecionada) {
+            alert('Informe o código do produto e selecione a loja!');
+            return;
+        }
+
+        const codigoNum = parseInt(codigo);
+        console.log('Código digitado:', codigoNum);
+        console.log('Produtos disponíveis:', Object.keys(mapaProdutos));
+
+        const produto = mapaProdutos[codigoNum];
+        if (produto) {
+            console.log('Produto encontrado:', produto);
+            preencherProduto(produto);
+        } else {
+            console.warn('Produto não encontrado!');
+            alert('Produto não encontrado!');
+            $('#cod_produto').val('');
+            $('#desc_produto').val('');
+            $('#preco_venda').val('');
+            $('#total').val('');
+        }
+    }
+});
+
+
+// vincula a sincronização aos campos
+['quantidade', 'quantidade_un', 'peso_bruto'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+        el.addEventListener('input', sincronizarCampos);
+    }
+});
+async function buscarAssociados(idProduto) {
+    const response = await fetch(`/api/produto_opcoes/${idProduto}`);
+    if (!response.ok) return [];
+    return await response.json();
+}
+async function exibirDropdownAssociado(codPrincipal, codAssociado = '') {
+    let associados = await buscarAssociados(codPrincipal);
+    let divAssoc = document.getElementById('div-item-associado');
+    let select = document.getElementById('item-associado');
+    select.innerHTML = '';
+    if (associados.length > 0) {
+        select.innerHTML = '<option value="">Selecione...</option>';
+        associados.forEach(function(assoc) {
+            let opt = document.createElement('option');
+            opt.value = assoc.id;
+            opt.text = assoc.nome;
+            select.appendChild(opt);
+        });
+        divAssoc.style.display = 'block';
+        // FORÇA SELEÇÃO DEPOIS DO FETCH
+        if (codAssociado) select.value = codAssociado;
+    } else {
+        divAssoc.style.display = 'none';
+		    let codPrincipal = document.getElementById('cod_produto').value;
+			let produto = mapaProdutos[codPrincipal];
+			if (produto) {
+				$('#setor').val(produto.setor ?? '');
+				$('#id_setor_hidden').val(produto.id_setor ?? '');
+			} else {
+				$('#setor').val('');
+				$('#id_setor_hidden').val('');
+			}	
+    }
+    $('#item-associado').off('change').on('change', async function () {
+        const idAssociado = $(this).val();
+        const idLoja = $('#loja').val();
+
+        if (idAssociado && idLoja && idLoja !== 'Selecione...') {
+            try {
+                const response = await fetch(`/api/preco/${idAssociado}/${idLoja}`);
+                const data = await response.json();
+                $('#setor').val(data.descricao_setor ?? '');
+                $('#id_setor_hidden').val(data.id_setor ?? '');
+            } catch (error) {
+                $('#setor').val('');
+                $('#id_setor_hidden').val('');
+                console.error('Erro ao buscar setor do associado:', error);
+            }
+        } else {
+            let codPrincipal = document.getElementById('cod_produto').value;
+			let produto = mapaProdutos[codPrincipal];
+			if (produto) {
+				$('#setor').val(produto.setor ?? '');
+				$('#id_setor_hidden').val(produto.id_setor ?? '');
+			} else {
+				$('#setor').val('');
+				$('#id_setor_hidden').val('');
+			}
+		}	
+    });
+}
+
+window.editarItem = function(botao) {
+    const row = botao.parentElement.parentElement;
+    const cells = row.querySelectorAll('td');
+    document.getElementById('cod_produto').value = cells[0].textContent;
+    document.getElementById('desc_produto').value = cells[1].textContent;
+    document.getElementById('tipo_embalagem').value = cells[3].textContent;
+    document.getElementById('peso_bruto').value = cells[4].textContent;
+    document.getElementById('setor').value = cells[5].textContent;
+    document.getElementById('quantidade').value = cells[6].textContent;
+    document.getElementById('quantidade_un').value = cells[7].textContent;
+    document.getElementById('preco_venda').value = cells[8].textContent;
+    document.getElementById('total').value = cells[9].textContent;
+    document.getElementById('obs_item').value = cells[10].textContent;
+
+    // NOVO: Campo de associado
+    const codPrincipal = cells[0].textContent;
+    const codAssociado = row.dataset.codProdutoAssociado || '';
+
+    exibirDropdownAssociado(codPrincipal, codAssociado);
+	
+
+
+    modoEdicao = true;
+    linhaEditando = row;
+    atualizarValorTotalPedido();
+}
+
+function adicionarLinhaItemPedido(item) {
+    const tabela = document.getElementById('tabela_itens').getElementsByTagName('tbody')[0];
+    const row = tabela.insertRow();
+
+    const idSetorInput = document.getElementById('id_setor_hidden');
+    const idSetorFinal = idSetorInput ? parseInt(idSetorInput.value.trim()) : null;
+
+    row.dataset.idSetor = idSetorFinal;
+    row.dataset.codProdutoAssociado = item.cod_produto_associado;
+
+    console.log('✅ ID SETOR definido na linha (adicionarLinhaItemPedido):', idSetorFinal);
+
+    [
+        item.cod_produto,
+        item.descricao,
+        item.desc_produto_associado,
+        item.tipo_embalagem,
+        item.peso_bruto,
+        document.getElementById('setor').value, // descricao do setor
+        item.quantidade,
+        item.quantidade_un,
+        item.preco_venda,
+        item.total,
+        item.observacao
+    ].forEach(valor => {
+        const cell = row.insertCell();
+        cell.textContent = valor;
+    });
+
+    const actionsCell = row.insertCell();
+    actionsCell.innerHTML = `
+        <button type="button" class="btn btn-warning btn-sm me-1" onclick="editarItem(this)">Editar</button>
+        <button type="button" class="btn btn-danger btn-sm" onclick="excluirItem(this)">Excluir</button>
+    `;
+}
+
+window.editarItem = async function(botao) {
+    const row = botao.parentElement.parentElement;
+    const cells = row.querySelectorAll('td');
+
+    // 1) Preenche código e descrição no formulário
+    const cod = (cells[0].textContent || '').trim();
+    document.getElementById('cod_produto').value = cod;
+    document.getElementById('desc_produto').value = (cells[1].textContent || '').trim();
+
+    // 2) Rodar o MESMO fluxo do ENTER no campo código
+    //    (isso busca preço/setor por loja, preenche produto, exibe dropdown do associado etc.)
+    //await carregarProdutoDoCampo();
+
+    // 3) Repor os demais campos com os valores da linha editada
+    document.getElementById('tipo_embalagem').value = (cells[3].textContent || '').trim();
+    document.getElementById('peso_bruto').value     = (cells[4].textContent || '').trim();
+    document.getElementById('setor').value          = (cells[5].textContent || '').trim();
+    document.getElementById('quantidade').value     = (cells[6].textContent || '').trim();
+    document.getElementById('quantidade_un').value  = (cells[7].textContent || '').trim();
+
+    // Usa o dataset (se existir) ou o valor da célula
+    const precoVendaLinha = (row.dataset.precoVenda || cells[8].textContent || '').trim();
+    document.getElementById('preco_venda').value = precoVendaLinha;
+    document.getElementById('total').value       = (cells[9].textContent || '').trim();
+    document.getElementById('obs_item').value    = (cells[10].textContent || '').trim();
+
+    // 3.1) Se a linha tinha id_setor gravado, garante o mesmo no hidden
+    if (row.dataset.idSetor) {
+        document.getElementById('id_setor_hidden').value = row.dataset.idSetor;
+    }
+
+    // 4) Seleciona o associado (se houver) e dispara a mesma lógica do change
+    const codAssociado = row.dataset.codProdutoAssociado || '';
+    const selectAssoc  = document.getElementById('item-associado');
+    if (selectAssoc && codAssociado) {
+        selectAssoc.value = codAssociado;
+        $('#item-associado').trigger('change'); // mantém comportamento já existente
+    }
+
+    // 5) Recalcula total do item e sincroniza campos (peso <-> unidades)
+    sincronizarCampos();
+
+    // 6) Remove a linha antiga e atualiza total do pedido (mantém seu comportamento)
+    row.remove();
+    atualizarValorTotalPedido();
+};
+
+
+window.excluirItem = function(botao) {
+    const row = botao.parentElement.parentElement;
+    row.remove();
+};
+
+window.adicionarItem = function() {
+    
+};
+
+window.salvarPedido = async function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const idPedido = urlParams.get('id');
+    if (!idPedido) {
+        alert('ID do pedido não encontrado!');
+        return;
+    }
+
+    let idCliente = document.getElementById('cliente').dataset.idCliente;
+    if (!idCliente || idCliente === "undefined") {
+        alert("Erro: cliente não identificado.");
+        return;
+    }
+
+    // Pega os itens da tabela
+    const linhas = document.querySelectorAll('#tabela_itens tbody tr');
+    let itens = [];
+    linhas.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const precoVenda = parseFloat((row.dataset.precoVenda || cells[8].textContent || '0').replace(',', '.')) || 0;
+
+        itens.push({
+            cod_produto: cells[0].textContent,
+            quantidade: cells[6].textContent,
+            quantidade_un: cells[7].textContent,
+            valor_unitario: precoVenda,
+            observacao: cells[10].textContent,
+            id_setor: row.dataset.idSetor || null
+        });
+    });
+
+    const payload = {
+        id_pedido: idPedido,
+        id_cliente: idCliente,
+        id_loja: document.getElementById('loja').value,
+        data_entrega: document.getElementById('data').value,
+        hora_entrega: document.getElementById('hora').value,
+        telefone: document.getElementById('telefone').value,
+        observacoes: document.querySelector('textarea[name="observacoes"]').value,
+        tipo_entrega: document.querySelector('input[name="tipo_entrega"]:checked').value,
+        itens
+    };
+
+    console.log("📤 Enviando para o backend:", JSON.stringify(payload, null, 2));
+
+    try {
+        const response = await fetch('/api/pedido/salvar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const resultado = await response.json();
+        if (response.ok) {
+            alert('Itens do pedido atualizados com sucesso!');
+            window.location.href = '/pedidos/consulta';
+        } else {
+            alert('Erro ao atualizar itens: ' + (resultado.erro || ''));
+        }
+    } catch (error) {
+        alert('Erro na requisição: ' + error.message);
+    }
+};
+
+
+// Exibe/oculta campo de endereço conforme tipo de entrega
+const entregaRadio = document.getElementById('entrega');
+const retiradaRadio = document.getElementById('retirada');
+const enderecoContainer = document.getElementById('endereco-container');
+
+entregaRadio.addEventListener('change', () => enderecoContainer.style.display = 'block');
+retiradaRadio.addEventListener('change', () => enderecoContainer.style.display = 'none');
+
+let clientesCache = [];
+let lojasCache = [];
+let modoEdicao = false;
+let linhaEditando = null;
+
+$(document).ready(function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    const idPedido = urlParams.get('id');
+
+    let carregouClientes = false;
+    let carregouLojas = false;
+	console.log("A");
+
+    // Carregar dados iniciais
+    $.getJSON('/api/clientes', function (data) {
+        clientesCache = data.map(c => ({
+            ...c,
+            nome_normalizado: c.nome.toLowerCase().normalize("NFD").replace(/[^\w\s]/gi, '')
+        }));
+		console.log(clientesCache);
+        carregouClientes = true;
+        tentarCarregarPedido();
+    });
+
+    $.getJSON('/api/lojas', function (data) {
+        lojasCache = data;
+        const $select = $('#loja');
+        $select.empty();
+        $select.append('<option selected>Selecione...</option>');
+        data.forEach(l => {
+            $select.append(`<option value="${l.id}">${l.descricao}</option>`);
+        });
+        carregouLojas = true;
+        tentarCarregarPedido();
+    });
+
+function tentarCarregarPedido() {
+	if (carregouClientes && carregouLojas && idPedido) {
+		carregarPedido(idPedido);
+	}
+}
+
+function carregarProdutos(idLoja, callback = null) {
+    mapaProdutos = {};
+
+    $.getJSON('/api/produtos', {
+        id_loja: idLoja
+    }, function(data) {
+
+        data.forEach(prod => {
+            mapaProdutos[prod.id_produto] = prod;
+        });
+		console.log(mapaProdutos[5952]);
+        carregouProdutos = true;
+
+        if (callback) {
+            callback();
+        }
+    });
+}
+
+function carregarPedido(id) {
+    fetch(`/api/pedido/${id}`)
+        .then(response => response.json())
+        .then(pedido => {
+
+            if (!pedido) {
+                alert('Pedido não encontrado!');
+                return;
+            }
+
+            $('#cliente').val(pedido.nome_cliente);
+            document.getElementById('cliente').dataset.idCliente = pedido.id_cliente;
+            $('#telefone').val(pedido.telefone);
+            $('#endereco').val(pedido.endereco);
+            $('textarea[name="observacoes"]').val(pedido.observacoes);
+
+            if (pedido.id_status === 6) {
+                $('#balcao').prop('checked', true);
+                $('#endereco-container').hide();
+            } else if (pedido.tipo_entrega === 'entrega') {
+                $('#entrega').prop('checked', true);
+                $('#endereco-container').show();
+            } else {
+                $('#retirada').prop('checked', true);
+                $('#endereco-container').hide();
+            }
+
+            $('#loja').val(pedido.id_loja);
+            $('#data').val(pedido.data_entrega);
+            $('#hora').val(pedido.hora_entrega);
+
+            carregarProdutos(pedido.id_loja, function() {
+                preencherGridItens(
+                    Array.isArray(pedido.itens) ? pedido.itens : []
+                );
+            });
+        })
+        .catch(error => console.error('Erro ao carregar pedido:', error));
+}
+
+
+function preencherGridItens(itens) {
+    const tabela = document.getElementById('tabela_itens').getElementsByTagName('tbody')[0];
+    tabela.innerHTML = "";
+	console.log("📤 Exibindo preços cadastrados nas linhas (debug):");
+	const linhas = document.querySelectorAll('#tabela_itens tbody tr');
+	linhas.forEach(row => {
+		const preco = row.dataset.precoVenda;
+		console.log(`🔍 Produto: ${row.cells[0].textContent}, Preço: ${preco}`);
+	});
+    itens.forEach(item => {
+        const row = tabela.insertRow();
+        row.dataset.idSetor = item.id_setor || '';
+        row.dataset.codProdutoAssociado = item.cod_produto_associado || '';
+        row.dataset.precoVenda = item.preco_venda || '';  // ✅ CORREÇÃO
+
+        row.insertCell(0).textContent = item.cod_produto;
+        row.insertCell(1).textContent = item.descricao;
+        row.insertCell(2).textContent = item.desc_produto_associado || '';
+        row.insertCell(3).textContent = item.tipo_embalagem;
+        row.insertCell(4).textContent = item.peso_bruto;
+        row.insertCell(5).textContent = item.setor;
+        row.insertCell(6).textContent = item.quantidade;
+        row.insertCell(7).textContent = item.quantidade_un;
+        row.insertCell(8).textContent = item.preco_venda;
+        row.insertCell(9).textContent = item.total;
+        row.insertCell(10).textContent = item.observacao;
+
+        const actionsCell = row.insertCell(11);
+        actionsCell.innerHTML = `
+            <button type="button" class="btn btn-warning btn-sm me-1" onclick="editarItem(this)">Editar</button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="excluirItem(this)">Excluir</button>
+        `;
+    });
+
+    atualizarValorTotalPedido();
+}
+
+    // Eventos de cliente
+	$('#cliente').on('input', function () {
+		if (clientesCache.length === 0) return;
+
+		let buscaOriginal = $(this).val().trim();
+
+		let busca = buscaOriginal
+			.toLowerCase()
+			.normalize("NFD")
+			.replace(/[^\w\s]/gi, '');
+
+		let buscaNumerica = buscaOriginal.replace(/\D/g, '');
+
+		if (busca.length < 3 && buscaNumerica.length < 3) {
+			$('#sugestoes-clientes').empty();
+			return;
+		}
+
+		const palavras = busca.split(/\s+/).filter(Boolean);
+
+		let sugestoesFiltradas = clientesCache.filter(c => {
+			const telefoneLimpo = c.telefone.replace(/\D/g, '');
+
+			const achouNome = c.nome_normalizado.includes(busca);
+			const achouTelefone = telefoneLimpo.includes(buscaNumerica);
+
+			if (c.nome.includes("pedro")) {
+				console.log({
+					nomeOriginal: c.nome,
+					nomeNormalizado: c.nome_normalizado,
+					busca: busca,
+					achouNome: achouNome,
+					buscaNumerica: buscaNumerica,
+					achouTelefone: achouTelefone
+				});
+			}
+
+			return busca && achouNome || buscaNumerica && achouTelefone;
+		}).slice(0, 10);
+
+		$('#sugestoes-clientes').empty();
+
+		sugestoesFiltradas.forEach(c => {
+			$('#sugestoes-clientes').append(`
+				<button type="button"
+						class="list-group-item list-group-item-action"
+						data-cliente='${JSON.stringify(c)}'>
+					${c.nome} - ${c.telefone}
+				</button>
+			`);
+		});
+	});
+
+    $('#sugestoes-clientes').on('click', 'button', function () {
+        preencherCliente($(this).data('cliente'));
+        $('#sugestoes-clientes').empty();
+    });
+
+    $('#cliente').on('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (clientesCache.length === 0) return;
+
+            const buscaOriginal = $(this).val();
+            const busca = buscaOriginal.toLowerCase().normalize("NFD").replace(/[^\w\s]/gi, '');
+            const buscaNumerica = buscaOriginal.replace(/\D/g, '');
+
+            const cliente = clientesCache.find(c => {
+                const telefoneLimpo = c.telefone.replace(/\D/g, '');
+                return c.nome_normalizado === busca || telefoneLimpo === buscaNumerica;
+            });
+
+            if (cliente) preencherCliente(cliente);
+            else alert('Cliente não encontrado!');
+        }
+    });
+
+    function preencherCliente(cliente) {
+        $('#cliente').val(cliente.nome);
+        $('#telefone').val(cliente.telefone);
+        $('#endereco').val(`${cliente.endereco}, ${cliente.cidade} - ${cliente.estado}`);
+        $('#obs_endereco').val(cliente.observacao || '');
+		document.getElementById('cliente').dataset.idCliente = cliente.id; 
+    }
+});
+
+window.adicionarItem = async function() {
+    let idSetorInput = document.getElementById('id_setor_hidden');
+    let tentativas = 0;
+    let idSetor = idSetorInput ? idSetorInput.value.trim() : '';
+
+    // Tenta aguardar carregamento do setor por até 5 tentativas
+    while ((!idSetor || isNaN(parseInt(idSetor))) && tentativas < 5) {
+        await new Promise(resolve => setTimeout(resolve, 200));  // espera 200ms
+        idSetor = idSetorInput.value.trim();
+        tentativas++;
+    }
+
+    console.log('⚠ ID SETOR lido no momento de adicionar item (com retry):', idSetor);
+
+    if (!idSetor || isNaN(parseInt(idSetor))) {
+        alert('Erro: Setor não carregado. Verifique o produto e a loja selecionados.');
+        return;
+    }
+
+    // ... resto do código que já está funcionando
+    const cod_produto = document.getElementById('cod_produto').value.trim();
+    const desc_produto = document.getElementById('desc_produto').value.trim();
+    const tipo_embalagem = document.getElementById('tipo_embalagem').value.trim();
+    const peso_bruto = document.getElementById('peso_bruto').value.trim();
+    const setor = document.getElementById('setor').value.trim();
+    const quantidade = document.getElementById('quantidade').value.trim();
+    const quantidade_un = document.getElementById('quantidade_un').value.trim();
+    const preco_venda = document.getElementById('preco_venda').value.trim();
+    const total = document.getElementById('total').value.trim();
+    const observacao = document.getElementById('obs_item').value.trim();
+
+    const produtoOpcao = document.getElementById('item-associado');
+    const cod_produto_associado = produtoOpcao ? produtoOpcao.value : '';
+    const desc_produto_associado = produtoOpcao && produtoOpcao.selectedOptions.length > 0 
+        ? produtoOpcao.selectedOptions[0].text 
+        : '';
+
+    const tabela = document.getElementById('tabela_itens').getElementsByTagName('tbody')[0];
+    const row = tabela.insertRow();
+
+    row.dataset.idSetor = idSetor;
+    row.dataset.codProdutoAssociado = cod_produto_associado;
+	row.dataset.precoVenda = preco_venda;
+	row.setAttribute('data-preco-venda', preco_venda);
+
+    [
+        cod_produto,
+        desc_produto,
+        desc_produto_associado,
+        tipo_embalagem,
+        peso_bruto,
+        setor,
+        quantidade,
+        quantidade_un,
+        preco_venda,
+        total,
+        observacao
+    ].forEach(valor => {
+        const cell = row.insertCell();
+        cell.textContent = valor;
+    });
+
+    const actionsCell = row.insertCell();
+    actionsCell.innerHTML = `
+        <button type="button" class="btn btn-warning btn-sm me-1" onclick="editarItem(this)">Editar</button>
+        <button type="button" class="btn btn-danger btn-sm" onclick="excluirItem(this)">Excluir</button>
+    `;
+
+    [
+        'cod_produto', 'desc_produto', 'tipo_embalagem', 'peso_bruto', 'setor',
+        'quantidade', 'quantidade_un', 'preco_venda', 'total', 'obs_item'
+    ].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    document.getElementById('id_setor_hidden').value = ''; 
+    if (produtoOpcao) produtoOpcao.selectedIndex = 0;
+
+    document.getElementById('cod_produto').focus();
+    atualizarValorTotalPedido();
+	console.log('✅ Preço venda adicionado na linha (dataset):', preco_venda);
+};
+$('#desc_produto').on('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        let termo = $('#desc_produto').val().trim();
+        if (termo.length < 3) {
+            alert('Digite pelo menos 3 letras!');
+            return;
+        }
+        $.ajax({
+            url: '/api/produtos/busca_descricao',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ termo: termo }),
+            success: function(produtos) {
+                let $lista = $('#sugestoes-produtos');
+                $lista.empty();
+                if (!produtos || produtos.length === 0) {
+                    $lista.append('<button type="button" class="list-group-item list-group-item-action disabled">Nenhum produto encontrado</button>');
+                    return;
+                }
+                produtos.forEach(function(prod) {
+                    $lista.append(
+                        `<button type="button" class="list-group-item list-group-item-action"
+                            data-id="${prod.id}"
+                            data-descricao="${prod.descricaocompleta}">
+                            [${prod.id}] - ${prod.descricaocompleta}
+                        </button>`
+                    );
+                });
+            }
+        });
+    }
+});
+
+$('#sugestoes-produtos').on('click', 'button', async function() {
+    let id_produto = $(this).data('id');
+    let descricao   = $(this).data('descricao');
+
+    // Garante que existe no mapa para o fluxo
+    if (!mapaProdutos[id_produto]) {
+        mapaProdutos[id_produto] = {
+            id_produto: id_produto,
+            descricaocompleta: descricao,
+            pesobruto: "",
+            tipoembalagem: "",
+            setor: ""
+        };
+    }
+
+    $('#cod_produto').val(id_produto);
+    $('#desc_produto').val(descricao);
+
+    // Chama seu fluxo já existente que puxa preço/setor por loja
+    await preencherProduto(mapaProdutos[id_produto]);
+
+    $('#sugestoes-produtos').empty();
+});
+$('#desc_produto').on('input', function() {
+    $('#cod_produto').val('');
+    $('#tipo_embalagem').val('');
+    $('#peso_bruto').val('');
+    $('#setor').val('');
+    $('#id_setor_hidden').val('');
+    $('#preco_venda').val('');
+    $('#total').val('');
+});
+async function carregarProdutoDoCampo() {
+  const codigo = $('#cod_produto').val().trim();
+  const idLoja = $('#loja').val();
+  if (!codigo || !idLoja || idLoja === 'Selecione...') {
+    alert('Informe o código do produto e selecione a loja!');
+    return;
+  }
+  const produto = mapaProdutos[parseInt(codigo, 10)];
+  if (!produto) {
+    alert('Produto não encontrado!');
+    return;
+  }
+  console.log("carregarProdutoDoCampo");
+  console.log(produto);
+  await preencherProduto(produto); // <- tem fetch interno e já é async
+}
+
+function atualizarValorTotalPedido() {
+    const linhas = document.querySelectorAll('#tabela_itens tbody tr');
+    let totalPedido = 0;
+
+    linhas.forEach(row => {
+        const totalItem = parseFloat(row.cells[9].textContent.replace(',', '.')) || 0;
+        totalPedido += totalItem;
+    });
+
+    const campoTotalPedido = document.getElementById('valor_total_pedido');
+    if (campoTotalPedido) {
+        campoTotalPedido.value = totalPedido.toFixed(2);
+    }
+}
+async function verificarProdutoOpcoes(idProduto) {
+    const response = await fetch(`/api/produto_opcoes/${idProduto}`);
+    const opcoes = await response.json();
+
+    const container = document.getElementById("campo-opcoes");
+    container.innerHTML = "";
+
+    if (opcoes.length > 0) {
+        const label = document.createElement("label");
+        label.innerText = "Escolha a opção de produção:";
+
+        const select = document.createElement("select");
+        select.id = "item-associado";
+        select.className = "form-control";
+
+        opcoes.forEach(op => {
+            const option = document.createElement("option");
+            option.value = op.id;
+            option.text = op.descricao;
+            select.appendChild(option);
+        });
+
+        container.appendChild(label);
+        container.appendChild(select);
+    }
+}
+async function verProdutoOpcoes(idProduto) {
+    const response = await fetch(`/api/produto_opcoes/${idProduto}`);
+    const dados = await response.json();
+    const tabela = document.getElementById('tabela_opcoes_produto');
+    tabela.innerHTML = '';
+
+    if (!dados || dados.length === 0) {
+        tabela.innerHTML = '<tr><td colspan="4" class="text-center">Nenhuma opção encontrada.</td></tr>';
+    } else {
+        dados.forEach(op => {
+            const linha = document.createElement('tr');
+            linha.innerHTML = `
+                <td>${op.id}</td>
+                <td>${op.descricao}</td>
+                <td>${op.setor || '-'}</td>
+                <td>${op.observacao || '-'}</td>
+            `;
+            tabela.appendChild(linha);
+        });
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('modalProdutoOpcoes'));
+    modal.show();
+}
+
+
+</script>
+{% endblock %}
+

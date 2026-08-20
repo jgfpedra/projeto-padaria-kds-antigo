@@ -1,0 +1,1572 @@
+{% extends "layout_base.html" %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/gestao_encomendas.css') }}">
+{% endblock %}
+{% block conteudo_central %}
+
+<div class="container mt-4">
+
+    <button onclick="abrirModalImpressora()" class="btn btn-secondary">Configurar Impressora</button>
+
+<!-- Modal Bootstrap padrão -->
+<div class="modal fade" id="modalImpressora" tabindex="-1" aria-labelledby="modalImpressoraLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalImpressoraLabel">Configurar Impressora por Loja</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2">
+          <label class="form-label">Loja</label>
+          <select id="cfgLojaGE" class="form-select"></select>
+          <small class="text-muted">Esta configuração é específica por loja (setor em branco).</small>
+        </div>
+        <div class="mb-1">
+          <label class="form-label">Caminho Impressora</label>
+          <input type="text" id="caminhoImpressora" class="form-control" placeholder="Ex.: \\SERVIDOR\IMP_TERMICA">
+          <small class="text-muted">Windows: \\SERVIDOR\IMP — Linux: arquivo/pipe (ex.: /tmp/imp_kitchen)</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button onclick="salvarCaminhoImpressora()" class="btn btn-primary">Salvar</button>
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="card mb-4">
+  <div class="card-body">
+
+    <!-- Linha 1 -->
+    <div class="row g-3 align-items-end">
+      <div class="col-md-2">
+        <label class="form-label">Filtrar por</label>
+        <select id="data_tipo" class="form-select">
+          <option value="data_entrega">Data de Entrega</option>
+          <option value="data_pedido">Data do Pedido</option>
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Data Início</label>
+        <input type="date" id="data_inicio" class="form-control">
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Data Fim</label>
+        <input type="date" id="data_fim" class="form-control">
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Tipo Entrega</label>
+        <select id="tipo_entrega" class="form-select">
+          <option value="">Todos</option>
+          <option value="retirada">Retirada</option>
+          <option value="entrega">Entrega</option>
+          <option value="balcao">Balcão</option>
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Loja</label>
+        <select id="loja" class="form-select"></select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Status</label>
+        <select id="status" class="form-select"></select>
+      </div>
+    </div>
+
+    <!-- Linha 2 -->
+    <div class="row g-3 align-items-end mt-0">
+      <div class="col-md-2">
+        <label class="form-label">Impresso</label>
+        <select id="filtro_impresso" class="form-select">
+          <option value="">Todos</option>
+          <option value="1">Sim</option>
+          <option value="0">Não</option>
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Nº do Pedido</label>
+        <input type="number" id="num_pedido" class="form-control" placeholder="ex.: 123">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Ordenar por</label>
+        <select id="ordenar_por" class="form-select">
+          <option value="data_entrega">Data de entrega</option>
+          <option value="data_pedido">Data do pedido</option>
+          <option value="numero">Número do pedido</option>
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Direção</label>
+        <select id="ordem" class="form-select">
+          <option value="desc">Maior</option>
+          <option value="asc">Menor</option>
+        </select>
+      </div>
+
+      <div class="col-md-3 position-relative">
+        <label class="form-label">Cliente</label>
+        <div class="input-group">
+          <input type="text" id="cliente" class="form-control" placeholder="Nome, telefone ou código">
+          <button class="btn btn-primary" type="button" onclick="pesquisarEncomendas()">Pesquisar</button>
+        </div>
+        <input type="hidden" id="id_cliente_real">
+        <div id="sugestoes-clientes" class="list-group position-absolute w-100"
+             style="z-index:10; max-height:300px; overflow:auto;"></div>
+      </div>
+	  <div class="col-md-4">
+	  <label class="form-label">Busca livre</label>
+	  <input type="text" id="busca_livre" class="form-control"
+			  placeholder="Digite: observação, horário, item, cliente, endereço, status...">
+	  </div>	  
+    </div>
+
+  </div>
+</div>
+
+<div id="cards-container" class="row g-4"></div>
+
+</div>
+
+<div id="modais"></div>
+
+<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+
+<script>
+function formatarQuantidade(qtd) {
+    // Garante que é número
+    let n = Number(qtd);
+    // Se é inteiro, mostra sem casas decimais
+    if (Number.isInteger(n)) {
+        return n.toString();
+    }
+    // Se tem casas decimais, mostra com vírgula e duas casas
+    return n.toFixed(2).replace('.', ',');
+}
+
+let clientesCache = [];
+async function carregarClientes() {
+    const response = await fetch('/api/clientes');
+    const clientes = await response.json();
+    clientesCache = clientes.map(c => ({
+        ...c,
+        nome_normalizado: c.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    }));
+}
+function formatarDataHora(dataIso) {
+    if (!dataIso) return "";
+    const d = new Date(dataIso);
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+}
+
+function formatarData(dataIso) {
+    if (!dataIso) return "";
+    const partes = dataIso.split("-");
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
+
+$(document).ready(function () {
+    carregarLojas();
+    carregarStatus();
+    carregarClientes();
+
+    $('#cliente').on('input', function () {
+        if (clientesCache.length === 0) return;
+
+        let buscaOriginal = $(this).val();
+        let busca = buscaOriginal.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        let buscaNumerica = buscaOriginal.replace(/\D/g, '');
+
+        if (buscaOriginal.trim() === "") {
+            $('#id_cliente_real').val('');
+            $('#sugestoes-clientes').empty();
+            return;
+        }
+
+        if (busca.length < 3 && buscaNumerica.length < 3) {
+            $('#sugestoes-clientes').empty();
+            return;
+        }
+
+        let sugestoesFiltradas = clientesCache.filter(c => {
+            const telefoneLimpo = c.telefone.replace(/\D/g, '');
+            return busca && c.nome_normalizado.includes(busca) || buscaNumerica && telefoneLimpo.includes(buscaNumerica);
+        }).slice(0, 10);
+
+        $('#sugestoes-clientes').empty();
+        sugestoesFiltradas.forEach(c => {
+            $('#sugestoes-clientes').append(`<button type="button" class="list-group-item list-group-item-action" data-id="${c.id}" data-nome="${c.nome}">${c.nome} - ${c.telefone}</button>`);
+        });
+    });
+
+    $('#sugestoes-clientes').on('click', 'button', function () {
+        const idCliente = $(this).data('id');
+        const nomeCliente = $(this).data('nome');
+        $('#cliente').val(nomeCliente);
+        $('#id_cliente_real').val(idCliente);
+        $('#sugestoes-clientes').empty();
+    });
+});
+
+async function carregarLojas() {
+    const response = await fetch('/api/lojas');
+    const lojas = await response.json();
+    const select = document.getElementById('loja');
+    select.innerHTML = '<option value="">Todas</option>';
+    lojas.forEach(loja => {
+        const option = document.createElement('option');
+        option.value = loja.id;
+        option.textContent = loja.descricao;
+        select.appendChild(option);
+    });
+}
+async function carregarStatus() {
+    const response = await fetch('/api/status');
+    const status = await response.json();
+    const select = document.getElementById('status');
+    select.innerHTML = '<option value="">Todos</option>';
+    status.forEach(s => {
+        const option = document.createElement('option');
+        option.value = s.id;
+        option.textContent = s.descricao;
+        select.appendChild(option);
+    });
+}
+
+function criarCardHtml(pedido) {
+    const hoje = new Date();
+    hoje.setHours(0,0,0,0);
+
+    const dataEntrega = new Date(pedido.data_entrega);
+    let faixa = '';
+
+    if (pedido.data_entrega === new Date().toISOString().split('T')[0]) {
+        faixa = '<span class="badge bg-success">HOJE</span>';
+    } else if (dataEntrega < hoje) {
+        faixa = '<span class="badge bg-danger">ATRASADO</span>';
+    }
+
+    const valorTotalFormatado = (pedido.valor_total || 0).toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+    });
+
+    const itensHtml = (pedido.itens || []).map(item => `
+        <li class="text-break">
+            📋 ${formatarQuantidade(item.quantidade_un)} UN - ${item.descricao}
+            ${item.desc_produto_associado ? ' - ' + item.desc_produto_associado : ''}
+            ${item.observacao ? ' (<em>' + item.observacao + '</em>)' : ''}
+        </li>
+    `).join('');
+
+    const enderecoHtml = pedido.tipo_entrega === 'entrega'
+        ? `<p><strong>Endereço:</strong> ${pedido.endereco || ''}</p>`
+        : '';
+
+    const mostrarBotoes = pedido.id_status !== 7;
+
+    const btnFinalizar = pedido.impresso && mostrarBotoes
+        ? `<button class="btn botao-finalizar" onclick="escolherSistemaFinalizacao(${pedido.id}, ${pedido.impresso})">Finalizar</button>`
+        : '';
+
+    const btnStatus = mostrarBotoes
+        ? `<button class="btn botao-status" onclick="abrirModalStatus(${pedido.id})">Status</button>`
+        : '';
+
+    const infoFinalizado = pedido.data_finalizacao ? `
+        <p>
+            <i class="bi bi-check2-circle"></i> Finalizado em:
+            ${formatarDataHora(pedido.data_finalizacao)}<br>
+            <span style="font-size:1.3em">${compararDatasIso(pedido.data_finalizacao, pedido.data_entrega)}</span>
+        </p>
+    ` : '';
+
+    return `
+        <div class="col-md-4" id="pedido-${pedido.id}">
+            <div class="card-pedido">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div><span class="badge bg-primary">Pedido #${pedido.id}</span></div>
+                    <div><i class="bi bi-clock"></i> ${formatarDataHora(pedido.data_pedido)}</div>
+                </div>
+
+                ${pedido.impresso
+                    ? `<span class="badge bg-success"><i class="bi bi-printer"></i> Impresso</span>`
+                    : `<span class="badge bg-secondary"><i class="bi bi-printer"></i> Não impresso</span>`}
+
+                <p><i class="bi bi-shop"></i> ${pedido.nome_loja || ''}</p>
+                <p><i class="bi bi-person"></i> ${pedido.nome_cliente || ''} - ${pedido.telefone || ''}</p>
+
+                <p><strong>Tipo Entrega:</strong> ${(pedido.tipo_entrega || '').toUpperCase()}</p>
+
+                ${enderecoHtml}
+
+                <p><strong>Status Atual:</strong> ${pedido.status_descricao || ''}</p>
+
+                ${pedido.observacoes ? `<p><strong>Observação:</strong> ${pedido.observacoes}</p>` : ''}
+
+                <ul>${itensHtml}</ul>
+
+                <hr>
+
+                <p><i class="bi bi-calendar-event"></i>
+                    Entrega: ${formatarData(pedido.data_entrega)} -
+                    ${diaSemanaExtenso(pedido.data_entrega)}
+                </p>
+
+                <p><strong>Hora Entrega:</strong> ${pedido.hora_entrega || ''} ${!pedido.data_finalizacao ? faixa : ''}</p>
+
+                ${infoFinalizado}
+
+                <p><strong>Valor Total:</strong> ${valorTotalFormatado}</p>
+
+                <div class="botoes">
+                    ${btnStatus}
+                    ${btnFinalizar}
+                    <button class="btn btn-success btn-sm"
+                        onclick="imprimirPedido(${pedido.id})">
+                        Imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+let pedidosCache = [];
+
+function renderPedidos(pedidos) {
+    const cont = $('#cards-container');
+    if (!pedidos.length) {
+        cont.html('<p class="text-center">Nenhum pedido encontrado.</p>');
+        pedidosCache = [];
+        return;
+    }
+    const idsNovos = new Set();
+    pedidos.forEach(pedido => {
+        idsNovos.add(pedido.id);
+        const htmlNovo = criarCardHtml(pedido);
+        const cardExistente = $('#pedido-' + pedido.id);
+        const pedidoAntigo = pedidosCache.find(p => p.id === pedido.id);
+        if (!cardExistente.length) {
+            cont.append(htmlNovo);
+        } else if (JSON.stringify(pedidoAntigo) !== JSON.stringify(pedido)) {
+            cardExistente.replaceWith(htmlNovo);
+        }
+    });
+    pedidosCache.forEach(pedido => {
+        if (!idsNovos.has(pedido.id)) {
+            $('#pedido-' + pedido.id).remove();
+        }
+    });
+    pedidosCache = structuredClone(pedidos);
+}
+
+function normalizarTexto(s) {
+  return String(s || '')
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, ""); // remove acentos
+}
+
+function montarTextoPesquisa(p) {
+  const blocos = [];
+
+  // campos diretos
+  blocos.push(p.id);
+  blocos.push(p.nome_cliente);
+  blocos.push(p.telefone);
+  blocos.push(p.nome_loja);
+  blocos.push(p.tipo_entrega);
+  blocos.push(p.status_descricao);
+  blocos.push(p.observacoes);
+  blocos.push(p.endereco);
+  blocos.push(p.hora_entrega);
+  blocos.push(p.data_entrega);
+  blocos.push(p.data_pedido);
+
+  // itens (descrição + observação do item + produto associado)
+  (p.itens || []).forEach(it => {
+    blocos.push(it.descricao);
+    blocos.push(it.observacao);
+    blocos.push(it.desc_produto_associado);
+  });
+
+  // junte tudo como um “documento” do pedido
+  return normalizarTexto(blocos.filter(Boolean).join(' | '));
+}
+
+// debounce simples para não re-renderizar a cada tecla
+function debounce(fn, ms) {
+  let t; 
+  return function(...args) {
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), ms);
+  };
+}
+
+const onBuscaLivre = debounce(() => {
+  const q = normalizarTexto($('#busca_livre').val() || '');
+
+  if (!q) {
+    // sem termo → mostra tudo (já ordenado do último fetch)
+    renderPedidos(pedidosCache);
+    return;
+  }
+
+  const filtrados = pedidosCache.filter(p => {
+    // índice pré-computado acelera:
+    if (!p._idx) p._idx = montarTextoPesquisa(p);
+    return p._idx.includes(q);
+  });
+
+  renderPedidos(filtrados);
+}, 120);
+
+// ative o listener quando a página carrega
+$(document).ready(function () {
+  // ... seus carregamentos já existentes
+  $('#busca_livre').on('input', onBuscaLivre);
+});
+
+
+let snapshotUltimosPedidos = "";
+let timerAtualizacao = 0
+function agendarAtualizacaoAutomatica() {
+    if (timerAtualizacao) clearInterval(timerAtualizacao);
+    timerAtualizacao = setInterval(() => {
+        pesquisarEncomendas(true);
+    }, 60000);
+}
+
+function tocarSomNovoPedido() {
+  const audio = document.getElementById('alertaAudio');
+  if (audio) { audio.currentTime = 0; audio.play(); }
+}
+
+
+async function pesquisarEncomendas(atualizacaoAutomatica=false) {
+	const posicaoScroll = window.scrollY;
+    $('#cards-container').empty('');
+	const hoje = new Date().toISOString().slice(0, 10);
+	const filtros = {
+		data_tipo: document.getElementById('data_tipo').value || '',
+		data_inicio: document.getElementById('data_inicio').value || '',
+		data_fim: document.getElementById('data_fim').value || '',
+		tipo_entrega: document.getElementById('tipo_entrega').value || '',
+		id_loja: document.getElementById('loja').value || '',
+		id_cliente: document.getElementById('id_cliente_real').value || '',
+		status: document.getElementById('status').value || '',
+		impresso: document.getElementById('filtro_impresso').value || '',
+		num_pedido: document.getElementById('num_pedido').value?.trim() || ''
+	};
+
+    try {
+        const response = await fetch('/api/encomendas/consulta', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(filtros)
+        });
+        const pedidos = await response.json();
+		const novoSnapshot = pedidos
+        .map(p => p.id)
+        .sort()
+        .join('-');
+
+        if (!pedidos.length) {
+            $('#cards-container').html('<p class="text-center">Nenhum pedido encontrado.</p>');
+            return;
+        }
+		if (atualizacaoAutomatica) {
+			if (snapshotUltimosPedidos && snapshotUltimosPedidos !== novoSnapshot) {
+				tocarSomNovoPedido();
+			}
+		}
+		snapshotUltimosPedidos = novoSnapshot;
+		const ordenarPor = document.getElementById('ordenar_por').value;
+		const ordem = document.getElementById('ordem').value;
+
+		const cmpData = (a, b, campo) => {
+		const da = a[campo] ? new Date(a[campo]) : new Date(0);
+		const db = b[campo] ? new Date(b[campo]) : new Date(0);
+		return da - db;
+		};
+		const minutos = (hhmm) => {
+			if (!hhmm) return -1;
+			const [h, m] = hhmm.split(':').map(Number);
+			return (h||0)*60 + (m||0);
+		};
+
+// Helpers mais robustos (DATA → número)
+function toYmdNumber(v) {
+  if (!v) return -Infinity; // sem data vai para o começo no ASC
+  // aceita "YYYY-MM-DD" ou "YYYY-MM-DDTHH:MM:SS"
+  const ymd = String(v).split('T')[0].trim();
+  const [Y, M, D] = ymd.split('-').map(n => parseInt(n, 10));
+  if (!Y || !M || !D) return -Infinity;
+  return (Y * 10000) + (M * 100) + D; // número comparável
+}
+
+// PESO DE HORÁRIO (inteiro): HH*100 + MM
+function horaPesoInt(val) {
+  if (val == null) return Number.MAX_SAFE_INTEGER; // sem hora vai pro fim
+  const s = String(val).trim();
+
+  // "H:MM" / "HH:MM" / "HH:MM:SS"
+  const m1 = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (m1) {
+    const h = parseInt(m1[1], 10) || 0;
+    const m = parseInt(m1[2], 10) || 0;
+    return (h * 100) + m; // 06:30 -> 630, 09:15 -> 915
+  }
+
+  // "HMM" / "HHMM" (ex.: "905", "0905", "1430")
+  if (/^\d{3,4}$/.test(s)) {
+    const pad = s.padStart(4, '0');
+    const h = parseInt(pad.slice(0, 2), 10) || 0;
+    const m = parseInt(pad.slice(2, 4), 10) || 0;
+    return (h * 100) + m;
+  }
+
+  // formato inesperado
+  return Number.MAX_SAFE_INTEGER;
+}
+
+// ===== ORDENAR =====
+pedidos.sort((a, b) => {
+  const ordenarPor = document.getElementById('ordenar_por').value;
+  const ordem = document.getElementById('ordem').value; // 'asc' | 'desc'
+  const dir = (ordem === 'asc') ? 1 : -1;
+
+  // por número (id)
+  if (ordenarPor === 'numero') {
+    return ((a.id || 0) - (b.id || 0)) * dir;
+  }
+
+  // por data (pedido/entrega)
+  const campoData = (ordenarPor === 'data_pedido') ? 'data_pedido' : 'data_entrega';
+
+  // 1) compara DATA conforme direção selecionada
+  const da = toYmdNumber(a[campoData]);
+  const db = toYmdNumber(b[campoData]);
+  if (da !== db) return (da < db ? -1 : 1) * dir;
+
+  // 2) MESMA DATA → usa PESO DO HORÁRIO (sempre crescente no mesmo dia)
+  const pa = horaPesoInt(a.hora_entrega);
+  const pb = horaPesoInt(b.hora_entrega);
+  if (pa !== pb) return pa - pb;
+  // (se preferir que DESC também reverta o horário, troque por: return (pa - pb) * dir;)
+
+  // 3) desempate por id ascendente (estável)
+  return (a.id || 0) - (b.id || 0);
+});
+
+// ===== RENDER =====
+pedidosCache = pedidos; // ← guarda o cache UMA ÚNICA vez, fora do loop
+
+pedidos.forEach(pedido => {
+  const hoje = new Date();
+  hoje.setHours(0,0,0,0);
+  const dataEntrega = new Date(pedido.data_entrega);
+
+  let faixa = '';
+  if (pedido.data_entrega === new Date().toISOString().split('T')[0]) {
+      faixa = '<span class="badge bg-success">HOJE</span>';
+  } else if (dataEntrega < hoje) {
+      faixa = '<span class="badge bg-danger">ATRASADO</span>';
+  }
+
+  const valorTotalFormatado = (pedido.valor_total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  const itensHtml = pedido.itens.map(item => `
+      <li class="text-break">📋 ${formatarQuantidade(item.quantidade_un)} UN - ${item.descricao} ${item.desc_produto_associado ? ' - ' + item.desc_produto_associado : ''} ${item.observacao ? ' (<em>' + item.observacao + '</em>)' : ''}</li>
+  `).join('');
+
+  const enderecoHtml = pedido.tipo_entrega === 'entrega' ? `<p><strong>Endereço:</strong> ${pedido.endereco}</p>` : '';
+
+  let mostrarBotoes = pedido.id_status !== 7;
+
+  let btnFinalizar = pedido.impresso && mostrarBotoes
+      ? `<button class="btn botao-finalizar" onclick="escolherSistemaFinalizacao(${pedido.id}, ${pedido.impresso})">Finalizar</button>`
+      : '';
+
+  let btnStatus = mostrarBotoes
+      ? `<button class="btn botao-status" onclick="abrirModalStatus(${pedido.id})">Status</button>`
+      : '';
+
+  let infoFinalizado = '';
+  if (pedido.data_finalizacao) {
+    infoFinalizado = `
+      <p>
+        <i class="bi bi-check2-circle"></i> Finalizado em: 
+        ${formatarDataHora(pedido.data_finalizacao)}<br>
+        <span style="font-size:1.3em">${compararDatasIso(pedido.data_finalizacao, pedido.data_entrega)}</span>
+      </p>
+    `;
+  }
+
+  const card = `
+  <div class="col-md-4">
+      <div class="card-pedido">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+              <div><span class="badge bg-primary">Pedido #${pedido.id}</span></div>
+              <div><i class="bi bi-clock"></i> ${formatarDataHora(pedido.data_pedido)}</div>
+          </div>
+          ${pedido.impresso
+              ? `<span class="badge bg-success"><i class="bi bi-printer"></i> Impresso</span>`
+              : `<span class="badge bg-secondary"><i class="bi bi-printer"></i> Não impresso</span>`
+          }
+          <p><i class="bi bi-shop"></i> ${pedido.nome_loja}</p>
+          <p><i class="bi bi-person"></i> ${pedido.nome_cliente} - ${pedido.telefone}</p>
+          <p><strong>Tipo Entrega:</strong> ${pedido.tipo_entrega.toUpperCase()}</p>
+          ${enderecoHtml}
+          <p><strong>Status Atual:</strong> ${pedido.status_descricao || ''}</p>
+          ${pedido.observacoes ? `<p><strong>Observação:</strong> ${pedido.observacoes}</p>` : ''}
+          <ul>${itensHtml}</ul>
+          <hr>
+          <p><i class="bi bi-calendar-event"></i> Entrega: ${formatarData(pedido.data_entrega)} - ${diaSemanaExtenso(pedido.data_entrega)}</p>
+          <p><strong>Hora Entrega:</strong> ${pedido.hora_entrega || ''} ${(!pedido.data_finalizacao ? faixa : '')}</p>
+          ${infoFinalizado}
+          <p><strong>Valor Total:</strong> ${valorTotalFormatado}</p>
+          <div class="botoes">
+              ${btnStatus}
+              ${btnFinalizar}
+              <button class="btn btn-success btn-sm" onclick="imprimirPedido(${pedido.id})">Imprimir</button>
+          </div>
+      </div>
+  </div>`;
+
+	requestAnimationFrame(() => {
+			window.scrollTo({
+				top: posicaoScroll,
+				behavior: 'instant'
+			});
+		});
+	  $('#cards-container').append(card);
+	});
+
+    } catch (error) {
+        console.error('Erro ao buscar encomendas:', error);
+        $('#cards-container').html('<p class="text-center text-danger">Erro ao buscar pedidos.</p>');
+    }
+}
+
+async function abrirModalStatus(idPedido) {
+    try {
+        const response = await fetch('/api/status');
+        const statusList = await response.json();
+
+        const pedido = pedidosCache.find(p => p.id === idPedido); // buscamos o pedido do cache carregado
+        const statusAtual = pedido ? pedido.id_status : "";
+
+        let options = statusList.map(s => `
+            <option value="${s.id}" ${s.id === statusAtual ? 'selected' : ''}>${s.descricao}</option>
+        `).join('');
+
+        const modalHtml = `
+            <div class="modal fade" id="modalStatus" tabindex="-1" aria-labelledby="modalStatusLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalStatusLabel">Alterar Status do Pedido</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        </div>
+                        <div class="modal-body">
+                            <label for="novoStatus" class="form-label">Novo Status</label>
+                            <select id="novoStatus" class="form-select">
+                                ${options}
+                            </select>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-primary" onclick="salvarStatus(${idPedido})">Salvar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        $('#modais').html(modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('modalStatus'));
+        modal.show();
+    } catch (error) {
+        console.error('Erro ao abrir modal de status:', error);
+    }
+}
+async function salvarStatus(idPedido) {
+    const novoStatus = document.getElementById('novoStatus').value;
+
+    try {
+        const response = await fetch('/api/encomenda/status', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                id_pedido: idPedido,
+                id_status: novoStatus
+            })
+        });
+
+        const resultado = await response.json();
+
+        if (response.ok) {
+            alert('Status alterado com sucesso!');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalStatus'));
+            modal.hide();
+            pesquisarEncomendas(); // recarrega a lista
+        } else {
+            alert('Erro ao alterar status: ' + (resultado.erro || ''));
+        }
+    } catch (error) {
+        console.error('Erro ao salvar status:', error);
+        alert('Erro ao alterar status.');
+    }
+}
+function escolherSistemaFinalizacao(idPedido, impresso) {
+  if (!impresso) {
+    alert("Imprima o pedido primeiro!");
+    return;
+  }
+
+  const html = `
+    <div class="modal fade" id="modalEscolhaSistema" tabindex="-1" aria-labelledby="modalEscolhaSistemaLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalEscolhaSistemaLabel">Finalizar no…</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            <p>Selecione o sistema em que deseja finalizar o pedido.</p>
+            <div class="d-grid gap-2">
+              <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal"
+                onclick="abrirModalFinalizar(${idPedido}, true)">VR Ficha</button>
+              <button type="button" class="btn btn-outline-success" data-bs-dismiss="modal"
+                onclick="abrirModalFinalizarVRFood(${idPedido})">VRFood</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  $('#modais').html(html);
+  new bootstrap.Modal(document.getElementById('modalEscolhaSistema')).show();
+}
+async function abrirModalFinalizarVRFood(idPedido) {
+  try {
+    const response = await fetch(`/api/pedido/${idPedido}`);
+    const pedido = await response.json();
+    if (!pedido || pedido.erro) {
+      alert("Erro ao buscar pedido para finalização.");
+      return;
+    }
+
+    let totalPedido = 0;
+    let linhasProdutos = pedido.itens.map(item => {
+      const precoVenda = parseFloat(item.preco_venda) || 0;
+      const quantidade = parseFloat(item.quantidade) || 0;
+      const quantidadeUn = Math.round(quantidade);
+      const total = precoVenda * quantidade;
+      totalPedido += total;
+
+      return `
+        <tr data-id-produto="${item.cod_produto}" data-preco-venda="${precoVenda}">
+          <td>${item.cod_produto}</td>
+          <td>${item.descricao}</td>
+          <td>
+			<div class="input-group">
+			<input type="number" class="form-control form-control-sm quantidade" style="width: 80px;"
+					value="${quantidade}" onchange="atualizarValorTotalFinalizar(this)" />
+			<button type="button" class="btn btn-secondary btn-sm"
+					onclick="abrirCampoEtiqueta(this, ${item.cod_produto}, ${precoVenda})">Etiqueta</button>
+			<button type="button" class="btn btn-outline-primary btn-sm"
+					title="Bipar várias etiquetas"
+					onclick="abrirModalMultiEtiquetas(this, ${item.cod_produto}, ${precoVenda})">+</button>
+			</div>
+            <div class="mt-1 d-none campo-etiqueta">
+              <input type="text" class="form-control form-control-sm etiqueta-input" placeholder="Digite ou bip a etiqueta"
+                     onkeydown="if(event.key==='Enter'){lerEtiquetaBalança(this, ${item.cod_produto}, ${precoVenda});}">
+              <small class="text-danger etiqueta-erro"></small>
+            </div>
+          </td>
+          <td>${quantidadeUn}</td>
+          <td>${precoVenda.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
+          <td class="valor-total">${total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
+        </tr>`;
+    }).join('');
+
+    const modalHtml = `
+      <div class="modal fade" id="modalFinalizarVRFood" tabindex="-1" aria-labelledby="modalFinalizarVRFoodLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="modalFinalizarVRFoodLabel">Finalizar Pedido (VRFood)</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Cod</th>
+                    <th>Descrição</th>
+                    <th>Qtd Kg</th>
+                    <th>Qtd UN</th>
+                    <th>Preço Venda</th>
+                    <th>Valor Total</th>
+                  </tr>
+                </thead>
+                <tbody id="itensFinalizar">
+                  ${linhasProdutos}
+                </tbody>
+              </table>
+              <div class="d-flex justify-content-end mt-3 pe-5">
+                <h5 id="valorTotalPedidoFinalizar">Valor Total: ${totalPedido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</h5>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="button" class="btn btn-success" onclick="salvarFinalizacaoPedidoVRFood(${idPedido})">Finalizar</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    $('#modais').html(modalHtml);
+    new bootstrap.Modal(document.getElementById('modalFinalizarVRFood')).show();
+  } catch (e) {
+    console.error(e);
+    alert('Erro ao abrir pedido para finalização.');
+  }
+}
+// ========================
+// Bipagem múltipla etiquetas
+// ========================
+let _multiCtx = null; 
+// _multiCtx = { linha, codInterno, precoVendaKg, lista: [{raw, kg}] }
+
+function abrirModalMultiEtiquetas(btn, codInterno, precoVendaKg) {
+  const linha = btn.closest('tr');
+  const ja = safeParseJson(linha?.dataset?.multiEtiquetas) || [];
+  _multiCtx = { linha, codInterno, precoVendaKg, lista: ja };
+
+  const html = `
+    <div class="modal fade" id="modalMultiEtiquetas" tabindex="-1" aria-labelledby="modalMultiEtiquetasLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalMultiEtiquetasLabel">Bipar várias etiquetas (Cod ${codInterno})</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-2 align-items-end">
+              <div class="col-sm-8">
+                <label class="form-label">Bipe a etiqueta e pressione ENTER</label>
+                <input type="text" class="form-control" id="multiEtiquetaInput" placeholder="Bipe ou digite a etiqueta">
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label d-block">&nbsp;</label>
+                <button class="btn btn-primary w-100" type="button" onclick="adicionarEtiquetaMulti()">Adicionar</button>
+              </div>
+            </div>
+
+            <hr>
+
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered mb-2">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Etiqueta</th>
+                    <th>Peso (Kg)</th>
+                    <th style="width:70px">Remover</th>
+                  </tr>
+                </thead>
+                <tbody id="multiEtiquetasTbody"></tbody>
+              </table>
+            </div>
+
+            <div class="d-flex justify-content-end gap-4 pe-1">
+              <div><strong>Qtd Etiquetas:</strong> <span id="multiQtdEtiquetas">0</span></div>
+              <div><strong>Peso Total (Kg):</strong> <span id="multiTotalKg">0</span></div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-danger me-auto" type="button" onclick="limparEtiquetasMulti()">Limpar lista</button>
+            <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancelar</button>
+            <button class="btn btn-success" type="button" onclick="salvarMultiEtiquetas()">Salvar</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  const cont = document.getElementById('modais');
+  cont.insertAdjacentHTML('beforeend', html);
+  const modal = new bootstrap.Modal(document.getElementById('modalMultiEtiquetas'));
+  modal.show();
+  
+  const modalEl = document.getElementById('modalMultiEtiquetas');
+  modalEl.addEventListener('hidden.bs.modal', () => {
+  modalEl.remove();           // limpa o DOM depois que fechar
+  });
+
+  // enter para adicionar
+  setTimeout(() => {
+    const inp = document.getElementById('multiEtiquetaInput');
+    if (inp) {
+      inp.focus();
+      inp.onkeydown = (ev) => {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          adicionarEtiquetaMulti();
+        }
+      };
+    }
+  }, 100);
+
+  renderMultiLista();
+}
+
+function adicionarEtiquetaMulti() {
+  if (!_multiCtx) return;
+  const input = document.getElementById('multiEtiquetaInput');
+  const etiqueta = (input?.value || '').trim();
+  if (!etiqueta) return;
+
+  // usa a MESMA validação já existente
+  const r = validarEtiquetaBalança(etiqueta, _multiCtx.codInterno, _multiCtx.precoVendaKg);
+  if (r.erro) {
+    alert(r.erro);
+    input.select();
+    return;
+  }
+
+  _multiCtx.lista.push({ raw: etiqueta, kg: r.quantidadeKg });
+  input.value = '';
+  renderMultiLista();
+}
+
+function renderMultiLista() {
+  if (!_multiCtx) return;
+
+  const tbody = document.getElementById('multiEtiquetasTbody');
+  const rows = _multiCtx.lista.map((it, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${it.raw}</td>
+      <td>${formatarQuantidade(it.kg)}</td>
+      <td class="text-center">
+        <button class="btn btn-sm btn-outline-danger" onclick="removerEtiquetaMulti(${i})">&times;</button>
+      </td>
+    </tr>
+  `).join('');
+  tbody.innerHTML = rows || `<tr><td colspan="4" class="text-center text-muted">Nenhuma etiqueta adicionada</td></tr>`;
+
+  const qtd = _multiCtx.lista.length;
+  const totalKg = _multiCtx.lista.reduce((acc, it) => acc + (parseFloat(it.kg) || 0), 0);
+
+  document.getElementById('multiQtdEtiquetas').textContent = String(qtd);
+  document.getElementById('multiTotalKg').textContent = formatarQuantidade(totalKg);
+}
+
+function removerEtiquetaMulti(idx) {
+  if (!_multiCtx) return;
+  _multiCtx.lista.splice(idx, 1);
+  renderMultiLista();
+}
+
+function limparEtiquetasMulti() {
+  if (!_multiCtx) return;
+  if (!confirm('Deseja limpar todas as etiquetas desta lista?')) return;
+  _multiCtx.lista = [];
+  renderMultiLista();
+}
+
+function salvarMultiEtiquetas() {
+  if (!_multiCtx) return;
+  // soma total em kg
+  const totalKg = _multiCtx.lista.reduce((acc, it) => acc + (parseFloat(it.kg) || 0), 0);
+
+  // grava na linha original
+  const linha = _multiCtx.linha;
+  const campoQtd = linha.querySelector('.quantidade');
+  if (campoQtd) {
+    campoQtd.value = (Math.round(totalKg * 1000) / 1000); // 3 casas
+    // dispara change para recalcular total da linha / pedido
+    campoQtd.dispatchEvent(new Event('change'));
+  }
+
+  // persiste a lista na linha (reabrir depois)
+  linha.dataset.multiEtiquetas = JSON.stringify(_multiCtx.lista);
+
+  // fecha modal
+  const m = bootstrap.Modal.getInstance(document.getElementById('modalMultiEtiquetas'));
+  if (m) m.hide();
+  _multiCtx = null;
+}
+
+function safeParseJson(s) {
+  try { return s ? JSON.parse(s) : null; } catch (_) { return null; }
+}
+async function salvarFinalizacaoPedidoVRFood(idPedido) {
+  // coleta itens (igual ao VR Ficha, só não envia numero_ficha)
+  const linhas = document.querySelectorAll('#itensFinalizar tr');
+  const itensAtualizados = [];
+  linhas.forEach(linha => {
+    const idProduto = linha.getAttribute('data-id-produto');
+    const quantidade = parseFloat(linha.querySelector('.quantidade').value) || 0;
+    const quantidadeUn = Math.round(quantidade);
+    itensAtualizados.push({
+      cod_produto: idProduto,
+      quantidade: quantidade,
+      quantidade_un: quantidadeUn
+    });
+  });
+
+  try {
+    const r = await fetch('/api/encomenda/finalizar_vrfood', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ id_pedido: idPedido, itens: itensAtualizados })
+    });
+    const res = await r.json();
+
+    if (r.ok) {
+      alert('Pedido finalizado no VRFood com sucesso!');
+      const modal = bootstrap.Modal.getInstance(document.getElementById('modalFinalizarVRFood'));
+      modal && modal.hide();
+      pesquisarEncomendas();
+    } else {
+      alert('Erro ao finalizar (VRFood): ' + (res.erro || ''));
+    }
+  } catch (e) {
+    console.error(e);
+    alert('Erro ao finalizar (VRFood).');
+  }
+}
+
+async function abrirModalEditar(idPedido) {
+    try {
+        const response = await fetch(`/api/pedido/${idPedido}`);
+        const pedido = await response.json();
+
+        if (!pedido || pedido.erro) {
+            alert("Erro ao buscar pedido para edição.");
+            return;
+        }
+        let totalPedido = 0;
+        let linhasProdutos = pedido.itens.map(item => {
+          const precoVenda = parseFloat(item.preco_venda) || 0;
+          const quantidade = parseFloat(item.quantidade) || 0;
+          const quantidadeUn = Math.round(quantidade);
+          const total = precoVenda * quantidade;
+          totalPedido += total;
+
+          return `
+    <tr data-id-produto="${item.cod_produto}">
+        <td>${item.cod_produto}</td>
+        <td>${item.descricao}</td>
+        <td><input type="number" class="form-control form-control-sm quantidade" style="width: 80px;" value="${quantidade}" onchange="atualizarValorTotal(this)" /></td>
+        <td>${quantidadeUn}</td>
+        <td>${precoVenda.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
+        <td class="valor-total">${total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
+    </tr>`;
+}).join('');
+
+
+        const modalHtml = `
+            <div class="modal fade" id="modalEditar" tabindex="-1" aria-labelledby="modalEditarLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalEditarLabel">Editar Produtos do Pedido</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        </div>
+                        <div class="modal-body">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Cod</th>
+                                        <th>Descrição</th>
+                                        <th>Qtd Kg</th>
+                                        <th>Qtd UN</th>
+                                        <th>Preço Venda</th>
+                                        <th>Valor Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itensEditar">
+                                    ${linhasProdutos}
+                                </tbody>
+                            </table>
+                        </div>
+                       <div class="d-flex justify-content-end mt-3 pe-5">
+                            <h5 id="valorTotalPedido">Valor Total: ${totalPedido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</h5>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-success" onclick="salvarEdicaoPedido(${idPedido})">Salvar Alterações</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        $('#modais').html(modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('modalEditar'));
+        modal.show();
+    } catch (error) {
+        console.error('Erro ao abrir modal de edição:', error);
+        alert('Erro ao abrir pedido para edição.');
+    }
+}
+function atualizarValorTotal(input) {
+    const linha = input.closest('tr');
+    const precoVenda = parseFloat(linha.querySelectorAll('td')[4].innerText.replace('R$', '').replace('.', '').replace(',', '.'));
+    const novaQuantidade = parseFloat(input.value) || 0;
+    const novoTotal = precoVenda * novaQuantidade;
+    linha.querySelector('.valor-total').innerText = novoTotal.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+    atualizarValorTotalPedido();
+}
+function atualizarValorTotalPedido() {
+    let totalPedido = 0;
+    document.querySelectorAll('#itensEditar tr').forEach(linha => {
+        const precoVenda = parseFloat(linha.querySelectorAll('td')[4].innerText.replace('R$', '').replace('.', '').replace(',', '.'));
+        const quantidade = parseFloat(linha.querySelector('.quantidade').value) || 0;
+        totalPedido += precoVenda * quantidade;
+    });
+
+    document.getElementById('valorTotalPedido').innerText = 'Valor Total: ' + totalPedido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+async function salvarEdicaoPedido(idPedido) {
+    const linhas = document.querySelectorAll('#itensEditar tr');
+    const itensAtualizados = [];
+
+    linhas.forEach(linha => {
+        const idProduto = linha.getAttribute('data-id-produto');
+        const quantidade = parseFloat(linha.querySelector('.quantidade').value) || 0;
+        const quantidadeUn = Math.round(quantidade);
+
+        itensAtualizados.push({
+            cod_produto: idProduto,
+            quantidade: quantidade,        // Salvar com decimal
+            quantidade_un: quantidadeUn     // Salvar inteiro
+        });
+    });
+
+    try {
+        const response = await fetch('/api/encomenda/editar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                id_pedido: idPedido,
+                itens: itensAtualizados
+            })
+        });
+
+        const resultado = await response.json();
+
+        if (response.ok) {
+            alert('Pedido editado com sucesso!');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditar'));
+            modal.hide();
+            R(); // Recarrega a tela
+        } else {
+            alert('Erro ao editar pedido: ' + (resultado.erro || ''));
+        }
+    } catch (error) {
+        console.error('Erro ao salvar edição:', error);
+        alert('Erro ao salvar edição.');
+    }
+}
+async function abrirModalFinalizar(idPedido, impresso) {
+    if (!impresso) {
+        alert("Imprima o pedido primeiro!");
+        return;
+    }
+    try {
+        // Busca os dados do pedido
+        const response = await fetch(`/api/pedido/${idPedido}`);
+        const pedido = await response.json();
+
+        if (!pedido || pedido.erro) {
+            alert("Erro ao buscar pedido para finalização.");
+            return;
+        }
+
+        let totalPedido = 0;
+		let linhasProdutos = pedido.itens.map((item, idx) => {
+			const precoVenda = parseFloat(item.preco_venda) || 0;
+			const quantidade = parseFloat(item.quantidade) || 0;
+			const quantidadeUn = Math.round(quantidade);
+			const total = precoVenda * quantidade;
+			totalPedido += total;
+		
+			return `
+				<tr data-id-produto="${item.cod_produto}" data-preco-venda="${precoVenda}">
+					<td>${item.cod_produto}</td>
+					<td>${item.descricao}</td>
+					<td>
+					<div class="input-group">
+					<input type="number" class="form-control form-control-sm quantidade" style="width: 80px;"
+							value="${quantidade}" onchange="atualizarValorTotalFinalizar(this)" />
+					<button type="button" class="btn btn-secondary btn-sm"
+							onclick="abrirCampoEtiqueta(this, ${item.cod_produto}, ${precoVenda})">Etiqueta</button>
+					<button type="button" class="btn btn-outline-primary btn-sm"
+							title="Bipar várias etiquetas"
+							onclick="abrirModalMultiEtiquetas(this, ${item.cod_produto}, ${precoVenda})">+</button>
+					</div>
+					<div class="mt-1 d-none campo-etiqueta">
+					<input type="text" class="form-control form-control-sm etiqueta-input" placeholder="Digite ou bip a etiqueta"
+							onkeydown="if(event.key==='Enter'){lerEtiquetaBalança(this, ${item.cod_produto}, ${precoVenda});}">
+					<small class="text-danger etiqueta-erro"></small>
+					</div>
+
+					</td>
+					<td>${quantidadeUn}</td>
+					<td>${precoVenda.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
+					<td class="valor-total">${total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
+				</tr>`;
+		}).join('');
+
+
+        const modalHtml = `
+            <div class="modal fade" id="modalFinalizar" tabindex="-1" aria-labelledby="modalFinalizarLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalFinalizarLabel">Finalizar Pedido</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        </div>
+                        <div class="modal-body">
+                            <label for="numeroFicha" class="form-label">Número da Ficha</label>
+                            <input type="text" id="numeroFicha" class="form-control" placeholder="Digite o número da ficha">
+                            <hr>
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Cod</th>
+                                        <th>Descrição</th>
+                                        <th>Qtd Kg</th>
+                                        <th>Qtd UN</th>
+                                        <th>Preço Venda</th>
+                                        <th>Valor Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itensFinalizar">
+                                    ${linhasProdutos}
+                                </tbody>
+                            </table>
+                            <div class="d-flex justify-content-end mt-3 pe-5">
+                                <h5 id="valorTotalPedidoFinalizar">Valor Total: ${totalPedido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</h5>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-success" onclick="salvarFinalizacaoPedido(${idPedido})">Finalizar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        $('#modais').html(modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('modalFinalizar'));
+        modal.show();
+    } catch (error) {
+        console.error('Erro ao abrir modal de finalização:', error);
+        alert('Erro ao abrir pedido para finalização.');
+    }
+}
+
+// Função para atualizar valor total no modal de finalizar
+function atualizarValorTotalFinalizar(input) {
+    const linha = input.closest('tr');
+    const precoVenda = parseFloat(linha.querySelectorAll('td')[4].innerText.replace('R$', '').replace('.', '').replace(',', '.'));
+    const novaQuantidade = parseFloat(input.value) || 0;
+    const novoTotal = precoVenda * novaQuantidade;
+    linha.querySelector('.valor-total').innerText = novoTotal.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+    atualizarValorTotalPedidoFinalizar();
+}
+function atualizarValorTotalPedidoFinalizar() {
+    let totalPedido = 0;
+    document.querySelectorAll('#itensFinalizar tr').forEach(linha => {
+        const precoVenda = parseFloat(linha.querySelectorAll('td')[4].innerText.replace('R$', '').replace('.', '').replace(',', '.'));
+        const quantidade = parseFloat(linha.querySelector('.quantidade').value) || 0;
+        totalPedido += precoVenda * quantidade;
+    });
+
+    const totalEl = document.getElementById('valorTotalPedidoFinalizar');
+	if (totalEl) {
+	totalEl.innerText = 'Valor Total: ' +
+		totalPedido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+	}
+}
+
+// Atualizar pedidos:
+
+
+// Utilitário: carrega lojas para o select do modal (reaproveita /api/lojas)
+async function carregarLojasModalGE() {
+  const sel = document.getElementById('cfgLojaGE');
+  sel.innerHTML = '<option value="">Selecione a Loja</option>';
+  try {
+    const r = await fetch('/api/lojas');
+    const lojas = await r.json();
+    lojas.forEach(loja => {
+      const opt = document.createElement('option');
+      opt.value = loja.id;
+      opt.textContent = loja.descricao;
+      sel.appendChild(opt);
+    });
+  } catch {
+    sel.innerHTML = '<option value="">(erro ao carregar lojas)</option>';
+  }
+}
+
+// Abre modal: preenche lojas e tenta pré-selecionar a loja do filtro da tela
+async function abrirModalImpressora() {
+  await carregarLojasModalGE();
+
+  const filtroLoja = document.getElementById('loja')?.value || '';
+  const sel = document.getElementById('cfgLojaGE');
+  if (filtroLoja) sel.value = filtroLoja;
+
+  // Busca caminho para a loja selecionada com id_setor = null
+  await buscarCaminhoImpressoraPorLojaGE();
+
+  // Ao trocar a loja no modal, recarrega o caminho
+  sel.onchange = buscarCaminhoImpressoraPorLojaGE;
+
+  const modal = new bootstrap.Modal(document.getElementById('modalImpressora'));
+  modal.show();
+}
+
+// GET no mesmo endpoint do KDS, com setor vazio => id_setor = null no backend
+async function buscarCaminhoImpressoraPorLojaGE() {
+  const lojaId = document.getElementById('cfgLojaGE').value;
+  const input = document.getElementById('caminhoImpressora');
+
+  if (!lojaId) {
+    input.value = '';
+    input.placeholder = '\\\\SERVIDOR\\IMP_TERMICA';
+    return;
+  }
+
+  try {
+    // importante: setor vazio na querystring
+    const r = await fetch(`/api/impressora/setor?loja=${lojaId}&setor=`);
+    const j = await r.json();
+    input.value = j.caminho_impressora || '';
+    if (!input.value) input.placeholder = '\\\\SERVIDOR\\IMP_TERMICA';
+  } catch {
+    input.value = '';
+    input.placeholder = '\\\\SERVIDOR\\IMP_TERMICA';
+  }
+}
+
+// Salva caminho para a loja escolhida com id_setor = null
+async function salvarCaminhoImpressora() {
+  const lojaId = document.getElementById('cfgLojaGE').value;
+  const caminho = document.getElementById('caminhoImpressora').value.trim();
+
+  if (!lojaId) {
+    alert('Selecione a Loja.');
+    return;
+  }
+  if (!caminho) {
+    alert('Informe o caminho da impressora.');
+    return;
+  }
+
+  try {
+    const r = await fetch('/api/impressora/setor', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        id_loja: Number(lojaId),
+        id_setor: null,                  // <- chave: setor nulo para Gestão de Encomendas
+        caminho_impressora: caminho
+      })
+    });
+    const j = await r.json();
+    if (j.ok || j.sucesso) {
+      alert('Configuração salva!');
+      const modal = bootstrap.Modal.getInstance(document.getElementById('modalImpressora'));
+      modal && modal.hide();
+    } else {
+      alert(j.erro || 'Erro ao salvar caminho da impressora.');
+    }
+  } catch (e) {
+    console.error(e);
+    alert('Erro ao salvar caminho da impressora.');
+  }
+}
+
+async function imprimirPedido(idPedido) {
+  try {
+    // parâmetros opcionais ainda podem ser enviados, se fizer sentido
+    const linhasExtras = 6, cortar = true, tipoCorte = 'full';
+    const r = await fetch(`/api/pedido/${idPedido}/imprimir`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ linhas_extras: linhasExtras, cortar, tipo_corte: tipoCorte })
+    });
+    const res = await r.json();
+	console.log(res);
+
+    if (r.ok && res.sucesso) {
+      alert('Pedido enviado para impressão!');
+      pesquisarEncomendas();
+    } else {
+      alert('Erro ao imprimir: ' + (res.mensagem || res.erro || ''));
+    }
+  } catch (e) {
+    console.error(e);
+    alert('Erro ao enviar impressão.');
+  }
+}
+function diaSemanaExtenso(dataIso) {
+    if (!dataIso) return "";
+    const dias = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+    // Garante que a data seja tratada como local
+    let partes = dataIso.split('-');
+    // Cuidado: meses no JS começam do 0!
+    let d = new Date(partes[0], partes[1] - 1, partes[2]);
+    return dias[d.getDay()];
+}
+async function salvarFinalizacaoPedido(idPedido) {
+    const numeroFicha = document.getElementById('numeroFicha').value.trim();
+
+    if (!numeroFicha) {
+        alert("Por favor, digite o número da ficha.");
+        return;
+    }
+
+    // Pega itens atualizados
+    const linhas = document.querySelectorAll('#itensFinalizar tr');
+    const itensAtualizados = [];
+
+    linhas.forEach(linha => {
+        const idProduto = linha.getAttribute('data-id-produto');
+        const quantidade = parseFloat(linha.querySelector('.quantidade').value) || 0;
+        const quantidadeUn = Math.round(quantidade);
+
+        itensAtualizados.push({
+            cod_produto: idProduto,
+            quantidade: quantidade,        // Salvar com decimal
+            quantidade_un: quantidadeUn     // Salvar inteiro
+        });
+    });
+
+    try {
+        const response = await fetch('/api/encomenda/finalizar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                id_pedido: idPedido,
+                numero_ficha: numeroFicha,
+                itens: itensAtualizados
+            })
+        });
+
+        const resultado = await response.json();
+
+        if (response.ok) {
+            alert('Pedido finalizado com sucesso!');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalFinalizar'));
+            modal.hide();
+            pesquisarEncomendas(); // Recarrega a tela
+        } else {
+            alert('Erro ao finalizar pedido: ' + (resultado.erro || ''));
+        }
+    } catch (error) {
+        console.error('Erro ao finalizar pedido:', error);
+        alert('Erro ao finalizar pedido.');
+    }
+}
+function compararDatasIso(dataFinalizacao, dataEntrega) {
+    if (!dataFinalizacao || !dataEntrega) return "";
+    let dFinal = new Date(dataFinalizacao.split("T")[0]);
+    let dEntrega = new Date(dataEntrega.split("T")[0]);
+    if (dFinal > dEntrega) return "☹️ Em atraso";
+    else return "🙂 Dentro do prazo";
+}
+
+function abrirCampoEtiqueta(btn, codInterno, precoVendaKg) {
+    const divCampo = btn.closest('td').querySelector('.campo-etiqueta');
+    divCampo.classList.toggle('d-none');
+    divCampo.querySelector('.etiqueta-input').focus();
+}
+
+function lerEtiquetaBalança(input, codInterno, precoVendaKg) {
+    const codigoEtiqueta = input.value.trim();
+    const div = input.closest('.campo-etiqueta');
+    const erroElem = div.querySelector('.etiqueta-erro');
+
+    const resultado = validarEtiquetaBalança(codigoEtiqueta, codInterno, precoVendaKg);
+    if (resultado.erro) {
+        erroElem.textContent = resultado.erro;
+        return;
+    }
+    erroElem.textContent = '';
+
+    // Preenche o campo de quantidade na linha
+    const linha = input.closest('tr');
+    const campoQtd = linha.querySelector('.quantidade');
+    campoQtd.value = resultado.quantidadeKg;
+
+    // Dispara o evento para atualizar o valor total
+    campoQtd.dispatchEvent(new Event('change'));
+
+    // Fecha o campo etiqueta e limpa o input
+    div.classList.add('d-none');
+    input.value = '';
+}
+function validarEtiquetaBalança(codigoEtiqueta, codInternoEsperado, precoVendaKg) {
+  // remove apenas o "_" inicial (se existir) e espaços de borda
+  const raw = String(codigoEtiqueta || '').trim();
+  const s = raw.charAt(0) === '_' ? raw.slice(1) : raw;
+
+  // mantém as mesmas posições que já funcionavam:
+  // código: 2..5  |  preço: 8..12
+  if (s.length < 13) return { erro: "Etiqueta inválida!" };
+
+  const codigoInterno    = s.substr(1, 4); // posições 2 a 5
+  const precoEtiquetaStr = s.substr(7, 5); // posições 8 a 12
+
+  const precoEtiqueta   = parseInt(precoEtiquetaStr, 10) / 100; // 01965 -> 19.65
+  const codInternoLimpo = codigoInterno.replace(/^0+/, '');
+
+  if (codInternoLimpo !== String(codInternoEsperado)) {
+    return { erro: "Código interno diferente do pedido!" };
+  }
+
+  const quantidadeKg = +(precoEtiqueta / precoVendaKg).toFixed(3);
+  return { quantidadeKg, precoEtiqueta };
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const hoje = new Date().toISOString().split('T')[0];
+
+    document.getElementById('data_inicio').value = hoje;
+    document.getElementById('data_fim').value = hoje;
+	const audio = document.createElement('audio');
+    audio.id = 'alertaAudio';
+    audio.src = '../static/som_alerta.mp3';
+    document.body.appendChild(audio);
+	pesquisarEncomendas();
+	agendarAtualizacaoAutomatica();
+});
+
+</script>
+{% endblock %}
