@@ -3,6 +3,10 @@ from app.repo.produto_composto import (
     repo_get_itens_fixos,
     repo_get_opcionais_escolhidos,
     repo_get_produto_detalhe,
+    repo_get_produtos_compostos,
+    repo_salvar_produto_composto,
+    repo_remover_produto_composto,
+    repo_get_calculos_pessoa
 )
 from app.utils.produto_composto import (
     salgados,
@@ -11,6 +15,22 @@ from app.utils.produto_composto import (
 )
 
 logger = logging.getLogger("api.services.produto_composto")
+
+
+def svc_get_produtos_compostos():
+    return repo_get_produtos_compostos()
+
+
+def svc_salvar_produtos_compostos(dados):
+    return repo_salvar_produto_composto(dados)
+
+
+def svc_remover_produtos_compostos(id_produto):
+    return repo_remover_produto_composto(id_produto)
+
+
+def svc_get_calculos_pessoa():
+    return repo_get_calculos_pessoa()
 
 
 def calcular_componentes(id_produto, fator, estrutura, escolhas_opcionais):

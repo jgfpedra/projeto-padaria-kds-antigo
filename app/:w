@@ -162,17 +162,18 @@ def repo_buscar_produtos(termo: str, id_loja, limit: int = 10):
 
 def repo_get_calculos_pessoa():
     try:
-        with conectar_app.cursor() as cur:
-            cur.execute("""
+        conn_app = conectar_app()
+        cur = conn_app.cursor()
+        cur.execute("""
                 SELECT *
                 FROM produto_composto_calculo_pessoa
                 ORDER BY id
             """)
-            rows = cur.fetchall()
-            return [{"id": r[0],
-                     "bebida_ml": r[1],
-                     "bolo_g": r[2],
-                     "salgados_unid": r[3]} for r in rows]
+        rows = cur.fetchall()
+        return [{"id": r[0],
+                 "bebida_ml": r[1],
+                 "bolo_g": r[2],
+                 "salgados_unid": r[3]} for r in rows]
     except Exception as e:
         logger.error(e)
         return False

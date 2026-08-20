@@ -15,15 +15,21 @@ from app.repo.produto_composto import (
         )
 from app.services.produto_composto import (
         montar_itens,
-        calcular_componentes
+        calcular_componentes,
+        svc_get_calculos_pessoa,
+        svc_get_produtos_compostos,
+        svc_salvar_produtos_compostos,
+        svc_remover_produtos_compostos,
         )
 from app import app
 from app.conexao_vr import buscar_clientes, conectar_vr
 from app.conexao_app import conectar_app
 from app import bcrypt
-from flask import Blueprint
 from decimal import Decimal, InvalidOperation
-bp = Blueprint('api', __name__)
+import logging
+
+
+logger = logging.getLogger("api.api_routes")
 
 
 @app.route("/api/clientes")
@@ -1905,19 +1911,47 @@ def carregar_produto_associado(id):
         conn.close()
 
 
-@bp.route("api/produtos_compostos/compostos")
+@app.route("/api/produtos_compostos")
 def get_produtos_compostos():
     try:
-        return jsonify(svc_get_produtos_compostos())
+        a = svc_get_produtos_compostos()
+        return jsonify(a)
     except Exception as e:
         logger.exception(e)
-
         return jsonify({
             "error": "Erro interno"
         }), 500
 
 
-@bp.route("/api/produtos_compostos/<int:id_produto>", methods=["POST"])
+@app.route("/api/produtos_compostos/salvar", methods=["POST"])
+def api_salvar_composto():
+    dados = request.get_json()
+    if not dados or not dados.get("id_produto"):
+        return jsonify({"erro": "id_produto obrigatório."}), 400
+    ok = svc_salvar_produtos_compostos(dados)
+    if not ok:
+        return jsonify({"erro": "Erro ao salvar."}), 500
+    return jsonify({"ok": True})
+
+
+@app.route("/api/produtos_compostos/remover/<int:id_produto>",
+          methods=["DELETE"])
+def api_remover_composto(id_produto):
+    ok = svc_remover_produtos_compostos(id_produto)
+    if not ok:
+        return jsonify({"erro": "Erro ao remover."}), 500
+    return jsonify({"ok": True})
+
+
+@app.route("/api/produtos_compostos/calculos")
+def api_get_calculos():
+    data = svc_get_calculos_pessoa()
+    if data is False:
+        return jsonify({"erro": "Erro ao buscar."}), 500
+    return jsonify(data)
+
+
+@app.route("/api/produtos_compostos/<int:id_produto>", methods=["POST"])
 def api_get_composto(id_produto):
     estrutura = repo_get_composto_estrutura(id_produto)
     if estrutura is False:
@@ -1941,7 +1975,7 @@ def api_get_composto(id_produto):
     })
 
 
-@bp.route("/api/produtos_compostos/explodir/<int:id_produto>",
+@app.route("/api/produtos_compostos/explodir/<int:id_produto>",
           methods=["POST"])
 def api_explodir_composto(id_produto):
     dados = request.get_json(silent=True) or {}
@@ -1990,8 +2024,8 @@ def api_explodir_composto(id_produto):
                                           int(id_loja))})
 
 
-@bp.route('/api/produtos/opcoes_associadas/<int:id_produto_principal>',
-          methods=['GET'])
+@app.route('/api/produtos/opcoes_associadas/<int:id_produto_principal>',
+           methods=['GET'])
 def opcoes_associadas(id_produto_principal):
     conn_app = conectar_app()
     cursor_app = conn_app.cursor()

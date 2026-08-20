@@ -83,7 +83,7 @@ function carregarTiposFiltro() {
 }
 
 function buscarCompostos() {
-  fetch('/api/produtos/compostos', { cache: 'no-store' })
+  fetch('/api/produtos_compostos', { cache: 'no-store' })
     .then(res => res.json())
     .then(data => {
       compostosCache = Array.isArray(data) ? data : [];
@@ -141,7 +141,7 @@ function renderTabelaCompostos() {
 
 function excluirComposto(id) {
   if (!confirm(`Remover composto #${id}?`)) return;
-  fetch(`/api/produtos/compostos/remover/${id}`, { method: 'DELETE' })
+  fetch(`/api/produtos_compostos/remover/${id}`, { method: 'DELETE' })
     .then(res => {
       if (!res.ok) throw new Error();
       notify('Composto removido.');
