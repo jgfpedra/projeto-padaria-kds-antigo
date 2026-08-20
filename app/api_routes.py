@@ -6,7 +6,16 @@ from flask import (
         jsonify,
         redirect,
         url_for,
-        flash
+        )
+from app.repo.produto_composto import (
+        repo_get_itens_fixos,
+        repo_get_produto_detalhe,
+        repo_get_grupos_opcionais,
+        repo_get_composto_estrutura
+        )
+from app.services.produto_composto import (
+        montar_itens,
+        calcular_componentes
         )
 from app import app
 from app.conexao_vr import buscar_clientes, conectar_vr
@@ -46,7 +55,6 @@ def api_produtos():
         conn = conectar_vr()
         cur = conn.cursor()
 
-        # Base da query
         sql = """
             SELECT DISTINCT
                 p.id                           AS id_produto,
@@ -112,7 +120,8 @@ def api_lojas():
 
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, descricao FROM loja WHERE id_situacaocadastro = 1 ORDER BY descricao")
+        cursor.execute("""SELECT id, descricao FROM loja
+                       WHERE id_situacaocadastro = 1 ORDER BY descricao""")
         rows = cursor.fetchall()
         return jsonify([{"id": r[0], "descricao": r[1]} for r in rows])
     except Exception as e:
@@ -124,11 +133,9 @@ def api_lojas():
 @app.route('/api/pedido/salvar', methods=['POST'])
 def salvar_pedido():
     data = request.get_json()
-
     conn = conectar_app()
     if not conn:
         return jsonify({'erro': 'Erro ao conectar ao banco de dados'}), 500
-
     try:
         cursor = conn.cursor()
         id_pedido = data.get('id_pedido')
@@ -165,8 +172,6 @@ def salvar_pedido():
                 novo_pedido = True
         else:
             novo_pedido = True
-
-        # Cria novo pedido se necessário
         if novo_pedido:
             cursor.execute("""
                 INSERT INTO pedidos (id_cliente, id_loja, data_entrega,
@@ -187,14 +192,16 @@ def salvar_pedido():
         for item in data['itens']:
             preco_venda_raw = item.get('valor_unitario', 0)
             if isinstance(preco_venda_raw, str):
-                   preco_venda = float(preco_venda_raw.replace(',', '.')) if preco_venda_raw else 0
+                if preco_venda_raw:
+                    preco_venda_raw = float(preco_venda_raw.replace(',', '.'))
+                else:
+                    preco_venda_raw = 0
             else:
                 preco_venda = float(preco_venda_raw)
             peso_bruto = float(item.get('peso_bruto', '0').replace(',', '.')) if item.get('peso_bruto') else 0
             quantidade_raw = item.get('quantidade')
             quantidade = float(quantidade_raw.replace(',', '.')) if quantidade_raw else 0
             quantidade_un = float(item.get('quantidade_un', '0').replace(',', '.')) if item.get('quantidade_un') else 0
-            total = float(item.get('total', '0').replace(',', '.')) if item.get('total') else 0
             id_setor = int(item.get('id_setor', 0)) if item.get('id_setor') else 0
 
             print('🧪 DEBUG INSERT VALORES:', (
@@ -212,7 +219,9 @@ def salvar_pedido():
 
             cursor.execute("""
                 INSERT INTO pedido_itens (
-                    id_pedido, id_produto, id_setor, quantidade, quantidade_un, peso, valor_unitario, observacao, id_produto_associado, id_status
+                    id_pedido, id_produto, id_setor, quantidade,
+                    quantidade_un, peso, valor_unitario, observacao,
+                    id_produto_associado, id_status
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 id_pedido,
@@ -237,7 +246,8 @@ def salvar_pedido():
 
     finally:
         conn.close()
-        
+
+
 @app.route('/api/preco/<int:id_produto>/<int:id_loja>')
 def api_preco_produto(id_produto, id_loja):
     try:
@@ -659,7 +669,8 @@ def api_pedidos_setor():
         })
 
     return jsonify(resultado)
-    
+
+
 @app.route("/api/loja/<int:id_loja>/setores")
 def api_setores_por_loja(id_loja):
     conn = conectar_vr()
@@ -1377,6 +1388,8 @@ def api_buscar_usuario(id_usuario):
 
     finally:
         conn_app.close()
+
+
 @app.route("/api/usuarios/novo", methods=["POST"])
 def api_novo_usuario():
     conn_app = conectar_app()
@@ -1621,7 +1634,7 @@ def api_produto_opcoes(id_produto):
         conn_app.close()
         conn_vr.close()
 
-        
+
 @app.route("/api/produto_associado/salvar", methods=["POST"])
 def salvar_produto_associado():
     conn = conectar_app()
@@ -1647,14 +1660,16 @@ def salvar_produto_associado():
         # Insere principais
         for p in principais:
             cur.execute("""
-                INSERT INTO produto_opcoes_principal (id_produtoopcoes, id_produto_principal)
+                INSERT INTO produto_opcoes_principal (id_produtoopcoes,
+                id_produto_principal)
                 VALUES (%s, %s)
             """, (id_grupo, p))
 
         # Insere associados
         for o in opcoes:
             cur.execute("""
-                INSERT INTO produto_opcoes_associado (id_produtoopcoes, id_produto_associado)
+                INSERT INTO produto_opcoes_associado (id_produtoopcoes,
+                id_produto_associado)
                 VALUES (%s, %s)
             """, (id_grupo, o))
 
@@ -1675,7 +1690,7 @@ def salvar_produto_associado():
     finally:
         conn.close()
 
-        
+
 @app.route("/api/produto_associado/editar/<int:id>", methods=["PUT"])
 def editar_produto_associado(id):
     conn = conectar_app()
@@ -1759,11 +1774,14 @@ def api_detalhe_produto_vr(id_produto):
         return jsonify({"erro": str(e)}), 500
     finally:
         conn.close()
-from flask import render_template
+
 
 @app.route("/consulta_associado")
 def pagina_consulta_associado():
-    return render_template("consulta_associado.html", titulo_tela="Consulta de Associados")
+    return render_template("consulta_associado.html",
+                           titulo_tela="Consulta de Associados")
+
+
 @app.route("/api/produto_associado/grupos")
 def listar_grupos_produto_associado():
     conn_app = conectar_app()
@@ -1850,6 +1868,7 @@ def produto_associado():
     else:
         return redirect("/consulta_associado")
 
+
 @app.route("/api/produto_associado/grupo/<int:id>")
 def carregar_produto_associado(id):
     conn = conectar_app()
@@ -1878,7 +1897,83 @@ def carregar_produto_associado(id):
         return jsonify({"erro": str(e)}), 500
     finally:
         conn.close()
-@bp.route('/api/produtos/opcoes_associadas/<int:id_produto_principal>', methods=['GET'])
+
+
+@bp.route("/api/produtos_compostos/<int:id_produto>", methods=["POST"])
+def api_get_composto(id_produto):
+    estrutura = repo_get_composto_estrutura(id_produto)
+    if estrutura is False:
+        return jsonify({"erro": "Erro ao buscar composto."}), 500
+    if estrutura is None:
+        return jsonify({"erro": "Produto não é composto."}), 404
+    itens_fixos = repo_get_itens_fixos(id_produto)
+    if itens_fixos is False:
+        return jsonify({"erro": "Erro ao buscar itens fixos."}), 500
+    grupos = repo_get_grupos_opcionais(id_produto)
+    if grupos is False:
+        return jsonify({"erro": "Erro ao buscar grupos opcionais."}), 500
+    return jsonify({
+        "id_produto": id_produto,
+        "tipo": estrutura.get("tipo"),
+        "min_pessoas": estrutura.get("pedido_min_pessoas"),
+        "calculo_pessoa": estrutura.get("calculo_pessoa"),
+        "itens_fixos": itens_fixos,
+        "grupos_opcionais": [{"chave": k, "itens": v} for k,
+                             v in grupos.items()],
+    })
+
+
+@bp.route("/api/produtos_compostos/explodir/<int:id_produto>",
+          methods=["POST"])
+def api_explodir_composto(id_produto):
+    dados = request.get_json(silent=True) or {}
+    id_loja = dados.get("id_loja")
+    if not id_loja:
+        return jsonify({"erro": "id_loja é obrigatório."}), 400
+    pessoas = dados.get("pessoas")
+    quantidade = dados.get("quantidade")
+    if pessoas is not None:
+        fator = int(pessoas)
+        if fator <= 0:
+            return jsonify({"erro": "pessoas deve ser maior que zero."}), 400
+    elif quantidade is not None:
+        fator = int(quantidade)
+        if fator <= 0:
+            return jsonify({"erro": "quantidade deve ser maior que zero."}),
+        400
+    else:
+        return jsonify({"erro": "Informe pessoas ou quantidade."}), 400
+    estrutura = repo_get_composto_estrutura(id_produto)
+    if estrutura is False:
+        return jsonify({"erro": "Erro ao buscar composto."}), 500
+    if estrutura is None:
+        return jsonify({"erro": "Produto não é composto."}), 404
+    produto_pai = repo_get_produto_detalhe(id_produto, int(id_loja))
+    if not produto_pai:
+        return jsonify({"erro": "Produto não encontrado na loja informada."}),
+    404
+    tem_calculo_pessoa = bool(estrutura.get("calculo_pessoa"))
+    if tem_calculo_pessoa and not dados.get("pessoas"):
+        return jsonify({"erro": "Este composto requer o campo pessoas."}),
+    400
+    if not tem_calculo_pessoa and not dados.get("quantidade"):
+        return jsonify({"erro": "Este composto requer o campo quantidade."}),
+    400
+
+    componentes = calcular_componentes(id_produto,
+                                       fator,
+                                       estrutura,
+                                       dados.get("escolhas_opcionais") or {})
+    if componentes is False:
+        return jsonify({"erro": "Erro ao calcular componentes."}), 500
+    return jsonify({"itens": montar_itens(produto_pai,
+                                          fator,
+                                          componentes,
+                                          int(id_loja))})
+
+
+@bp.route('/api/produtos/opcoes_associadas/<int:id_produto_principal>',
+          methods=['GET'])
 def opcoes_associadas(id_produto_principal):
     conn_app = conectar_app()
     cursor_app = conn_app.cursor()
@@ -1924,10 +2019,7 @@ def opcoes_associadas(id_produto_principal):
 
     return jsonify(lista_retorno)
 
-app.register_blueprint(bp)
-if __name__ == "__main__":
-    app.register_blueprint(bp)
-    app.run(host="0.0.0.0", port=5000, debug=True)
+
 @app.route("/setor/kds")
 def setor_kds():
     return render_template("kds.html", titulo_tela="KDS")
@@ -2336,18 +2428,20 @@ def imprimir_pedido(id_pedido):
         # ---------------------------
         # ESC/POS
         ESC = b'\x1b'
-        GS  = b'\x1d'
+        GS = b'\x1d'
         init_printer = ESC + b'@'           # inicializa
         # Code pages:
         #  0x03 = PC860 (Português)   -> preferida para PT-BR
         #  0x02 = PC850 (Multilingual) -> alternativa comum
         select_cp = ESC + b't' + b'\x03'    # tente primeiro PC860
         try:
-            dados = init_printer + select_cp + conteudo_txt.encode('cp860', errors='replace')
+            dados = init_printer + select_cp + conteudo_txt.encode('cp860',
+                                                                   errors='replace')
         except LookupError:
             # fallback para cp850 se ambiente não tiver cp860 (raro)
             select_cp = ESC + b't' + b'\x02'
-            dados = init_printer + select_cp + conteudo_txt.encode('cp850', errors='replace')
+            dados = init_printer + select_cp + conteudo_txt.encode('cp850',
+                                                                   errors='replace')
 
         # Corte (opcional) – respeita flags recebidas
         if cortar:
@@ -2360,15 +2454,9 @@ def imprimir_pedido(id_pedido):
 
         comando = f'copy /b "{nome_arquivo}" "{caminho_impressora}"'
         os.system(comando)
-
-        # ---------------------------
-        # 10) Marcar como impresso
-        # ---------------------------
         cursor_app.execute("UPDATE pedidos SET impresso = true WHERE id = %s", (id_pedido,))
         conn_app.commit()
-
         return jsonify({'sucesso': True})
-
     except Exception as e:
         conn_app.rollback()
         print("Erro ao imprimir pedido:", str(e))
@@ -2401,7 +2489,7 @@ def api_impressora_get():
     finally:
         conn.close()
 
-# SALVAR/ATUALIZAR caminho da impressora
+
 @app.route("/api/impressora", methods=["POST"])
 def api_impressora_post():
     conn = conectar_app()
@@ -2411,7 +2499,8 @@ def api_impressora_post():
         cursor = conn.cursor()
         # Deleta anterior e insere novo, para garantir sempre só 1 registro
         cursor.execute("DELETE FROM impressora")
-        cursor.execute("INSERT INTO impressora (caminho_impressora) VALUES (%s)", (caminho,))
+        cursor.execute("""INSERT INTO impressora (caminho_impressora)
+                       VALUES (%s)""", (caminho,))
         conn.commit()
         return jsonify({"sucesso": True})
     except Exception as e:
@@ -2423,10 +2512,12 @@ def api_impressora_post():
 @app.route("/base")
 def base():
     return render_template("layout_base.html")
-    
+
+
 @app.route('/dashboard_partial')
 def dashboard_partial():
     return render_template('dashboard_partial.html')
+
 
 @app.route("/api/ia/cliente", methods=["POST"])
 def ia_buscar_cliente():
@@ -2548,135 +2639,6 @@ def ia_cadastrar_cliente():
     except Exception as e:
         conn_vr.rollback()
         return jsonify({"erro": str(e)}), 500
-from difflib import get_close_matches
-
-@app.route("/api/ia/produtos-identificar", methods=["POST"])
-def ia_identificar_produtos():
-    conn_vr = conectar_vr()
-
-    if not conn_vr:
-        return jsonify({"erro": "Falha ao conectar ao banco de dados"}), 500
-
-    try:
-        dados = request.get_json()
-        lista_itens = dados.get("produtos", [])  # lista de strings
-
-        if not lista_itens or not isinstance(lista_itens, list):
-            return jsonify({"erro": "Lista de produtos inválida"}), 400
-
-        cursor = conn_vr.cursor()
-        cursor.execute("SELECT id, descricaocompleta FROM produto")
-        produtos = cursor.fetchall()
-
-        lista_descricoes = [p[1].lower() for p in produtos]
-
-        resultados = []
-        for descricao_cliente in lista_itens:
-            descricao_limpa = descricao_cliente.strip().lower()
-            match = get_close_matches(descricao_limpa, lista_descricoes, n=1, cutoff=0.6)
-
-            if match:
-                descricao_match = match[0]
-                produto_match = next(p for p in produtos if p[1].lower() == descricao_match)
-                resultados.append({
-                    "descricao_cliente": descricao_cliente,
-                    "encontrado": True,
-                    "id_produto": produto_match[0],
-                    "descricao_sistema": produto_match[1]
-                })
-            else:
-                resultados.append({
-                    "descricao_cliente": descricao_cliente,
-                    "encontrado": False,
-                    "mensagem": "Produto não identificado, confirmar com cliente."
-                })
-
-        return jsonify({"resultados": resultados})
-
-    except Exception as e:
-        return jsonify({"erro": str(e)}), 500
-
-@app.route("/api/ia/lojas", methods=["GET"])
-def ia_listar_lojas():
-    conn_vr = conectar_vr()
-
-    if not conn_vr:
-        return jsonify({"erro": "Falha ao conectar ao banco de dados"}), 500
-
-    try:
-        cursor = conn_vr.cursor()
-        cursor.execute("SELECT id, descricao FROM loja ORDER BY descricao")
-
-        lojas = cursor.fetchall()
-
-        lista_lojas = [{"id": row[0], "descricao": row[1]} for row in lojas]
-
-        return jsonify({"lojas": lista_lojas})
-
-    except Exception as e:
-        return jsonify({"erro": str(e)}), 500
-
-@app.route("/api/ia/pedido", methods=["POST"])
-def ia_lancar_pedido():
-    conn_app = conectar_app()
-
-    if not conn_app:
-        return jsonify({"erro": "Falha ao conectar ao banco de dados"}), 500
-
-    try:
-        dados = request.get_json()
-
-        id_cliente = dados.get("id_cliente")
-        id_loja = dados.get("id_loja")
-        data_entrega = dados.get("data_entrega")  # formato: YYYY-MM-DD
-        hora_entrega = dados.get("hora_entrega")  # formato: HH:MM
-        tipo_entrega = dados.get("tipo_entrega", "retirada")  # retirada ou entrega
-        telefone = dados.get("telefone")
-        observacoes = dados.get("observacoes", "")
-        itens = dados.get("itens", [])  # [{id_produto, quantidade}]
-
-        if not all([id_cliente, id_loja, data_entrega, hora_entrega, telefone, itens]):
-            return jsonify({"erro": "Campos obrigatórios faltando"}), 400
-
-        cursor = conn_app.cursor()
-
-        # Inserir pedido
-        cursor.execute("""
-            INSERT INTO pedidos (
-                id_cliente, id_loja, data_entrega, hora_entrega,
-                telefone, observacoes, criado_em, tipo_entrega, id_status
-            ) VALUES (%s, %s, %s, %s, %s, %s, NOW(), %s, %s)
-            RETURNING id
-        """, (
-            id_cliente, id_loja, data_entrega, hora_entrega,
-            telefone, observacoes, tipo_entrega, 3
-        ))
-
-        id_pedido = cursor.fetchone()[0]
-
-        # Inserir itens
-        for item in itens:
-            id_produto = item.get("id_produto")
-            quantidade = item.get("quantidade", 1)
-
-            if not id_produto or quantidade <= 0:
-                continue
-
-            cursor.execute("""
-                INSERT INTO pedido_itens (id_pedido, id_produto, quantidade)
-                VALUES (%s, %s, %s)
-            """, (id_pedido, id_produto, quantidade))
-
-        conn_app.commit()
-
-        return jsonify({
-            "pedido_cadastrado": True,
-            "id_pedido": id_pedido
-        })
-
-    except Exception as e:
-        conn_app.rollback()
-        return jsonify({"erro": str(e)}), 500
 
 
 @app.route("/api/produtos/busca_descricao", methods=["POST"])
@@ -2758,7 +2720,8 @@ def api_produtos_kds_horario():
 
         resultado = [{"id_produto": row[0], "nome": row[1]} for row in produtos]
         return jsonify(resultado)
-        
+
+
 @app.route("/api/produtos_ocultar_horario")
 def api_produtos_ocultar_horario():
     conn = conectar_app()
@@ -2857,8 +2820,8 @@ def _montar_texto_impressao_kds(titulo, itens):
     linhas.append("\n\n")
     return "\r\n".join(linhas)
 
+
 def _enviar_para_impressora_kds(caminho, conteudo):
-    # Simples: grava em arquivo/pipe compartilhado ou usa 'print /D:' no Windows.
     try:
         with open(caminho, 'w', encoding='utf-8', errors='ignore') as f:
             f.write(conteudo)
