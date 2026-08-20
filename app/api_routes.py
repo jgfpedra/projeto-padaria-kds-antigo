@@ -1782,6 +1782,12 @@ def pagina_consulta_associado():
                            titulo_tela="Consulta de Associados")
 
 
+@app.route("/consulta_composto")
+def pagina_consulta_composto():
+    return render_template("consulta_composto.html",
+                           titulo_tela="Consulta de Produtos Compostos")
+
+
 @app.route("/api/produto_associado/grupos")
 def listar_grupos_produto_associado():
     conn_app = conectar_app()
@@ -1897,6 +1903,18 @@ def carregar_produto_associado(id):
         return jsonify({"erro": str(e)}), 500
     finally:
         conn.close()
+
+
+@bp.route("api/produtos_compostos/compostos")
+def get_produtos_compostos():
+    try:
+        return jsonify(svc_get_produtos_compostos())
+    except Exception as e:
+        logger.exception(e)
+
+        return jsonify({
+            "error": "Erro interno"
+        }), 500
 
 
 @bp.route("/api/produtos_compostos/<int:id_produto>", methods=["POST"])
