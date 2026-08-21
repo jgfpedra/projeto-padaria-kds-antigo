@@ -186,171 +186,110 @@
 </div>
 <script>
 let mapaProdutos = {};
+let produtoCompostoAtual = null;
 
 async function buscarProdutoPorCodigo(codigo) {
     let lojaSelecionada = $('#loja').val();
-
     if (!lojaSelecionada || lojaSelecionada === '' || lojaSelecionada === 'Selecione...') {
         alert('Selecione uma loja antes de buscar o produto!');
         return;
     }
-
     if (!codigo) {
         alert('Informe o código do produto!');
         return;
     }
+
     const codigoNum = parseInt(codigo);
     const produto = mapaProdutos[codigoNum];
-    if (produto) {
-        try {
-			 const response = await fetch(`/api/preco/${produto.id_produto}/${lojaSelecionada}`);
-			 const data = await response.json();
-			 
-			 if (data && data.ativo === false) {
-				 alert('Produto inativo/excluído para esta loja. Selecione outro item.');
-				 if (typeof limparCamposProduto === 'function') limparCamposProduto();
-				 return;
-			 }
-			 
-			 produto.precovenda = data.precovenda ?? 0;
-			 produto.setor = data.id_setor ?? '';
-
-        // Composto
-        let divComposto = document.getElementById('div-composto');
-        if (divComposto) divComposto.style.display = 'none';
-
-        const resComposto = await fetch(`/api/produtos_compostos/${produto.id_produto}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({})
-        });
-
-        if (resComposto.ok) {
-            const composto = await resComposto.json();
-            abrirModalComposto(composto, produto, lojaSelecionada);
-        }
-        await preencherProduto(produto);
-            // Buscar associados
-            let associados = await buscarAssociados(produto.id_produto);
-            let divAssoc = document.getElementById('div-item-associado');
-            let select = document.getElementById('item-associado');
-            select.innerHTML = '';
-            if (associados.length > 0) {
-                select.innerHTML = '<option value="">Selecione...</option>';
-                associados.forEach(function(assoc) {
-                    let opt = document.createElement('option');
-                    opt.value = assoc.id;
-                    opt.text = assoc.nome;
-                    select.appendChild(opt);
-                });
-                divAssoc.style.display = 'block';
-            } else {
-                divAssoc.style.display = 'none';
-            }
-        } catch (error) {
-            console.error('Erro ao buscar preço/setor do produto:', error);
-            alert('Erro ao buscar preço e setor!');
-        }
-    } else {
+    if (!produto) {
         alert('Produto não encontrado!');
         limparCamposProduto();
+        return;
     }
-}
-
-
-function abrirModalComposto(composto, produto, id_loja) {
-    // Adapte o HTML do modal ao que já existe no projeto
-    // Aqui assumo um modal genérico com id="modal-composto"
-    const modal = document.getElementById('modal-composto');
-    const corpo = document.getElementById('modal-composto-corpo');
-
-    let html = '';
-
-    if (composto.min_pessoas) {
-        html += `<p>Mínimo de pessoas: <strong>${composto.min_pessoas}</strong></p>`;
-    }
-
-    if (composto.calculo_pessoa) {
-        html += `<label>Número de pessoas:</label>
-                 <input type="number" id="composto-pessoas" min="1" value="${composto.min_pessoas || 1}">`;
-    } else {
-        html += `<label>Quantidade:</label>
-                 <input type="number" id="composto-quantidade" min="1" value="1">`;
-    }
-
-    composto.grupos_opcionais.forEach(grupo => {
-        html += `<fieldset>
-                    <legend>${grupo.chave}</legend>`;
-        grupo.itens.forEach(item => {
-            html += `<label>
-                        <input type="checkbox" name="opcional_${grupo.chave}" value="${item.id_produto}">
-                        Produto #${item.id_produto}
-                     </label><br>`;
-        });
-        html += `</fieldset>`;
-    });
-
-    html += `<button onclick="confirmarComposto(${composto.id_produto}, '${id_loja}')">Confirmar</button>`;
-
-    corpo.innerHTML = html;
-    modal.style.display = 'block';
-
-    // guarda referência pro confirmar usar
-    modal._produto_pai = produto;
-}
-
-
-async function confirmarComposto(id_produto, id_loja) {
-    const pessoas = document.getElementById('composto-pessoas')?.value;
-    const quantidade = document.getElementById('composto-quantidade')?.value;
-
-    const escolhas_opcionais = {};
-    document.querySelectorAll('[name^="opcional_"]').forEach(cb => {
-        if (!cb.checked) return;
-        const chave = cb.name.replace('opcional_', '');
-        escolhas_opcionais[chave] = escolhas_opcionais[chave] || [];
-        escolhas_opcionais[chave].push(parseInt(cb.value));
-    });
 
     try {
-        const res = await fetch(`/api/produtos_compostos/explodir/${id_produto}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id_loja: parseInt(id_loja),
-                pessoas: pessoas ? parseInt(pessoas) : undefined,
-                quantidade: quantidade ? parseInt(quantidade) : undefined,
-                escolhas_opcionais,
-            })
-        });
+        const response = await fetch(`/api/preco/${produto.id_produto}/${lojaSelecionada}`);
+        const data = await response.json();
 
-        if (!res.ok) {
-            const err = await res.json();
-            alert(err.erro || 'Erro ao processar composto.');
+        if (data && data.ativo === false) {
+            alert('Produto inativo/excluído para esta loja. Selecione outro item.');
+            if (typeof limparCamposProduto === 'function') limparCamposProduto();
             return;
         }
 
-        const data = await res.json();
-        const modal = document.getElementById('modal-composto');
-        modal.style.display = 'none';
-
-        // Envia os itens explodidos para o fluxo normal de inserção
-        adicionarItensCompostoAoPedido(data.itens, modal._produto_pai);
-
-    } catch (e) {
-        console.error('Erro ao explodir composto:', e);
-        alert('Erro ao processar composto.');
+        produto.precovenda = data.precovenda ?? 0;
+        produto.setor = data.id_setor ?? '';
+        await preencherProduto(produto);
+        let associados = await buscarAssociados(produto.id_produto);
+        let divAssoc = document.getElementById('div-item-associado');
+        let select = document.getElementById('item-associado');
+        select.innerHTML = '';
+        if (associados.length > 0) {
+            select.innerHTML = '<option value="">Selecione...</option>';
+            associados.forEach(function(assoc) {
+                let opt = document.createElement('option');
+                opt.value = assoc.id;
+                opt.text = assoc.nome;
+                select.appendChild(opt);
+            });
+            divAssoc.style.display = 'block';
+        } else {
+            divAssoc.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Erro ao buscar preço/setor do produto:', error);
+        alert('Erro ao buscar preço e setor!');
     }
 }
 
-
-function adicionarItensCompostoAoPedido(itens, produto_pai) {
-    // Adapte aqui para o que o projeto usa pra adicionar itens ao pedido.
-    // itens é um array com o mesmo shape que os itens normais do pedido.
-    itens.forEach(item => {
-        console.log('Item composto:', item);
-        // ex: adicionarItemNaTabela(item);
+async function explodir_composto(item, id_loja, quantidade_un) {
+    const res = await fetch(`/api/produtos_compostos/explodir/${item.cod_produto}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_loja: parseInt(id_loja), pessoas: quantidade_un })
     });
+
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.erro || 'Erro ao processar composto.');
+        return false;
+    }
+
+    const data = await res.json();
+    const tabela = document.getElementById('tabela_itens');
+
+    // Pai vem dos campos do formulário, já preenchidos normalmente
+    adicionarLinhaItemPedido(item);
+
+    // Filhos vêm do backend
+    data.itens.forEach(filho => {
+        const row = tabela.insertRow();
+        row.dataset.idSetor = filho.id_setor || '';
+        row.dataset.codProdutoAssociado = filho.cod_produto_associado || '';
+        [
+            filho.cod_produto,
+            filho.descricao,
+            filho.desc_produto_associado,
+            filho.tipo_embalagem,
+            filho.peso_liquido,
+            filho.setor,
+            filho.quantidade,
+            filho.quantidade_un,
+            filho.preco_venda,
+            filho.total,
+            filho.observacao
+        ].forEach(valor => {
+            const cell = row.insertCell();
+            cell.textContent = valor ?? '';
+        });
+        const actionsCell = row.insertCell();
+        actionsCell.innerHTML = `
+            <button type="button" class="btn btn-warning btn-sm me-1" onclick="editarItem(this)">Editar</button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="excluirItem(this)">Excluir</button>
+        `;
+    });
+    atualizarTotalPedido();
+    return true;
 }
 
 function sincronizarCampos(evt = null) {
@@ -406,14 +345,14 @@ async function buscarAssociados(id_produto_principal) {
     if (!response.ok) return [];
     return await response.json();
 }
+
+
 async function adicionarItem() {
     const id_loja = document.getElementById('loja').value;
-
     if (!id_loja || id_loja === 'Selecione...') {
         alert('Selecione uma loja antes de adicionar produtos!');
         return;
     }
-
     const item = {
         cod_produto: document.getElementById('cod_produto').value.trim(),
         descricao: document.getElementById('desc_produto').value.trim(),
@@ -428,44 +367,43 @@ async function adicionarItem() {
         total: document.getElementById('total').value.trim(),
         observacao: document.getElementById('obs_item').value.trim()
     };
-
-    // 🚨 Validações
-	// Se tem associado mas não escolheu
+    if (!item.cod_produto) {
+        alert('Informe o código do produto antes de adicionar!');
+        return;
+    }
+    if (!item.quantidade || parseFloat(item.quantidade) <= 0) {
+        alert('Informe uma quantidade válida antes de adicionar!');
+        return;
+    }
     if (document.getElementById('div-item-associado').style.display === 'block' && !item.cod_produto_associado) {
         alert('Selecione o item associado!');
         return;
     }
-
-if (!item.cod_produto) {
-    alert('Informe o código do produto antes de adicionar!');
-    return;
+    // Verifica se é composto
+    const resComposto = await fetch(`/api/produtos_compostos/${item.cod_produto}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+    });
+    if (resComposto.ok) {
+        const qtd_un = parseInt(item.quantidade_un) || 0;
+        if (qtd_un < 10) {
+            alert('Produto composto requer mínimo de 10 pessoas.');
+            return;
+        }
+        await explodir_composto(item, id_loja, qtd_un);
+        return;
+    }
+    // não é composto, fluxo normal
+    adicionarLinhaItemPedido(item);
+    document.getElementById('div-item-associado').style.display = 'none';
 }
-if (!item.quantidade || parseFloat(item.quantidade) <= 0) {
-    alert('Informe uma quantidade válida antes de adicionar!');
-    return;
-}
-// Se tem associado mas não escolheu
-if (document.getElementById('div-item-associado').style.display === 'block' && !item.cod_produto_associado) {
-    alert('Selecione o item associado!');
-    return;
-}
-
-adicionarLinhaItemPedido(item);
-
-// Oculta o dropdown após adicionar
-document.getElementById('div-item-associado').style.display = 'none';
-
-}
-
 
 function adicionarLinhaItemPedido(item) {
     const tabela = document.getElementById('tabela_itens');
     const row = tabela.insertRow();
     row.dataset.idSetor = document.getElementById('id_setor_hidden').value;
 	row.dataset.codProdutoAssociado = item.cod_produto_associado;
-
-    // Ordem das colunas: 
-    // cod_produto, descricao, cod_produto_associado, desc_produto_associado, tipo_embalagem, peso_bruto, setor, quantidade, quantidade_un, preco_venda, total, observacao
     [
         item.cod_produto,
         item.descricao,
@@ -514,7 +452,6 @@ function adicionarLinhaItemPedido(item) {
     document.getElementById('cod_produto').focus();
     atualizarTotalPedido();
 }
-
 
 function atualizarTotalPedido() {
     let total = 0;
@@ -924,6 +861,3 @@ $('#desc_produto').on('input', function() {
 
 </script>
 {% endblock %}
-
-
-

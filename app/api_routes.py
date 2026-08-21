@@ -1848,6 +1848,7 @@ def listar_grupos_produto_associado():
         conn_app.close()
         conn_vr.close()
 
+
 @app.route("/produto_associado")
 def produto_associado():
     id_grupo = request.args.get("id")
@@ -1911,6 +1912,18 @@ def carregar_produto_associado(id):
         conn.close()
 
 
+@app.route("/produto_composto")
+def produto_composto():
+    id_produto = request.args.get("id_produto", type=int)
+    modal = request.args.get("modal")
+    print(id_produto, modal)
+    return render_template(
+        "produto_composto.html",
+        id_produto=id_produto,
+        modal=modal
+    )
+
+
 @app.route("/api/produtos_compostos")
 def get_produtos_compostos():
     try:
@@ -1935,7 +1948,7 @@ def api_salvar_composto():
 
 
 @app.route("/api/produtos_compostos/remover/<int:id_produto>",
-          methods=["DELETE"])
+           methods=["DELETE"])
 def api_remover_composto(id_produto):
     ok = svc_remover_produtos_compostos(id_produto)
     if not ok:

@@ -111,10 +111,11 @@ def repo_get_produto_detalhe(id_produto, id_loja):
         conn_vr = conectar_vr()
         cur = conn_vr.cursor()
         cur.execute("""
-            SELECT p.id, p.descricaocompleta, p.tipoembalagem, p.pesoliquido,
-                   pc.precovenda,
-                   s.id, s.descricao
+            SELECT p.id, p.descricaocompleta, te.descricao,
+                    p.pesoliquido, pc.precovenda,
+                    s.id, s.descricao
             FROM produto p
+            LEFT JOIN tipoembalagem te ON te.id = p.id_tipoembalagem
             LEFT JOIN produtocomplemento pc ON pc.id_produto = p.id
             AND pc.id_loja = %s
             LEFT JOIN ficha.setorproduto sp ON sp.id_produto = p.id
@@ -162,17 +163,18 @@ def repo_buscar_produtos(termo: str, id_loja, limit: int = 10):
 
 def repo_get_calculos_pessoa():
     try:
-        with conectar_app.cursor() as cur:
-            cur.execute("""
+        conn_app = conectar_app()
+        cur = conn_app.cursor()
+        cur.execute("""
                 SELECT *
                 FROM produto_composto_calculo_pessoa
                 ORDER BY id
             """)
-            rows = cur.fetchall()
-            return [{"id": r[0],
-                     "bebida_ml": r[1],
-                     "bolo_g": r[2],
-                     "salgados_unid": r[3]} for r in rows]
+        rows = cur.fetchall()
+        return [{"id": r[0],
+                 "bebida_ml": r[1],
+                 "bolo_g": r[2],
+                 "salgados_unid": r[3]} for r in rows]
     except Exception as e:
         logger.error(e)
         return False

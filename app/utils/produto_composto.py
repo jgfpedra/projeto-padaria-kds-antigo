@@ -35,7 +35,7 @@ def bolos(itens, pessoas, bolo_g):
     result = []
     for i in itens:
         peso_unit = float(i["peso_unitario_kg"] or 0)
-        peso_total = float(bolo_g) * pessoas
+        peso_total = (float(bolo_g) * pessoas) / 1000
         qtd = round(peso_total / peso_unit, 3) if peso_unit > 0 else 0.0
         result.append({"id_produto": i["id_produto"], "quantidade": qtd})
     return result

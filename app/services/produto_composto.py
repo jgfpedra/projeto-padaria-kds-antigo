@@ -37,30 +37,23 @@ def calcular_componentes(id_produto, fator, estrutura, escolhas_opcionais):
     itens_fixos = repo_get_itens_fixos(id_produto)
     if itens_fixos is False:
         return False
-    resultado = []
     cp = estrutura.get("calculo_pessoa")
-    if cp:
-        for i in itens_fixos:
-            if not i["tipo_item"]:
-                resultado.append(
-                    {"id_produto": i["id_produto"],
-                     "quantidade": float(i["quantidade"])})
+    if not cp:
+        resultado = [{"id_produto": i["id_produto"], "quantidade": float(
+            i["quantidade"]) * fator} for i in itens_fixos]
+    else:
+        calc = {"salgado": salgados, "bebida": bebidas, "bolo": bolos}
+        resultado = [{"id_produto": i["id_produto"], "quantidade": float(
+            i["quantidade"])} for i in itens_fixos if not i["tipo_item"]]
         por_tipo = {}
         for i in itens_fixos:
             if i["tipo_item"]:
                 por_tipo.setdefault(i["tipo_item"], []).append(i)
+        args = {"salgado": cp["salgados_unid"],
+                "bebida": cp["bebida_ml"], "bolo": cp["bolo_g"]}
         for tipo, grupo in por_tipo.items():
-            if tipo == "salgado":
-                resultado.extend(salgados(grupo, fator, cp["salgados_unid"]))
-            elif tipo == "bebida":
-                resultado.extend(bebidas(grupo, fator, cp["bebida_ml"]))
-            elif tipo == "bolo":
-                resultado.extend(bolos(grupo, fator, cp["bolo_g"]))
-    else:
-        for i in itens_fixos:
-            resultado.append(
-                {"id_produto": i["id_produto"],
-                 "quantidade": float(i["quantidade"]) * fator})
+            if tipo in calc:
+                resultado.extend(calc[tipo](grupo, fator, args[tipo]))
     for chave, ids in escolhas_opcionais.items():
         if not ids:
             continue
@@ -73,23 +66,7 @@ def calcular_componentes(id_produto, fator, estrutura, escolhas_opcionais):
 
 
 def montar_itens(produto_pai, fator, componentes, id_loja):
-    itens = [{
-        "cod_produto": produto_pai["id"],
-        "descricao": produto_pai["descricao"],
-        "tipo_embalagem": produto_pai["tipo_embalagem"],
-        "peso_liquido": produto_pai["peso_liquido"],
-        "setor": produto_pai["setor"],
-        "id_setor": produto_pai["id_setor"],
-        "quantidade": fator,
-        "quantidade_un": 1,
-        "preco_venda": produto_pai["preco_venda"],
-        "total": (round(produto_pai["preco_venda"] *
-                        fator *
-                        float(produto_pai["peso_liquido"] or 0), 2)),
-        "observacao": "",
-        "cod_produto_associado": "",
-        "desc_produto_associado": "",
-    }]
+    itens = []
     for comp in componentes:
         detalhe = repo_get_produto_detalhe(comp["id_produto"], id_loja)
         if not detalhe:
@@ -108,7 +85,7 @@ def montar_itens(produto_pai, fator, componentes, id_loja):
             "quantidade_un": comp["quantidade"],
             "preco_venda": 0,
             "total": 0,
-            "observacao": "",
+            "observacao": f"Composto: {produto_pai["descricao"]}",
             "cod_produto_associado": produto_pai["id"],
             "desc_produto_associado": produto_pai["descricao"],
         })
