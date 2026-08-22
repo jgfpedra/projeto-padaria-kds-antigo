@@ -128,7 +128,8 @@
 
         <!-- Botão Adicionar Item -->
         <div class="row mb-3">
-            <div class="col-md-12 text-end">
+            <div class="col-md-12 d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-danger" onclick="limparItens()">Limpar Itens</button>
                 <button type="button" class="btn btn-primary" onclick="adicionarItem()">Adicionar Produto</button>
             </div>
         </div>
@@ -245,6 +246,11 @@ async function buscarProdutoPorCodigo(codigo) {
         console.error('Erro ao buscar preço/setor do produto:', error);
         alert('Erro ao buscar preço e setor!');
     }
+}
+
+function limparItens() {
+    document.querySelector('#tabela_itens tbody').innerHTML = '';
+    atualizarTotalPedido();
 }
 
 async function explodirComposto(composto, item, id_loja, quantidade_un, escolhas_opcionais) {
@@ -487,8 +493,8 @@ async function adicionarItem() {
 }
 
 function adicionarLinhaItemPedido(item) {
-    const tabela = document.getElementById('tabela_itens');
-    const row = tabela.insertRow();
+    const tbody = document.querySelector('#tabela_itens tbody');
+    const row = tbody.insertRow();
     row.dataset.idSetor = document.getElementById('id_setor_hidden').value;
 	row.dataset.codProdutoAssociado = item.cod_produto_associado;
     [
