@@ -2013,22 +2013,18 @@ def produto_associado():
                     """SELECT id, descricao, id_loja
                     FROM controle_id_produtoopcoes
                     WHERE id = %s""",
-                    (id_grupo,),
+                (id_grupo,),
             )
             grupo = cur.fetchone()
             principais, opcoes = [], []
             if grupo:
                 cur.execute(
-                        """SELECT id_produto_principal
-                        FROM produto_opcoes_principal
-                        WHERE id_produtoopcoes = %s""",
-                        (id_grupo,),
+                    "SELECT id_produto_principal FROM produto_opcoes_principal WHERE id_produtoopcoes = %s",
+                    (id_grupo,),
                 )
                 principais = [r[0] for r in cur.fetchall()]
                 cur.execute(
-                    """SELECT id_produto_associado
-                    FROM produto_opcoes_associado
-                    WHERE id_produtoopcoes = %s""",
+                    "SELECT id_produto_associado FROM produto_opcoes_associado WHERE id_produtoopcoes = %s",
                     (id_grupo,),
                 )
                 opcoes = [r[0] for r in cur.fetchall()]
@@ -2037,16 +2033,13 @@ def produto_associado():
                     "descricao": grupo[1],
                     "id_loja": grupo[2],
                     "principais": [
-                        {"cod": cod,
-                         "desc": "",
-                         "setor": ""} for cod in principais
+                        {"cod": cod, "desc": "", "setor": ""} for cod in principais
                     ],
-                    "opcoes": [{"cod": cod,
-                                "desc": "",
-                                "setor": ""} for cod in opcoes],
+                    "opcoes": [{"cod": cod, "desc": "", "setor": ""} for cod in opcoes],
                 }
             cur.close()
             conn.close()
+        # Renderiza o modal já com o contexto (ou vazio se for novo)
         return render_template("produto_associado.html", **contexto)
     else:
         return redirect("/consulta_associado")
@@ -2058,9 +2051,7 @@ def carregar_produto_associado(id):
     try:
         cur = conn.cursor()
         cur.execute(
-            """SELECT id, descricao, id_loja
-            FROM controle_id_produtoopcoes
-            WHERE id = %s""",
+            "SELECT id, descricao, id_loja FROM controle_id_produtoopcoes WHERE id = %s",
             (id,),
         )
         grupo = cur.fetchone()
@@ -2069,17 +2060,13 @@ def carregar_produto_associado(id):
 
         # Busca produtos principais
         cur.execute(
-            """SELECT id_produto_principal
-            FROM produto_opcoes_principal
-            WHERE id_produtoopcoes = %s""",
+            "SELECT id_produto_principal FROM produto_opcoes_principal WHERE id_produtoopcoes = %s",
             (id,),
         )
         principais = [r[0] for r in cur.fetchall()]
         # Busca produtos de opção
         cur.execute(
-            """SELECT id_produto_associado
-            FROM produto_opcoes_associado
-            WHERE id_produtoopcoes = %s""",
+            "SELECT id_produto_associado FROM produto_opcoes_associado WHERE id_produtoopcoes = %s",
             (id,),
         )
         opcoes = [r[0] for r in cur.fetchall()]
@@ -2092,9 +2079,7 @@ def carregar_produto_associado(id):
                 "principais": [
                     {"cod": cod, "desc": "", "setor": ""} for cod in principais
                 ],
-                "opcoes": [{"cod": cod,
-                            "desc": "",
-                            "setor": ""} for cod in opcoes],
+                "opcoes": [{"cod": cod, "desc": "", "setor": ""} for cod in opcoes],
             }
         )
     except Exception as e:
@@ -2107,9 +2092,7 @@ def carregar_produto_associado(id):
 def produto_composto():
     id_produto = request.args.get("id_produto", type=int)
     modal = request.args.get("modal")
-    return render_template("produto_composto.html",
-                           id_produto=id_produto,
-                           modal=modal)
+    return render_template("produto_composto.html", id_produto=id_produto, modal=modal)
 
 
 @app.route("/api/produtos_compostos")
@@ -2132,8 +2115,7 @@ def api_salvar_composto():
     return jsonify({"ok": True})
 
 
-@app.route("/api/produtos_compostos/remover/<int:id_produto>",
-           methods=["DELETE"])
+@app.route("/api/produtos_compostos/remover/<int:id_produto>", methods=["DELETE"])
 def api_remover_composto(id_produto):
     ok = svc_remover_produtos_compostos(id_produto)
     if not ok:
@@ -2163,8 +2145,7 @@ def api_get_composto(id_produto):
     if grupos is False:
         return jsonify({"erro": "Erro ao buscar grupos opcionais."}), 500
     todos_ids = [
-        item["id_produto"]
-        for dados in grupos.values() for item in dados["itens"]
+        item["id_produto"] for dados in grupos.values() for item in dados["itens"]
     ]
     nomes = repo_vr_get_nomes_produtos(todos_ids) if todos_ids else {}
     grupos_com_nomes = [
@@ -2196,8 +2177,7 @@ def api_get_composto(id_produto):
     )
 
 
-@app.route("/api/produtos_compostos/explodir/<int:id_produto>",
-           methods=["POST"])
+@app.route("/api/produtos_compostos/explodir/<int:id_produto>", methods=["POST"])
 def api_explodir_composto(id_produto):
     dados = request.get_json(silent=True) or {}
     id_loja = dados.get("id_loja")
