@@ -77,7 +77,8 @@ def repo_get_grupos_opcionais(id_produto):
         grupos = {}
         for r in rows:
             grupos.setdefault(r[0], {"quantidade_total": r[1], "itens": []})
-            grupos[r[0]]["itens"].append({"id_produto": r[2], "quantidade": r[3]})
+            grupos[r[0]]["itens"].append(
+                {"id_produto": r[2], "quantidade": r[3]})
         return grupos
     except Exception as e:
         logger.error(e)
@@ -282,11 +283,14 @@ def salvar_grupos(cur, id_produto, grupos):
         """, (id_produto,))
         for grupo in grupos:
             cur.execute("""
-                INSERT INTO produto_composto_opcional_grupo
-                    (id_produto_comp, chave)
-                VALUES (%s, %s)
-                RETURNING id
-            """, (id_produto, grupo["chave"]))
+                    INSERT INTO produto_composto_opcional_grupo
+                        (id_produto_comp, chave, quantidade_total)
+                    VALUES (%s, %s, %s)
+                    RETURNING id
+                """,
+                        (id_produto,
+                         grupo["chave"],
+                         grupo.get("quantidade_total")))
 
             id_grupo = cur.fetchone()[0]
             itens = grupo.get("itens")

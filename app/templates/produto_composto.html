@@ -344,9 +344,10 @@ function lerGruposDoDom() {
 			const $row = $(`#grupo_${g.key}_item_${it.key}`);
 			if ($row.length === 0) return it;
 			return {
-				key: it.key,
-				id_produto: $row.find('.item_id_produto_hidden').val() || it.id_produto,
-				quantidade: $row.find('.campo_quantidade').val(),
+				key: g.key,
+				chave,
+				quantidade_total: $card.find('.campo_qtd_total').val() || null,
+				itens,
 			};
 		});
 	return { key: g.key, chave, itens };
@@ -371,6 +372,8 @@ function renderGruposOpcionais() {
 			<option value="">Selecione...</option>
 			${TIPOS_ITEM.map(t => `<option value="${t.value}" ${g.chave === t.value ? 'selected' : ''}>${t.label}</option>`).join('')}
 			</select>
+			<label class="mb-0 ms-3 me-1 text-nowrap">Qtd total:</label>
+			<input type="number" class="form-control form-control-sm campo_qtd_total" style="max-width:100px" value="${g.quantidade_total || ''}" placeholder="ex: 40">
 			<button type="button" class="btn btn-outline-success btn-sm ms-auto" onclick="adicionarItemGrupo(${g.key})"><i class="bi bi-plus"></i> Item</button>
 			<button type="button" class="btn btn-outline-danger btn-sm" onclick="removerGrupoOpcional(${g.key})"><i class="bi bi-trash"></i> Remover grupo</button>
 			</div>
