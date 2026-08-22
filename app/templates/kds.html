@@ -1,255 +1,392 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>KDS Gestão de Setores</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+    />
     <style>
-        body { background: #e7f1fa; }
-        .kanban-board { display: flex; gap: 1.5rem; padding: 2rem;}
-        .kanban-column { flex: 1; background: #fff; border-radius: 12px; padding: 1rem; min-height: 80vh; box-shadow: 0 2px 8px #0001; }
-        .kanban-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 1rem; text-align: center; }
-        .kds-card { background: #f7faff; border-radius: 10px; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 1px 4px #0002; position: relative;}
-        .kds-card.novo { border-left: 5px solid #33cc33; background: #eaffea; }
-        .kds-card.balcao { border-left: 5px solid #6633cc; background: #efeaff; }
-        .kds-card.finalizado { border-left: 5px solid #999; opacity: 0.7; }
-        .kds-btn { width: 100%; margin-top: 8px; }
-        .quantidade-total { font-size: 1.4rem; font-weight: bold; color: #006622; }
-        .card-observacao { background: #fff7e6; border-left: 5px solid #ffaa33; }
-        .badge.bg-purple { background: #8e24aa !important; color: #fff !important;}
-        .kds-card.emproducao { border-left: 5px solid #ffe066 !important; background: #fffbe9 !important;}
-        .kds-card.finalizado { background: #ececec !important; border-left: 5px solid #bbb !important; }
+      body {
+        background: #e7f1fa;
+      }
+      .kanban-board {
+        display: flex;
+        gap: 1.5rem;
+        padding: 2rem;
+      }
+      .kanban-column {
+        flex: 1;
+        background: #fff;
+        border-radius: 12px;
+        padding: 1rem;
+        min-height: 80vh;
+        box-shadow: 0 2px 8px #0001;
+      }
+      .kanban-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-align: center;
+      }
+      .kds-card {
+        background: #f7faff;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 4px #0002;
+        position: relative;
+      }
+      .kds-card.novo {
+        border-left: 5px solid #33cc33;
+        background: #eaffea;
+      }
+      .kds-card.balcao {
+        border-left: 5px solid #6633cc;
+        background: #efeaff;
+      }
+      .kds-card.finalizado {
+        border-left: 5px solid #999;
+        opacity: 0.7;
+      }
+      .kds-btn {
+        width: 100%;
+        margin-top: 8px;
+      }
+      .quantidade-total {
+        font-size: 1.4rem;
+        font-weight: bold;
+        color: #006622;
+      }
+      .card-observacao {
+        background: #fff7e6;
+        border-left: 5px solid #ffaa33;
+      }
+      .badge.bg-purple {
+        background: #8e24aa !important;
+        color: #fff !important;
+      }
+      .kds-card.emproducao {
+        border-left: 5px solid #ffe066 !important;
+        background: #fffbe9 !important;
+      }
+      .kds-card.finalizado {
+        background: #ececec !important;
+        border-left: 5px solid #bbb !important;
+      }
 
-        /* ações por card */
-        .kds-card-actions { display: flex; gap: 8px; margin-top: 10px; }
-        .kds-card-actions .btn { flex: 1; }
+      /* ações por card */
+      .kds-card-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .kds-card-actions .btn {
+        flex: 1;
+      }
     </style>
-</head>
-<body>
-<div class="row mb-4">
-    <div class="col-md-4">
+  </head>
+  <body>
+    <div class="row mb-4">
+      <div class="col-md-4">
         <label for="selectLoja" class="form-label">Loja</label>
         <select id="selectLoja" class="form-select"></select>
-    </div>
-    <div class="col-md-4">
+      </div>
+      <div class="col-md-4">
         <label for="selectSetor" class="form-label">Setor</label>
         <select id="selectSetor" class="form-select"></select>
-    </div>
-    <div class="col-md-2">
-        <label for="selectExibirHorario" class="form-label">Exibir Horário</label>
+      </div>
+      <div class="col-md-2">
+        <label for="selectExibirHorario" class="form-label"
+          >Exibir Horário</label
+        >
         <select id="selectExibirHorario" class="form-select">
-            <option value="SIM" selected>SIM</option>
-            <option value="NAO">NÃO</option>
+          <option value="SIM" selected>SIM</option>
+          <option value="NAO">NÃO</option>
         </select>
-    </div>
-    <div class="col-md-2 d-flex align-items-end" style="gap:8px;">
-        <button class="btn btn-outline-secondary w-100" type="button" onclick="atualizarPedidos()" title="Atualizar agora">
-            <i class="fas fa-sync-alt"></i> Atualizar
+      </div>
+      <div class="col-md-2 d-flex align-items-end" style="gap: 8px">
+        <button
+          class="btn btn-outline-secondary w-100"
+          type="button"
+          onclick="atualizarPedidos()"
+          title="Atualizar agora"
+        >
+          <i class="fas fa-sync-alt"></i> Atualizar
         </button>
-        <button class="btn btn-outline-primary w-100" type="button" onclick="abrirModalConfig()" title="Configurar impressora">
-            <i class="fas fa-gear"></i> Configurar
+        <button
+          class="btn btn-outline-primary w-100"
+          type="button"
+          onclick="abrirModalConfig()"
+          title="Configurar impressora"
+        >
+          <i class="fas fa-gear"></i> Configurar
         </button>
+      </div>
     </div>
-</div>
 
-<div class="kanban-board" id="kanban-board">
-    <!-- Coluna Aguardando -->
-    <div class="kanban-column" id="col-aguardando">
-        <div class="kanban-title" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-            <span>Aguardando</span>
-            <div class="d-flex" style="gap:8px;">
-                <button class="btn btn-sm btn-secondary" onclick="imprimirColuna('aguardando')">
-                    <i class="fa fa-print"></i> Imprimir
-                </button>
-                <button class="btn btn-sm btn-primary" onclick="produzirTodos()">Produzir Todos</button>
-            </div>
+    <div class="kanban-board" id="kanban-board">
+      <!-- Coluna Aguardando -->
+      <div class="kanban-column" id="col-aguardando">
+        <div
+          class="kanban-title"
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+          "
+        >
+          <span>Aguardando</span>
+          <div class="d-flex" style="gap: 8px">
+            <button
+              class="btn btn-sm btn-secondary"
+              onclick="imprimirColuna('aguardando')"
+            >
+              <i class="fa fa-print"></i> Imprimir
+            </button>
+            <button class="btn btn-sm btn-primary" onclick="produzirTodos()">
+              Produzir Todos
+            </button>
+          </div>
         </div>
         <!-- JS INSERE OS CARDS AQUI -->
-    </div>
+      </div>
 
-    <!-- Coluna Em Produção -->
-    <div class="kanban-column" id="col-producao">
-        <div class="kanban-title" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-            <span>Em Produção</span>
-            <div class="d-flex" style="gap:8px;">
-                <button class="btn btn-sm btn-secondary" onclick="imprimirColuna('producao')">
-                    <i class="fa fa-print"></i> Imprimir
-                </button>
-                <button class="btn btn-sm btn-success" onclick="finalizarTodos()">Finalizar Todos</button>
-            </div>
+      <!-- Coluna Em Produção -->
+      <div class="kanban-column" id="col-producao">
+        <div
+          class="kanban-title"
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+          "
+        >
+          <span>Em Produção</span>
+          <div class="d-flex" style="gap: 8px">
+            <button
+              class="btn btn-sm btn-secondary"
+              onclick="imprimirColuna('producao')"
+            >
+              <i class="fa fa-print"></i> Imprimir
+            </button>
+            <button class="btn btn-sm btn-success" onclick="finalizarTodos()">
+              Finalizar Todos
+            </button>
+          </div>
         </div>
         <!-- JS INSERE OS CARDS AQUI -->
-    </div>
+      </div>
 
-    <!-- Coluna Finalizado -->
-    <div class="kanban-column" id="col-finalizado">
+      <!-- Coluna Finalizado -->
+      <div class="kanban-column" id="col-finalizado">
         <div class="kanban-title">Finalizado</div>
         <!-- JS INSERE OS CARDS AQUI -->
-    </div>
-</div>
-
-<!-- Modal Configuração Impressora -->
-<div class="modal fade" id="modalConfig" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header py-2">
-        <h5 class="modal-title">Configurar Impressora</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body">
-        <div class="mb-2">
-          <label class="form-label">Loja</label>
-          <select id="cfgLoja" class="form-select" disabled></select>
-        </div>
-        <div class="mb-2">
-          <label class="form-label">Setor</label>
-          <select id="cfgSetor" class="form-select" disabled></select>
-        </div>
-        <div class="mb-1">
-          <label class="form-label">Caminho Impressora</label>
-          <input type="text" id="cfgCaminho" class="form-control" placeholder="Ex.: \\\\SERVIDOR\\IMP_TERMICA">
-          <small class="text-muted">Ex.: \\SERVIDOR\IMP_TERMICA (Windows) — ou arquivo/pipe no Linux</small>
-        </div>
-      </div>
-      <div class="modal-footer py-2">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-        <button class="btn btn-primary" onclick="salvarConfigImpressora()">Salvar</button>
       </div>
     </div>
-  </div>
-</div>
 
-<script>
-let lojaSelecionada = null;
-let setorSelecionado = null;
-let pedidos = [];
-let idsSempreComHorario = [];   // vindo de produto_exibir_horario
-let exibirHorarioGlobal = 'SIM'; // SIM | NAO
-let snapshotUltimosPedidos = ""; // para detectar novos
+    <!-- Modal Configuração Impressora -->
+    <div class="modal fade" id="modalConfig" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header py-2">
+            <h5 class="modal-title">Configurar Impressora</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Fechar"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-2">
+              <label class="form-label">Loja</label>
+              <select id="cfgLoja" class="form-select" disabled></select>
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Setor</label>
+              <select id="cfgSetor" class="form-select" disabled></select>
+            </div>
+            <div class="mb-1">
+              <label class="form-label">Caminho Impressora</label>
+              <input
+                type="text"
+                id="cfgCaminho"
+                class="form-control"
+                placeholder="Ex.: \\\\SERVIDOR\\IMP_TERMICA"
+              />
+              <small class="text-muted"
+                >Ex.: \\SERVIDOR\IMP_TERMICA (Windows) — ou arquivo/pipe no
+                Linux</small
+              >
+            </div>
+          </div>
+          <div class="modal-footer py-2">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">
+              Fechar
+            </button>
+            <button class="btn btn-primary" onclick="salvarConfigImpressora()">
+              Salvar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-// --- Utilitários de data ---
-function getHojeObj() {
-    const hoje = new Date();
-    return new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-}
-function getDataObj(dataIso) {
-    const [ano, mes, dia] = dataIso.split('-');
-    return new Date(Number(ano), Number(mes)-1, Number(dia));
-}
-function isHoje(dataIso) {
-    const data = getDataObj(dataIso);
-    const hoje = getHojeObj();
-    return data.getTime() === hoje.getTime();
-}
-function isAmanha(dataIso) {
-    const data = getDataObj(dataIso);
-    const amanha = getHojeObj();
-    amanha.setDate(amanha.getDate() + 1);
-    return data.getTime() === amanha.getTime();
-}
-function formatarDataBr(dataIso) {
-    if (!dataIso) return "";
-    const dias = ['DOMINGO','SEGUNDA','TERÇA','QUARTA','QUINTA','SEXTA','SÁBADO'];
-    const [ano, mes, dia] = dataIso.split('-');
-    const dataObj = new Date(Number(ano), Number(mes) - 1, Number(dia));
-    const diaSemana = dias[dataObj.getDay()];
-    return `${dia}/${mes}/${ano} - ${diaSemana}`;
-}
-function formatarHora(hora) {
-    if (!hora) return "";
-    return hora.slice(0,5);
-}
+    <script>
+      let lojaSelecionada = null;
+      let setorSelecionado = null;
+      let pedidos = [];
+      let idsSempreComHorario = []; // vindo de produto_exibir_horario
+      let exibirHorarioGlobal = "SIM"; // SIM | NAO
+      let snapshotUltimosPedidos = ""; // para detectar novos
 
-// --- Sons ---
-function tocarSomNovoPedido() {
-    const audio = document.getElementById('alertaAudio');
-    if (audio) { audio.currentTime = 0; audio.play(); }
-}
+      // --- Utilitários de data ---
+      function getHojeObj() {
+        const hoje = new Date();
+        return new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+      }
+      function getDataObj(dataIso) {
+        const [ano, mes, dia] = dataIso.split("-");
+        return new Date(Number(ano), Number(mes) - 1, Number(dia));
+      }
+      function isHoje(dataIso) {
+        const data = getDataObj(dataIso);
+        const hoje = getHojeObj();
+        return data.getTime() === hoje.getTime();
+      }
+      function isAmanha(dataIso) {
+        const data = getDataObj(dataIso);
+        const amanha = getHojeObj();
+        amanha.setDate(amanha.getDate() + 1);
+        return data.getTime() === amanha.getTime();
+      }
+      function formatarDataBr(dataIso) {
+        if (!dataIso) return "";
+        const dias = [
+          "DOMINGO",
+          "SEGUNDA",
+          "TERÇA",
+          "QUARTA",
+          "QUINTA",
+          "SEXTA",
+          "SÁBADO",
+        ];
+        const [ano, mes, dia] = dataIso.split("-");
+        const dataObj = new Date(Number(ano), Number(mes) - 1, Number(dia));
+        const diaSemana = dias[dataObj.getDay()];
+        return `${dia}/${mes}/${ano} - ${diaSemana}`;
+      }
+      function formatarHora(hora) {
+        if (!hora) return "";
+        return hora.slice(0, 5);
+      }
 
-// --- Carregamentos iniciais ---
-async function carregarLojas() {
-    let res = await fetch('/api/lojas');
-    let lojas = await res.json();
-    const select = document.getElementById('selectLoja');
-    select.innerHTML = '<option value="">Selecione a Loja</option>';
-    lojas.forEach(loja => {
-        select.innerHTML += `<option value="${loja.id}">${loja.descricao}</option>`;
-    });
-    select.onchange = async function() {
-        lojaSelecionada = this.value;
-        await carregarSetores();
-        setorSelecionado = null;
-        pedidos = [];
+      // --- Sons ---
+      function tocarSomNovoPedido() {
+        const audio = document.getElementById("alertaAudio");
+        if (audio) {
+          audio.currentTime = 0;
+          audio.play();
+        }
+      }
+
+      // --- Carregamentos iniciais ---
+      async function carregarLojas() {
+        let res = await fetch("/api/lojas");
+        let lojas = await res.json();
+        const select = document.getElementById("selectLoja");
+        select.innerHTML = '<option value="">Selecione a Loja</option>';
+        lojas.forEach((loja) => {
+          select.innerHTML += `<option value="${loja.id}">${loja.descricao}</option>`;
+        });
+        select.onchange = async function () {
+          lojaSelecionada = this.value;
+          await carregarSetores();
+          setorSelecionado = null;
+          pedidos = [];
+          renderCards();
+        };
+      }
+      async function carregarSetores() {
+        const selectSetor = document.getElementById("selectSetor");
+        selectSetor.innerHTML = '<option value="">Selecione o Setor</option>';
+        if (!lojaSelecionada) return;
+        const res = await fetch(`/api/loja/${lojaSelecionada}/setores`);
+        const setores = await res.json();
+        setores.forEach((setor) => {
+          selectSetor.innerHTML += `<option value="${setor.id}">${setor.descricao}</option>`;
+        });
+        selectSetor.onchange = function () {
+          setorSelecionado = this.value;
+          atualizarPedidos();
+        };
+      }
+      async function carregarIdsSempreComHorario() {
+        // apesar do nome "ocultar", este endpoint devolve os ids que DEVEM exibir horário (tabela produto_exibir_horario)
+        const res = await fetch("/api/produtos_ocultar_horario");
+        idsSempreComHorario = await res.json();
+      }
+
+      // --- Filtro de exibir horário ---
+      document.addEventListener("change", (e) => {
+        if (e.target && e.target.id === "selectExibirHorario") {
+          exibirHorarioGlobal = e.target.value;
+          renderCards(); // re-renderiza aplicando a regra
+        }
+      });
+      function deveExibirHorarioParaProduto(idProduto) {
+        if (exibirHorarioGlobal === "SIM") return true;
+        // Quando NÃO, só exibe para produtos listados na produto_exibir_horario
+        return idsSempreComHorario.includes(idProduto);
+      }
+
+      // --- Atualização dos pedidos ---
+      let timerAtualizacao = null;
+      function chegouNovoPedido(listaAtual) {
+        let novoSnapshot = listaAtual
+          .map((p) => p.id)
+          .sort()
+          .join("-");
+        return novoSnapshot !== snapshotUltimosPedidos;
+      }
+      async function atualizarPedidos(auto = false) {
+        const loja = document.getElementById("selectLoja").value;
+        const setor = document.getElementById("selectSetor").value;
+        if (!loja || !setor) {
+          pedidos = [];
+          renderCards();
+          return;
+        }
+        const res = await fetch(`/api/kds/pedidos?loja=${loja}&setor=${setor}`);
+        const novosPedidos = await res.json();
+        if (auto && chegouNovoPedido(novosPedidos)) {
+          tocarSomNovoPedido();
+        }
+        pedidos = novosPedidos;
         renderCards();
-    };
-}
-async function carregarSetores() {
-    const selectSetor = document.getElementById('selectSetor');
-    selectSetor.innerHTML = '<option value="">Selecione o Setor</option>';
-    if (!lojaSelecionada) return;
-    const res = await fetch(`/api/loja/${lojaSelecionada}/setores`);
-    const setores = await res.json();
-    setores.forEach(setor => {
-        selectSetor.innerHTML += `<option value="${setor.id}">${setor.descricao}</option>`;
-    });
-    selectSetor.onchange = function() {
-        setorSelecionado = this.value;
-        atualizarPedidos();
-    };
-}
-async function carregarIdsSempreComHorario() {
-    // apesar do nome "ocultar", este endpoint devolve os ids que DEVEM exibir horário (tabela produto_exibir_horario)
-    const res = await fetch("/api/produtos_ocultar_horario");
-    idsSempreComHorario = await res.json();
-}
+        snapshotUltimosPedidos = pedidos
+          .map((p) => p.id)
+          .sort()
+          .join("-");
+      }
+      function agendarAtualizacaoAutomatica() {
+        if (timerAtualizacao) clearInterval(timerAtualizacao);
+        timerAtualizacao = setInterval(() => atualizarPedidos(true), 60000);
+      }
 
-// --- Filtro de exibir horário ---
-document.addEventListener('change', (e) => {
-    if (e.target && e.target.id === 'selectExibirHorario') {
-        exibirHorarioGlobal = e.target.value;
-        renderCards(); // re-renderiza aplicando a regra
-    }
-});
-function deveExibirHorarioParaProduto(idProduto) {
-    if (exibirHorarioGlobal === 'SIM') return true;
-    // Quando NÃO, só exibe para produtos listados na produto_exibir_horario
-    return idsSempreComHorario.includes(idProduto);
-}
-
-// --- Atualização dos pedidos ---
-let timerAtualizacao = null;
-function chegouNovoPedido(listaAtual) {
-    let novoSnapshot = listaAtual.map(p => p.id).sort().join('-');
-    return (novoSnapshot !== snapshotUltimosPedidos);
-}
-async function atualizarPedidos(auto=false) {
-    const loja = document.getElementById('selectLoja').value;
-    const setor = document.getElementById('selectSetor').value;
-    if (!loja || !setor) {
-        pedidos = [];
-        renderCards();
-        return;
-    }
-    const res = await fetch(`/api/kds/pedidos?loja=${loja}&setor=${setor}`);
-    const novosPedidos = await res.json();
-    if (auto && chegouNovoPedido(novosPedidos)) {
-        tocarSomNovoPedido();
-    }
-    pedidos = novosPedidos;
-    renderCards();
-    snapshotUltimosPedidos = pedidos.map(p => p.id).sort().join('-');
-}
-function agendarAtualizacaoAutomatica() {
-    if (timerAtualizacao) clearInterval(timerAtualizacao);
-    timerAtualizacao = setInterval(() => atualizarPedidos(true), 60000);
-}
-
-// --- Renderização de cards ---
-let agrupadosGlobal = {};
-function renderCards() {
-    // limpa colunas
-    document.getElementById('col-aguardando').innerHTML = `
+      // --- Renderização de cards ---
+      let agrupadosGlobal = {};
+      function renderCards() {
+        // limpa colunas
+        document.getElementById("col-aguardando").innerHTML = `
       <div class="kanban-title" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
         <span>Aguardando</span>
         <div class="d-flex" style="gap:8px;">
@@ -259,7 +396,7 @@ function renderCards() {
             <button class="btn btn-sm btn-primary" onclick="produzirTodos()">Produzir Todos</button>
         </div>
       </div>`;
-    document.getElementById('col-producao').innerHTML = `
+        document.getElementById("col-producao").innerHTML = `
       <div class="kanban-title" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
         <span>Em Produção</span>
         <div class="d-flex" style="gap:8px;">
@@ -269,83 +406,120 @@ function renderCards() {
             <button class="btn btn-sm btn-success" onclick="finalizarTodos()">Finalizar Todos</button>
         </div>
       </div>`;
-    document.getElementById('col-finalizado').innerHTML = `<div class="kanban-title">Finalizado</div>`;
+        document.getElementById("col-finalizado").innerHTML =
+          `<div class="kanban-title">Finalizado</div>`;
 
-    if (!pedidos || pedidos.length === 0) {
-        document.getElementById('col-aguardando').innerHTML +=
-          '<div class="text-center text-muted mt-3">Sem pedidos para este setor/loja.</div>';
-        agrupadosGlobal = {};
-        return;
-    }
+        if (!pedidos || pedidos.length === 0) {
+          document.getElementById("col-aguardando").innerHTML +=
+            '<div class="text-center text-muted mt-3">Sem pedidos para este setor/loja.</div>';
+          agrupadosGlobal = {};
+          return;
+        }
 
-    // agrupa por produto + observação
-    let agrupados = {};
-    pedidos.forEach(p => {
-        const chave = (p.descricao || p.produto || p.id_produto) + '|' + (p.observacao || '');
-        if (!agrupados[chave]) agrupados[chave] = [];
-        agrupados[chave].push(p);
-    });
+        // agrupa por produto + observação
+        let agrupados = {};
+        pedidos.forEach((p) => {
+          const chave =
+            (p.descricao || p.produto || p.id_produto) +
+            "|" +
+            (p.observacao || "");
+          if (!agrupados[chave]) agrupados[chave] = [];
+          agrupados[chave].push(p);
+        });
 
-    // ordena grupos alfabeticamente por produto (pt-BR) e, em empate, pela observação
-    const coll = new Intl.Collator('pt-BR', { sensitivity: 'base', numeric: true });
-    const chavesOrdenadas = Object.keys(agrupados).sort((a, b) => {
-        const A = agrupados[a][0];
-        const B = agrupados[b][0];
-        const prodA = String(A.descricao || A.produto || A.id_produto).trim();
-        const prodB = String(B.descricao || B.produto || B.id_produto).trim();
-        const cmpProd = coll.compare(prodA, prodB);
-        if (cmpProd !== 0) return cmpProd;
-        const obsA = String(A.observacao || '').trim();
-        theObsB = String(B.observacao || '').trim();
-        return coll.compare(obsA, theObsB);
-    });
+        // ordena grupos alfabeticamente por produto (pt-BR) e, em empate, pela observação
+        const coll = new Intl.Collator("pt-BR", {
+          sensitivity: "base",
+          numeric: true,
+        });
+        const chavesOrdenadas = Object.keys(agrupados).sort((a, b) => {
+          const A = agrupados[a][0];
+          const B = agrupados[b][0];
+          const prodA = String(A.descricao || A.produto || A.id_produto).trim();
+          const prodB = String(B.descricao || B.produto || B.id_produto).trim();
+          const cmpProd = coll.compare(prodA, prodB);
+          if (cmpProd !== 0) return cmpProd;
+          const obsA = String(A.observacao || "").trim();
+          theObsB = String(B.observacao || "").trim();
+          return coll.compare(obsA, theObsB);
+        });
 
-    chavesOrdenadas.forEach(chave => {
-        const lista = agrupados[chave];
-        const produto = lista[0].descricao || lista[0].produto || lista[0].id_produto;
-        const observacao = lista[0].observacao || "";
-        const idProduto = lista[0].id_produto;
+        chavesOrdenadas.forEach((chave) => {
+          const lista = agrupados[chave];
+          const produto =
+            lista[0].descricao || lista[0].produto || lista[0].id_produto;
+          const observacao = lista[0].observacao || "";
+          const idProduto = lista[0].id_produto;
 
-        // <<< NOVO: prepara chave segura para uso no onclick >>>
-        const chaveSafe = String(chave)
-            .replace(/\\/g, '\\\\')   // escapa barra invertida
-            .replace(/'/g, "\\'");    // escapa aspas simples
+          // <<< NOVO: prepara chave segura para uso no onclick >>>
+          const chaveSafe = String(chave)
+            .replace(/\\/g, "\\\\") // escapa barra invertida
+            .replace(/'/g, "\\'"); // escapa aspas simples
 
-        [0, 1, 2].forEach(status => {
-            const pedidosHoje   = lista.filter(p => p.id_status == status && isHoje(p.data));
-            const pedidosAmanha = lista.filter(p => p.id_status == status && isAmanha(p.data));
+          [0, 1, 2].forEach((status) => {
+            const pedidosHoje = lista.filter(
+              (p) => p.id_status == status && isHoje(p.data),
+            );
+            const pedidosAmanha = lista.filter(
+              (p) => p.id_status == status && isAmanha(p.data),
+            );
             if (!pedidosHoje.length && !pedidosAmanha.length) return;
 
-            const total = [...pedidosHoje, ...pedidosAmanha]
-                .reduce((s, p) => s + parseFloat(p.quantidade || 0), 0);
-            const totalFormatado = total.toLocaleString('pt-BR', {minimumFractionDigits:3, maximumFractionDigits:3});
+            const total = [...pedidosHoje, ...pedidosAmanha].reduce(
+              (s, p) => s + parseFloat(p.quantidade || 0),
+              0,
+            );
+            const totalFormatado = total.toLocaleString("pt-BR", {
+              minimumFractionDigits: 3,
+              maximumFractionDigits: 3,
+            });
             const horariosHoje = pedidosHoje
-              .sort((a,b)=> (a.hora > b.hora ? 1 : -1))
-              .map(item => {
-                const etiquetaBalcao = item.tipo_entrega?.toLowerCase() === "balcao"
-                  ? '<span class="badge bg-purple text-white ms-2">BALCÃO</span>' : '';
-                const q = Math.trunc(Number(item.quantidade)).toLocaleString('pt-BR');
-                const qp = Number(item.peso).toLocaleString('pt-BR', {minimumFractionDigits:3, maximumFractionDigits:3});
+              .sort((a, b) => (a.hora > b.hora ? 1 : -1))
+              .map((item) => {
+                const etiquetaBalcao =
+                  item.tipo_entrega?.toLowerCase() === "balcao"
+                    ? '<span class="badge bg-purple text-white ms-2">BALCÃO</span>'
+                    : "";
+                const q = Math.trunc(Number(item.quantidade)).toLocaleString(
+                  "pt-BR",
+                );
+                const qp = Number(item.peso).toLocaleString("pt-BR", {
+                  minimumFractionDigits: 3,
+                  maximumFractionDigits: 3,
+                });
                 return `<div style="font-size:1.05em;"><b>${formatarHora(item.hora)}</b> - ${q} UN - ${qp} Kg ${etiquetaBalcao}</div>`;
-              }).join('');
+              })
+              .join("");
 
             const horariosAmanha = pedidosAmanha
-              .sort((a,b)=> (a.hora > b.hora ? 1 : -1))
-              .map(item => {
-                const etiquetaBalcao = item.tipo_entrega?.toLowerCase() === "balcao"
-                  ? '<span class="badge bg-purple text-white ms-2">BALCÃO</span>' : '';
-                const q = Math.trunc(Number(item.quantidade)).toLocaleString('pt-BR');
-                const qp = Number(item.peso).toLocaleString('pt-BR', {minimumFractionDigits:3, maximumFractionDigits:3});
+              .sort((a, b) => (a.hora > b.hora ? 1 : -1))
+              .map((item) => {
+                const etiquetaBalcao =
+                  item.tipo_entrega?.toLowerCase() === "balcao"
+                    ? '<span class="badge bg-purple text-white ms-2">BALCÃO</span>'
+                    : "";
+                const q = Math.trunc(Number(item.quantidade)).toLocaleString(
+                  "pt-BR",
+                );
+                const qp = Number(item.peso).toLocaleString("pt-BR", {
+                  minimumFractionDigits: 3,
+                  maximumFractionDigits: 3,
+                });
                 return `<div style="font-size:1.05em;"><b>${formatarHora(item.hora)}</b> - ${q} UN - ${qp} Kg ${etiquetaBalcao}</div>`;
-              }).join('');
+              })
+              .join("");
 
-            const hojeLabel   = pedidosHoje.length   ? `${formatarDataBr(pedidosHoje[0].data)} - <span style="color:#d00;font-weight:bold;">HOJE</span>`   : "";
-            const amanhaLabel = pedidosAmanha.length ? `${formatarDataBr(pedidosAmanha[0].data)} - <span style="color:#d00;font-weight:bold;">AMANHÃ</span>` : "";
+            const hojeLabel = pedidosHoje.length
+              ? `${formatarDataBr(pedidosHoje[0].data)} - <span style="color:#d00;font-weight:bold;">HOJE</span>`
+              : "";
+            const amanhaLabel = pedidosAmanha.length
+              ? `${formatarDataBr(pedidosAmanha[0].data)} - <span style="color:#d00;font-weight:bold;">AMANHÃ</span>`
+              : "";
 
             const mostrarHorario = deveExibirHorarioParaProduto(idProduto);
             let blocos = "";
             if (mostrarHorario) {
-                blocos = `
+              blocos = `
                   <div style="display:flex; gap:16px;">
                     <div style="flex:1; border:1px solid #222; border-radius:6px; min-height:70px; padding:7px; background:#f5fff5;">
                         ${hojeLabel ? `<div style="font-weight:500; margin-bottom:3px; color:#333;">${hojeLabel}</div>` : ""}
@@ -397,187 +571,236 @@ function renderCards() {
               </div>`;
 
             if (status == 0) {
-                document.getElementById('col-aguardando').innerHTML += card;
+              document.getElementById("col-aguardando").innerHTML += card;
             } else if (status == 1) {
-                document.getElementById('col-producao').innerHTML += card;
+              document.getElementById("col-producao").innerHTML += card;
             } else {
-                document.getElementById('col-finalizado').innerHTML += card;
+              document.getElementById("col-finalizado").innerHTML += card;
             }
+          });
         });
-    });
 
-    agrupadosGlobal = agrupados;
-}
+        agrupadosGlobal = agrupados;
+      }
 
-// --- Ações em massa (reutilizadas pelos botões por card) ---
-async function produzirPedidos(chave) {
-    try {
-        let lista = [];
-        pedidos.forEach(p => {
-            const k = (p.descricao || p.produto || p.id_produto) + '|' + (p.observacao || '');
+      // --- Ações em massa (reutilizadas pelos botões por card) ---
+      async function produzirPedidos(chave) {
+        try {
+          let lista = [];
+          pedidos.forEach((p) => {
+            const k =
+              (p.descricao || p.produto || p.id_produto) +
+              "|" +
+              (p.observacao || "");
             if (k === chave && (p.id_status == null || p.id_status == 0)) {
-                lista.push(p.id_item);
+              lista.push(p.id_item);
             }
-        });
-        if (!lista.length) return;
-        const res = await fetch('/api/kds/item/produzir', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ ids: lista })
-        });
-        const ret = await res.json();
-        if (ret.success) await atualizarPedidos();
-        else alert("Falha ao atualizar itens!");
-    } catch (e) {
-        console.error('Erro em produzirPedidos:', e);
-        alert('Erro ao produzir itens do card.');
-    }
-}
-async function finalizarPedidos(chave) {
-    try {
-        let lista = [];
-        pedidos.forEach(p => {
-            const k = (p.descricao || p.produto || p.id_produto) + '|' + (p.observacao || '');
+          });
+          if (!lista.length) return;
+          const res = await fetch("/api/kds/item/produzir", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: lista }),
+          });
+          const ret = await res.json();
+          if (ret.success) await atualizarPedidos();
+          else alert("Falha ao atualizar itens!");
+        } catch (e) {
+          console.error("Erro em produzirPedidos:", e);
+          alert("Erro ao produzir itens do card.");
+        }
+      }
+      async function finalizarPedidos(chave) {
+        try {
+          let lista = [];
+          pedidos.forEach((p) => {
+            const k =
+              (p.descricao || p.produto || p.id_produto) +
+              "|" +
+              (p.observacao || "");
             if (k === chave && p.id_status == 1) {
-                lista.push(p.id_item);
+              lista.push(p.id_item);
             }
+          });
+          if (!lista.length) return;
+          const res = await fetch("/api/kds/item/finalizar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: lista }),
+          });
+          const ret = await res.json();
+          if (ret.success) await atualizarPedidos();
+          else alert("Falha ao finalizar itens!");
+        } catch (e) {
+          console.error("Erro em finalizarPedidos:", e);
+          alert("Erro ao finalizar itens do card.");
+        }
+      }
+      async function produzirTodos() {
+        const chaves = Object.keys(agrupadosGlobal).filter((chave) => {
+          const lista = agrupadosGlobal[chave];
+          return lista.some((item) => item.id_status == 0);
         });
-        if (!lista.length) return;
-        const res = await fetch('/api/kds/item/finalizar', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ ids: lista })
+        for (const chave of chaves) {
+          await produzirPedidos(chave);
+        }
+        await atualizarPedidos();
+      }
+      async function finalizarTodos() {
+        const chaves = Object.keys(agrupadosGlobal).filter((chave) => {
+          const lista = agrupadosGlobal[chave];
+          return lista.some((item) => item.id_status == 1);
         });
-        const ret = await res.json();
-        if (ret.success) await atualizarPedidos();
-        else alert("Falha ao finalizar itens!");
-    } catch (e) {
-        console.error('Erro em finalizarPedidos:', e);
-        alert('Erro ao finalizar itens do card.');
-    }
-}
-async function produzirTodos() {
-    const chaves = Object.keys(agrupadosGlobal).filter(chave => {
-        const lista = agrupadosGlobal[chave];
-        return lista.some(item => item.id_status == 0);
-    });
-    for (const chave of chaves) { await produzirPedidos(chave); }
-    await atualizarPedidos();
-}
-async function finalizarTodos() {
-    const chaves = Object.keys(agrupadosGlobal).filter(chave => {
-        const lista = agrupadosGlobal[chave];
-        return lista.some(item => item.id_status == 1);
-    });
-    for (const chave of chaves) { await finalizarPedidos(chave); }
-    await atualizarPedidos();
-}
+        for (const chave of chaves) {
+          await finalizarPedidos(chave);
+        }
+        await atualizarPedidos();
+      }
 
-// --- Impressão por coluna ---
-function coletarItensParaImpressao(coluna) {
-    const statusAlvo = (coluna === 'aguardando') ? 0 : 1;
-    const result = [];
-    Object.keys(agrupadosGlobal).forEach(chave => {
-        const lista = agrupadosGlobal[chave];
-        const doStatus = lista.filter(p => p.id_status == statusAlvo && (isHoje(p.data) || isAmanha(p.data)));
-        if (!doStatus.length) return;
-        const produto = doStatus[0].descricao || doStatus[0].produto || doStatus[0].id_produto;
-        const observacao = doStatus[0].observacao || "";
-        const total = doStatus.reduce((s, p) => s + parseFloat(p.quantidade || 0), 0);
-        result.push({
+      // --- Impressão por coluna ---
+      function coletarItensParaImpressao(coluna) {
+        const statusAlvo = coluna === "aguardando" ? 0 : 1;
+        const result = [];
+        Object.keys(agrupadosGlobal).forEach((chave) => {
+          const lista = agrupadosGlobal[chave];
+          const doStatus = lista.filter(
+            (p) =>
+              p.id_status == statusAlvo && (isHoje(p.data) || isAmanha(p.data)),
+          );
+          if (!doStatus.length) return;
+          const produto =
+            doStatus[0].descricao ||
+            doStatus[0].produto ||
+            doStatus[0].id_produto;
+          const observacao = doStatus[0].observacao || "";
+          const total = doStatus.reduce(
+            (s, p) => s + parseFloat(p.quantidade || 0),
+            0,
+          );
+          result.push({
             produto: String(produto).trim(),
             observacao: String(observacao).trim(),
-            quantidade_formatada: total.toLocaleString('pt-BR', {minimumFractionDigits:3, maximumFractionDigits:3})
+            quantidade_formatada: total.toLocaleString("pt-BR", {
+              minimumFractionDigits: 3,
+              maximumFractionDigits: 3,
+            }),
+          });
         });
-    });
 
-    const coll = new Intl.Collator('pt-BR', { sensitivity: 'base', numeric: true });
-    result.sort((a, b) => {
-        const cmpProd = coll.compare(a.produto, b.produto);
-        return (cmpProd !== 0) ? cmpProd : coll.compare(a.observacao, b.observacao);
-    });
+        const coll = new Intl.Collator("pt-BR", {
+          sensitivity: "base",
+          numeric: true,
+        });
+        result.sort((a, b) => {
+          const cmpProd = coll.compare(a.produto, b.produto);
+          return cmpProd !== 0
+            ? cmpProd
+            : coll.compare(a.observacao, b.observacao);
+        });
 
-    return result;
-}
-async function imprimirColuna(coluna) {
-    const loja  = document.getElementById('selectLoja').value;
-    const setor = document.getElementById('selectSetor').value;
-    if (!loja || !setor) { alert('Selecione Loja e Setor.'); return; }
-    const itens = coletarItensParaImpressao(coluna);
-    if (!itens.length) { alert('Nenhum item para imprimir.'); return; }
-    const r = await fetch('/api/kds/imprimir', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({
+        return result;
+      }
+      async function imprimirColuna(coluna) {
+        const loja = document.getElementById("selectLoja").value;
+        const setor = document.getElementById("selectSetor").value;
+        if (!loja || !setor) {
+          alert("Selecione Loja e Setor.");
+          return;
+        }
+        const itens = coletarItensParaImpressao(coluna);
+        if (!itens.length) {
+          alert("Nenhum item para imprimir.");
+          return;
+        }
+        const r = await fetch("/api/kds/imprimir", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
             id_loja: Number(loja),
             id_setor: Number(setor),
             coluna,
-            itens
-        })
-    });
-    const j = await r.json();
-    if (j.ok) alert('Impressão enviada!');
-    else alert(j.erro || 'Falha ao imprimir');
-}
+            itens,
+          }),
+        });
+        const j = await r.json();
+        if (j.ok) alert("Impressão enviada!");
+        else alert(j.erro || "Falha ao imprimir");
+      }
 
-// --- Modal Configuração Impressora ---
-let modalConfig;
-function abrirModalConfig() {
-    if (!modalConfig) modalConfig = new bootstrap.Modal(document.getElementById('modalConfig'));
-    const lojaSel  = document.getElementById('selectLoja');
-    const setorSel = document.getElementById('selectSetor');
-    const cfgLoja  = document.getElementById('cfgLoja');
-    const cfgSetor = document.getElementById('cfgSetor');
+      // --- Modal Configuração Impressora ---
+      let modalConfig;
+      function abrirModalConfig() {
+        if (!modalConfig)
+          modalConfig = new bootstrap.Modal(
+            document.getElementById("modalConfig"),
+          );
+        const lojaSel = document.getElementById("selectLoja");
+        const setorSel = document.getElementById("selectSetor");
+        const cfgLoja = document.getElementById("cfgLoja");
+        const cfgSetor = document.getElementById("cfgSetor");
 
-    // clona opções atuais
-    cfgLoja.innerHTML  = lojaSel.innerHTML;
-    cfgSetor.innerHTML = setorSel.innerHTML;
-    cfgLoja.value  = lojaSel.value || '';
-    cfgSetor.value = setorSel.value || '';
+        // clona opções atuais
+        cfgLoja.innerHTML = lojaSel.innerHTML;
+        cfgSetor.innerHTML = setorSel.innerHTML;
+        cfgLoja.value = lojaSel.value || "";
+        cfgSetor.value = setorSel.value || "";
 
-    // busca config existente por loja/setor
-    const loja  = lojaSel.value;
-    const setor = setorSel.value;
-    const inputCaminho = document.getElementById('cfgCaminho');
-    inputCaminho.value = '';
-    if (loja && setor) {
-        fetch(`/api/impressora/setor?loja=${loja}&setor=${setor}`)
-          .then(r=>r.json())
-          .then(j => { inputCaminho.value = j.caminho_impressora || ''; })
-          .catch(()=>{});
-    }
-    modalConfig.show();
-}
-async function salvarConfigImpressora() {
-    const loja  = document.getElementById('selectLoja').value;
-    const setor = document.getElementById('selectSetor').value;
-    const caminho = document.getElementById('cfgCaminho').value.trim();
-    if (!loja || !setor || !caminho) { alert('Preencha Loja, Setor e Caminho.'); return; }
-    const r = await fetch('/api/impressora/setor', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ id_loja: Number(loja), id_setor: Number(setor), caminho_impressora: caminho })
-    });
-    const j = await r.json();
-    if (j.ok) { alert('Configuração salva!'); modalConfig.hide(); }
-    else alert(j.erro || 'Erro ao salvar');
-}
+        // busca config existente por loja/setor
+        const loja = lojaSel.value;
+        const setor = setorSel.value;
+        const inputCaminho = document.getElementById("cfgCaminho");
+        inputCaminho.value = "";
+        if (loja && setor) {
+          fetch(`/api/impressora/setor?loja=${loja}&setor=${setor}`)
+            .then((r) => r.json())
+            .then((j) => {
+              inputCaminho.value = j.caminho_impressora || "";
+            })
+            .catch(() => {});
+        }
+        modalConfig.show();
+      }
+      async function salvarConfigImpressora() {
+        const loja = document.getElementById("selectLoja").value;
+        const setor = document.getElementById("selectSetor").value;
+        const caminho = document.getElementById("cfgCaminho").value.trim();
+        if (!loja || !setor || !caminho) {
+          alert("Preencha Loja, Setor e Caminho.");
+          return;
+        }
+        const r = await fetch("/api/impressora/setor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id_loja: Number(loja),
+            id_setor: Number(setor),
+            caminho_impressora: caminho,
+          }),
+        });
+        const j = await r.json();
+        if (j.ok) {
+          alert("Configuração salva!");
+          modalConfig.hide();
+        } else alert(j.erro || "Erro ao salvar");
+      }
 
-// --- Boot ---
-let alertaCarregado = false;
-window.onload = async function() {
-    await carregarLojas();
-    await carregarIdsSempreComHorario();
-    agendarAtualizacaoAutomatica();
-    atualizarPedidos();
-    // carrega áudio
-    if (!alertaCarregado) {
-        const a = document.createElement('audio');
-        a.id = 'alertaAudio';
-        a.src = '/static/som_alerta.mp3';
-        document.body.appendChild(a);
-        alertaCarregado = true;
-    }
-};
-</script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+      // --- Boot ---
+      let alertaCarregado = false;
+      window.onload = async function () {
+        await carregarLojas();
+        await carregarIdsSempreComHorario();
+        agendarAtualizacaoAutomatica();
+        atualizarPedidos();
+        // carrega áudio
+        if (!alertaCarregado) {
+          const a = document.createElement("audio");
+          a.id = "alertaAudio";
+          a.src = "/static/som_alerta.mp3";
+          document.body.appendChild(a);
+          alertaCarregado = true;
+        }
+      };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
 </html>

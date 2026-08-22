@@ -1,79 +1,84 @@
-{% extends "layout_base.html" %}
-
-{% block title %}Gestão de Usuários - Padaria System{% endblock %}
-
-{% block conteudo_central %}
+{% extends "layout_base.html" %} {% block title %}Gestão de Usuários - Padaria
+System{% endblock %} {% block conteudo_central %}
 <div class="container mt-4">
-    <div class="row mb-3">
-        <div class="col-md-12 text-start">
-            <div class="d-inline-flex" style="gap: 10px;">
-                <a href="/dashboard_partial" class="btn btn-secondary">Voltar</a>
-            </div>
-        </div>
+  <div class="row mb-3">
+    <div class="col-md-12 text-start">
+      <div class="d-inline-flex" style="gap: 10px">
+        <a href="/dashboard_partial" class="btn btn-secondary">Voltar</a>
+      </div>
     </div>
-    <h2 class="mb-4 text-center">Gestão de Usuários</h2>
+  </div>
+  <h2 class="mb-4 text-center">Gestão de Usuários</h2>
 
-    <!-- Filtro -->
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <input type="text" id="filtroUsuario" class="form-control" placeholder="Pesquisar por Nome ou Email" oninput="buscarUsuarios()">
-        </div>
-        <div class="col-md-6 text-end">
-            <button class="btn btn-success" onclick="abrirModalUsuario()">Incluir <i class="fas fa-user-plus"></i></button>
-        </div>
+  <!-- Filtro -->
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <input
+        type="text"
+        id="filtroUsuario"
+        class="form-control"
+        placeholder="Pesquisar por Nome ou Email"
+        oninput="buscarUsuarios()"
+      />
     </div>
+    <div class="col-md-6 text-end">
+      <button class="btn btn-success" onclick="abrirModalUsuario()">
+        Incluir <i class="fas fa-user-plus"></i>
+      </button>
+    </div>
+  </div>
 
-    <!-- Tabela de Usuários -->
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Nome</th>
-                <th>Email</th>
-                <th>Loja</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody id="tabelaUsuarios">
-            <!-- Conteúdo gerado via JS -->
-        </tbody>
-    </table>
+  <!-- Tabela de Usuários -->
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Email</th>
+        <th>Loja</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="tabelaUsuarios">
+      <!-- Conteúdo gerado via JS -->
+    </tbody>
+  </table>
 
-    <!-- Modal de Cadastro/Edição -->
-    <div id="modalUsuarioContainer"></div>
+  <!-- Modal de Cadastro/Edição -->
+  <div id="modalUsuarioContainer"></div>
 </div>
 
 <!-- FontAwesome (caso já não esteja no layout_base, pode remover esta linha se já estiver) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
 
 <script>
-let lojasCache = [];
-let usuarioEditando = null; // Para saber se é inclusão ou edição
+  let lojasCache = [];
+  let usuarioEditando = null; // Para saber se é inclusão ou edição
 
-async function carregarLojas() {
-    const response = await fetch('/api/lojas');
+  async function carregarLojas() {
+    const response = await fetch("/api/lojas");
     const lojas = await response.json();
     lojasCache = lojas;
-}
+  }
 
-async function buscarUsuarios() {
-    const filtro = document.getElementById('filtroUsuario').value.trim();
+  async function buscarUsuarios() {
+    const filtro = document.getElementById("filtroUsuario").value.trim();
 
-    const response = await fetch('/api/usuarios/consulta', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ filtro })
+    const response = await fetch("/api/usuarios/consulta", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filtro }),
     });
 
     const usuarios = await response.json();
-    const tabela = document.getElementById('tabelaUsuarios');
-    tabela.innerHTML = '';
+    const tabela = document.getElementById("tabelaUsuarios");
+    tabela.innerHTML = "";
 
-    usuarios.forEach(usuario => {
-        const linha = `
+    usuarios.forEach((usuario) => {
+      const linha = `
             <tr>
                 <td>${usuario.nome}</td>
                 <td>${usuario.email}</td>
-                <td>${usuario.loja || ''}</td>
+                <td>${usuario.loja || ""}</td>
                 <td>
                     <button class="btn btn-primary btn-sm" onclick="abrirModalUsuario(${usuario.id})">
                         <i class="fas fa-edit"></i> Editar
@@ -81,18 +86,22 @@ async function buscarUsuarios() {
                 </td>
             </tr>
         `;
-        tabela.innerHTML += linha;
+      tabela.innerHTML += linha;
     });
-}
+  }
 
-function abrirModalUsuario(idUsuario = null) {
+  function abrirModalUsuario(idUsuario = null) {
     usuarioEditando = idUsuario;
 
-    let titulo = idUsuario ? 'Editar Usuário' : 'Novo Usuário';
+    let titulo = idUsuario ? "Editar Usuário" : "Novo Usuário";
 
-    let lojasOptions = lojasCache.map(loja => `
+    let lojasOptions = lojasCache
+      .map(
+        (loja) => `
         <option value="${loja.id}">${loja.descricao}</option>
-    `).join('');
+    `,
+      )
+      .join("");
 
     const modalHtml = `
     <div class="modal fade" id="modalUsuario" tabindex="-1" aria-labelledby="modalUsuarioLabel" aria-hidden="true">
@@ -132,62 +141,66 @@ function abrirModalUsuario(idUsuario = null) {
     </div>
     `;
 
-    document.getElementById('modalUsuarioContainer').innerHTML = modalHtml;
-    const modal = new bootstrap.Modal(document.getElementById('modalUsuario'));
+    document.getElementById("modalUsuarioContainer").innerHTML = modalHtml;
+    const modal = new bootstrap.Modal(document.getElementById("modalUsuario"));
     modal.show();
 
     if (idUsuario) {
-        carregarDadosUsuario(idUsuario);
+      carregarDadosUsuario(idUsuario);
     }
-}
+  }
 
-async function carregarDadosUsuario(idUsuario) {
+  async function carregarDadosUsuario(idUsuario) {
     const response = await fetch(`/api/usuarios/${idUsuario}`);
     const usuario = await response.json();
 
-    document.getElementById('nomeUsuario').value = usuario.nome;
-    document.getElementById('emailUsuario').value = usuario.email;
-    document.getElementById('lojaUsuario').value = usuario.id_loja;
-}
+    document.getElementById("nomeUsuario").value = usuario.nome;
+    document.getElementById("emailUsuario").value = usuario.email;
+    document.getElementById("lojaUsuario").value = usuario.id_loja;
+  }
 
-async function salvarUsuario() {
-    const nome = document.getElementById('nomeUsuario').value.trim();
-    const email = document.getElementById('emailUsuario').value.trim();
-    const senha = document.getElementById('senhaUsuario').value.trim();
-    const id_loja = document.getElementById('lojaUsuario').value;
+  async function salvarUsuario() {
+    const nome = document.getElementById("nomeUsuario").value.trim();
+    const email = document.getElementById("emailUsuario").value.trim();
+    const senha = document.getElementById("senhaUsuario").value.trim();
+    const id_loja = document.getElementById("lojaUsuario").value;
 
     if (!nome || !email || (!usuarioEditando && !senha) || !id_loja) {
-        alert('Preencha todos os campos obrigatórios.');
-        return;
+      alert("Preencha todos os campos obrigatórios.");
+      return;
     }
 
     const payload = { nome, email, senha, id_loja };
 
-    const url = usuarioEditando ? `/api/usuarios/editar/${usuarioEditando}` : '/api/usuarios/novo';
-    const method = usuarioEditando ? 'PUT' : 'POST';
+    const url = usuarioEditando
+      ? `/api/usuarios/editar/${usuarioEditando}`
+      : "/api/usuarios/novo";
+    const method = usuarioEditando ? "PUT" : "POST";
 
     const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
 
     if (response.ok) {
-        alert('Usuário salvo com sucesso!');
-        const modal = bootstrap.Modal.getInstance(document.getElementById('modalUsuario'));
-        modal.hide();
-        buscarUsuarios();
+      alert("Usuário salvo com sucesso!");
+      const modal = bootstrap.Modal.getInstance(
+        document.getElementById("modalUsuario"),
+      );
+      modal.hide();
+      buscarUsuarios();
     } else {
-        alert('Erro ao salvar usuário.');
+      alert("Erro ao salvar usuário.");
     }
-}
+  }
 
-// Inicialização dinâmica (para AJAX e para acesso direto)
-function usuariosInit() {
+  // Inicialização dinâmica (para AJAX e para acesso direto)
+  function usuariosInit() {
     carregarLojas().then(buscarUsuarios);
-}
+  }
 
-// Executa ao carregar a tela (funciona tanto via AJAX quanto direto)
-usuariosInit();
+  // Executa ao carregar a tela (funciona tanto via AJAX quanto direto)
+  usuariosInit();
 </script>
 {% endblock %}

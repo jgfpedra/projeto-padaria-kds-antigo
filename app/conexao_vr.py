@@ -1,6 +1,7 @@
 # app/conexao_vr.py
-import psycopg2
 import os
+
+import psycopg2
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,7 +14,7 @@ def conectar_vr():
             port=os.getenv("VR_DB_PORT"),
             dbname=os.getenv("VR_DB_NAME"),
             user=os.getenv("VR_DB_USER"),
-            password=os.getenv("VR_DB_PASS")
+            password=os.getenv("VR_DB_PASS"),
         )
         return conn
     except Exception as e:
@@ -73,3 +74,11 @@ def buscar_produtos():
         return []
     finally:
         conn.close()
+
+
+def fechar_conexao(cursor, conn):
+    try:
+        cursor.close()
+        conn.close()
+    except Exception:
+        pass

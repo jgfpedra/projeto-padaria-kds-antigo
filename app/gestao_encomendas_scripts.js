@@ -1,46 +1,54 @@
-
 async function pesquisarEncomendas() {
-    $('#cards-container').html('');
+  $("#cards-container").html("");
 
-    const filtros = {
-        data_tipo: document.getElementById('data_tipo').value,
-        data_inicio: document.getElementById('data_inicio').value,
-        data_fim: document.getElementById('data_fim').value,
-        tipo_entrega: document.getElementById('tipo_entrega').value,
-        id_loja: document.getElementById('loja').value,
-        cliente: document.getElementById('cliente').value,
-        status: document.getElementById('status').value
-    };
+  const filtros = {
+    data_tipo: document.getElementById("data_tipo").value,
+    data_inicio: document.getElementById("data_inicio").value,
+    data_fim: document.getElementById("data_fim").value,
+    tipo_entrega: document.getElementById("tipo_entrega").value,
+    id_loja: document.getElementById("loja").value,
+    cliente: document.getElementById("cliente").value,
+    status: document.getElementById("status").value,
+  };
 
-    try {
-        const response = await fetch('/api/encomendas/consulta', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(filtros)
-        });
+  try {
+    const response = await fetch("/api/encomendas/consulta", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(filtros),
+    });
 
-        const pedidos = await response.json();
-        if (!pedidos.length) {
-            $('#cards-container').html('<p class="text-center">Nenhum pedido encontrado.</p>');
-            return;
-        }
+    const pedidos = await response.json();
+    if (!pedidos.length) {
+      $("#cards-container").html(
+        '<p class="text-center">Nenhum pedido encontrado.</p>',
+      );
+      return;
+    }
 
-        pedidos.sort((a, b) => new Date(a.data_entrega) - new Date(b.data_entrega));
+    pedidos.sort((a, b) => new Date(a.data_entrega) - new Date(b.data_entrega));
 
-        pedidos.forEach(pedido => {
-            const hoje = new Date().toISOString().split('T')[0];
-            let faixa = '';
-            if (pedido.data_entrega === hoje) {
-                faixa = '<span class="badge bg-success">HOJE</span>';
-            } else if (new Date(pedido.data_entrega) < new Date() && pedido.id_status === 1) {
-                faixa = '<span class="badge bg-danger">ATRASADO</span>';
-            }
+    pedidos.forEach((pedido) => {
+      const hoje = new Date().toISOString().split("T")[0];
+      let faixa = "";
+      if (pedido.data_entrega === hoje) {
+        faixa = '<span class="badge bg-success">HOJE</span>';
+      } else if (
+        new Date(pedido.data_entrega) < new Date() &&
+        pedido.id_status === 1
+      ) {
+        faixa = '<span class="badge bg-danger">ATRASADO</span>';
+      }
 
-            const itensHtml = pedido.itens.map(item => `
-                <li>${item.quantidade_un} UN - ${item.descricao} ${item.observacao ? '(<em>' + item.observacao + '</em>)' : ''}</li>
-            `).join('');
+      const itensHtml = pedido.itens
+        .map(
+          (item) => `
+                <li>${item.quantidade_un} UN - ${item.descricao} ${item.observacao ? "(<em>" + item.observacao + "</em>)" : ""}</li>
+            `,
+        )
+        .join("");
 
-            const card = `
+      const card = `
             <div class="col-md-6">
                 <div class="card shadow-sm">
                     <div class="card-body">
@@ -50,8 +58,8 @@ async function pesquisarEncomendas() {
                         </div>
                         <p><strong>Cliente:</strong> ${pedido.nome_cliente} - ${pedido.telefone}</p>
                         <p><strong>Tipo Entrega:</strong> ${pedido.tipo_entrega.toUpperCase()}</p>
-                        ${pedido.tipo_entrega === 'entrega' ? `<p><strong>Endereço:</strong> ${pedido.endereco}</p>` : ''}
-                        ${pedido.observacoes ? `<p><strong>Observação:</strong> ${pedido.observacoes}</p>` : ''}
+                        ${pedido.tipo_entrega === "entrega" ? `<p><strong>Endereço:</strong> ${pedido.endereco}</p>` : ""}
+                        ${pedido.observacoes ? `<p><strong>Observação:</strong> ${pedido.observacoes}</p>` : ""}
                         <ul>${itensHtml}</ul>
                         <p><strong>Data Pedido:</strong> ${pedido.data_pedido}</p>
                         <p><strong>Entrega:</strong> ${pedido.data_entrega} - ${pedido.hora_entrega}</p>
@@ -65,17 +73,18 @@ async function pesquisarEncomendas() {
                 </div>
             </div>`;
 
-            $('#cards-container').append(card);
-        });
-
-    } catch (error) {
-        console.error('Erro ao buscar encomendas:', error);
-        $('#cards-container').html('<p class="text-center text-danger">Erro ao buscar pedidos.</p>');
-    }
+      $("#cards-container").append(card);
+    });
+  } catch (error) {
+    console.error("Erro ao buscar encomendas:", error);
+    $("#cards-container").html(
+      '<p class="text-center text-danger">Erro ao buscar pedidos.</p>',
+    );
+  }
 }
 
 function abrirModalStatus(idPedido) {
-    const modal = `
+  const modal = `
     <div class="modal fade" id="modalStatus" tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -97,13 +106,13 @@ function abrirModalStatus(idPedido) {
         </div>
       </div>
     </div>`;
-    
-    $('#modais').html(modal);
-    new bootstrap.Modal(document.getElementById('modalStatus')).show();
+
+  $("#modais").html(modal);
+  new bootstrap.Modal(document.getElementById("modalStatus")).show();
 }
 
 function abrirModalEditar(idPedido) {
-    const modal = `
+  const modal = `
     <div class="modal fade" id="modalEditar" tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -121,13 +130,13 @@ function abrirModalEditar(idPedido) {
         </div>
       </div>
     </div>`;
-    
-    $('#modais').html(modal);
-    new bootstrap.Modal(document.getElementById('modalEditar')).show();
+
+  $("#modais").html(modal);
+  new bootstrap.Modal(document.getElementById("modalEditar")).show();
 }
 
 function abrirModalFinalizar(idPedido) {
-    const modal = `
+  const modal = `
     <div class="modal fade" id="modalFinalizar" tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -146,6 +155,6 @@ function abrirModalFinalizar(idPedido) {
       </div>
     </div>`;
 
-    $('#modais').html(modal);
-    new bootstrap.Modal(document.getElementById('modalFinalizar')).show();
+  $("#modais").html(modal);
+  new bootstrap.Modal(document.getElementById("modalFinalizar")).show();
 }

@@ -1,379 +1,535 @@
-<div class="modal fade" id="modalComposto" tabindex="-1" aria-labelledby="modalCompostoLabel" aria-hidden="true">
-	<div class="modal-dialog modal-xl modal-dialog-scrollable">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h5 class="modal-title" id="modalCompostoLabel">Novo Composto</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-			</div>
+<div
+  class="modal fade"
+  id="modalComposto"
+  tabindex="-1"
+  aria-labelledby="modalCompostoLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalCompostoLabel">Novo Composto</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+        ></button>
+      </div>
 
-			<div class="modal-body">
-				<div id="modal_composto_error"></div>
+      <div class="modal-body">
+        <div id="modal_composto_error"></div>
 
-				<div class="row mb-3">
-					<div class="col-md-4">
-						<label class="form-label">Produto pai <span class="text-danger">*</span></label>
-						<div style="position:relative">
-							<input type="text" class="form-control" id="composto_produto_busca" placeholder="ID ou nome..." autocomplete="off">
-							<input type="hidden" id="composto_id_produto">
-							<ul id="composto_produto_sugestoes" class="list-group" style="position:absolute;z-index:999;width:100%;max-height:180px;overflow-y:auto;display:none;"></ul>
-						</div>
-						<small id="composto_produto_hint" class="text-muted"></small>
-					</div>
-					<div class="col-md-4">
-						<label class="form-label">Tipo <span class="text-danger">*</span></label>
-						<select class="form-select" id="composto_tipo">
-							<option value="">Selecione...</option>
-							<option value="combo">Combo</option>
-							<option value="cestaPaes">Cesta de Pães</option>
-							<option value="cestaCafeManha">Cesta Café da Manhã</option>
-							<option value="kitHibrido">Kit Híbrido</option>
-							<option value="coffeeBreak">Coffee Break</option>
-						</select>
-					</div>
-					<div class="col-md-4">
-						<label class="form-label">Mín. Pessoas</label>
-						<input type="number" min="1" class="form-control" id="composto_min_pessoas" placeholder="ex: 10">
-					</div>
-				</div>
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label class="form-label"
+              >Produto pai <span class="text-danger">*</span></label
+            >
+            <div style="position: relative">
+              <input
+                type="text"
+                class="form-control"
+                id="composto_produto_busca"
+                placeholder="ID ou nome..."
+                autocomplete="off"
+              />
+              <input type="hidden" id="composto_id_produto" />
+              <ul
+                id="composto_produto_sugestoes"
+                class="list-group"
+                style="
+                  position: absolute;
+                  z-index: 999;
+                  width: 100%;
+                  max-height: 180px;
+                  overflow-y: auto;
+                  display: none;
+                "
+              ></ul>
+            </div>
+            <small id="composto_produto_hint" class="text-muted"></small>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label"
+              >Tipo <span class="text-danger">*</span></label
+            >
+            <select class="form-select" id="composto_tipo">
+              <option value="">Selecione...</option>
+              <option value="combo">Combo</option>
+              <option value="cestaPaes">Cesta de Pães</option>
+              <option value="cestaCafeManha">Cesta Café da Manhã</option>
+              <option value="kitHibrido">Kit Híbrido</option>
+              <option value="coffeeBreak">Coffee Break</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Mín. Pessoas</label>
+            <input
+              type="number"
+              min="1"
+              class="form-control"
+              id="composto_min_pessoas"
+              placeholder="ex: 10"
+            />
+          </div>
+        </div>
 
-				<ul class="nav nav-tabs mb-3">
-					<li class="nav-item"><button type="button" class="nav-link active" data-aba="itens" onclick="trocarAbaComposto('itens')">Itens Fixos (<span id="contador_itens">0</span>)</button></li>
-					<li class="nav-item"><button type="button" class="nav-link" data-aba="opcionais" onclick="trocarAbaComposto('opcionais')">Grupos Opcionais (<span id="contador_grupos">0</span>)</button></li>
-					<li class="nav-item"><button type="button" class="nav-link" data-aba="calculo" onclick="trocarAbaComposto('calculo')">Cálculo / Pessoa</button></li>
-				</ul>
+        <ul class="nav nav-tabs mb-3">
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link active"
+              data-aba="itens"
+              onclick="trocarAbaComposto('itens')"
+            >
+              Itens Fixos (<span id="contador_itens">0</span>)
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              data-aba="opcionais"
+              onclick="trocarAbaComposto('opcionais')"
+            >
+              Grupos Opcionais (<span id="contador_grupos">0</span>)
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              data-aba="calculo"
+              onclick="trocarAbaComposto('calculo')"
+            >
+              Cálculo / Pessoa
+            </button>
+          </li>
+        </ul>
 
-				<!-- Aba: Itens fixos -->
-				<div id="aba_itens">
-					<div class="d-flex justify-content-end mb-2">
-						<button type="button" class="btn btn-outline-success btn-sm" onclick="adicionarItemFixo()">
-							<i class="bi bi-plus"></i>
-							Adicionar item
-						</button>
-					</div>
-					<table class="table table-sm table-bordered">
-						<thead class="table-light">
-							<tr>
-								<th style="width:150px">ID Produto</th>
-								<th style="width:100px">Quantidade</th>
-								<th style="width:130px">Peso Unit. (kg)</th>
-								<th style="width:150px">Tipo Item</th>
-								<th style="width:120px">Capacidade (ml)</th>
-								<th style="width:42px"></th>
-							</tr>
-						</thead>
-						<tbody id="tabela_itens_fixos">
-							<tr id="linha_vazia_itens"><td colspan="6" class="text-center text-muted py-3">Nenhum item adicionado</td></tr>
-						</tbody>
-					</table>
-				</div>
+        <!-- Aba: Itens fixos -->
+        <div id="aba_itens">
+          <div class="d-flex justify-content-end mb-2">
+            <button
+              type="button"
+              class="btn btn-outline-success btn-sm"
+              onclick="adicionarItemFixo()"
+            >
+              <i class="bi bi-plus"></i>
+              Adicionar item
+            </button>
+          </div>
+          <table class="table table-sm table-bordered">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 150px">ID Produto</th>
+                <th style="width: 100px">Quantidade</th>
+                <th style="width: 130px">Peso Unit. (kg)</th>
+                <th style="width: 150px">Tipo Item</th>
+                <th style="width: 120px">Capacidade (ml)</th>
+                <th style="width: 42px"></th>
+              </tr>
+            </thead>
+            <tbody id="tabela_itens_fixos">
+              <tr id="linha_vazia_itens">
+                <td colspan="6" class="text-center text-muted py-3">
+                  Nenhum item adicionado
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-				<!-- Aba: Grupos opcionais -->
-				<div id="aba_opcionais" style="display:none">
-					<div class="d-flex justify-content-end mb-2">
-						<button type="button" class="btn btn-outline-success btn-sm" onclick="adicionarGrupoOpcional()">
-							<i class="bi bi-plus"></i>
-							Adicionar grupo
-						</button>
-					</div>
-					<div id="grupos_opcionais_container">
-						<p class="text-center text-muted py-3" id="msg_sem_grupos">Nenhum grupo opcional</p>
-					</div>
-				</div>
+        <!-- Aba: Grupos opcionais -->
+        <div id="aba_opcionais" style="display: none">
+          <div class="d-flex justify-content-end mb-2">
+            <button
+              type="button"
+              class="btn btn-outline-success btn-sm"
+              onclick="adicionarGrupoOpcional()"
+            >
+              <i class="bi bi-plus"></i>
+              Adicionar grupo
+            </button>
+          </div>
+          <div id="grupos_opcionais_container">
+            <p class="text-center text-muted py-3" id="msg_sem_grupos">
+              Nenhum grupo opcional
+            </p>
+          </div>
+        </div>
 
-				<!-- Aba: Cálculo por pessoa -->
-				<div id="aba_calculo" style="display:none">
-					<div class="d-flex gap-3 mb-3">
-						<div class="form-check">
-							<input class="form-check-input" type="radio" name="modo_calc" id="modo_calc_nenhum" value="nenhum" checked>
-							<label class="form-check-label" for="modo_calc_nenhum">Nenhum</label>
-						</div>
-						<div class="form-check">
-							<input class="form-check-input" type="radio" name="modo_calc" id="modo_calc_existente" value="existente">
-							<label class="form-check-label" for="modo_calc_existente">Usar existente</label>
-						</div>
-						<div class="form-check">
-							<input class="form-check-input" type="radio" name="modo_calc" id="modo_calc_novo" value="novo">
-							<label class="form-check-label" for="modo_calc_novo">Criar novo</label>
-						</div>
-					</div>
+        <!-- Aba: Cálculo por pessoa -->
+        <div id="aba_calculo" style="display: none">
+          <div class="d-flex gap-3 mb-3">
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="radio"
+                name="modo_calc"
+                id="modo_calc_nenhum"
+                value="nenhum"
+                checked
+              />
+              <label class="form-check-label" for="modo_calc_nenhum"
+                >Nenhum</label
+              >
+            </div>
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="radio"
+                name="modo_calc"
+                id="modo_calc_existente"
+                value="existente"
+              />
+              <label class="form-check-label" for="modo_calc_existente"
+                >Usar existente</label
+              >
+            </div>
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="radio"
+                name="modo_calc"
+                id="modo_calc_novo"
+                value="novo"
+              />
+              <label class="form-check-label" for="modo_calc_novo"
+                >Criar novo</label
+              >
+            </div>
+          </div>
 
-					<div id="calc_existente_box" style="display:none;max-width:420px">
-						<label class="form-label">Selecionar cálculo</label>
-						<select class="form-select" id="calc_existente_id">
-							<option value="">Selecione...</option>
-						</select>
-					</div>
+          <div id="calc_existente_box" style="display: none; max-width: 420px">
+            <label class="form-label">Selecionar cálculo</label>
+            <select class="form-select" id="calc_existente_id">
+              <option value="">Selecione...</option>
+            </select>
+          </div>
 
-					<div id="calc_novo_box" class="row" style="display:none">
-						<div class="col-md-4">
-							<label class="form-label">Bebida (ml / pessoa)</label>
-							<input type="number" class="form-control" id="calc_bebida_ml" placeholder="ex: 500">
-						</div>
-						<div class="col-md-4">
-							<label class="form-label">Bolo (g / pessoa)</label>
-							<input type="number" class="form-control" id="calc_bolo_g" placeholder="ex: 100">
-						</div>
-						<div class="col-md-4">
-							<label class="form-label">Salgados (un / pessoa)</label>
-							<input type="number" class="form-control" id="calc_salgados_unid" placeholder="ex: 8">
-						</div>
-					</div>
+          <div id="calc_novo_box" class="row" style="display: none">
+            <div class="col-md-4">
+              <label class="form-label">Bebida (ml / pessoa)</label>
+              <input
+                type="number"
+                class="form-control"
+                id="calc_bebida_ml"
+                placeholder="ex: 500"
+              />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Bolo (g / pessoa)</label>
+              <input
+                type="number"
+                class="form-control"
+                id="calc_bolo_g"
+                placeholder="ex: 100"
+              />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Salgados (un / pessoa)</label>
+              <input
+                type="number"
+                class="form-control"
+                id="calc_salgados_unid"
+                placeholder="ex: 8"
+              />
+            </div>
+          </div>
 
-					<p class="text-muted" id="calc_nenhum_msg">Sem cálculo por pessoa vinculado.</p>
-				</div>
-			</div>
+          <p class="text-muted" id="calc_nenhum_msg">
+            Sem cálculo por pessoa vinculado.
+          </p>
+        </div>
+      </div>
 
-			<div class="modal-footer">
-				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-				<button type="button" class="btn btn-success" id="btnSalvarComposto">Salvar</button>
-			</div>
-		</div>
-	</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-success" id="btnSalvarComposto">
+          Salvar
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-	(function () {
-		const TIPOS_ITEM = [
-			{ value: 'salgado', label: 'Salgado' },
-			{ value: 'bolo', label: 'Bolo' },
-			{ value: 'paoMetro', label: 'Pão Metro' },
-			{ value: 'bebida', label: 'Bebida' },
-			{ value: 'salgadosFritos', label: 'Salgados Fritos' },
-			{ value: 'salgadosAssados', label: 'Salgados Assados' },
-		];
+  (function () {
+    const TIPOS_ITEM = [
+      { value: "salgado", label: "Salgado" },
+      { value: "bolo", label: "Bolo" },
+      { value: "paoMetro", label: "Pão Metro" },
+      { value: "bebida", label: "Bebida" },
+      { value: "salgadosFritos", label: "Salgados Fritos" },
+      { value: "salgadosAssados", label: "Salgados Assados" },
+    ];
 
-		let itensFixos = [];      // { key, id_produto, descricao, quantidade, peso_unitario_kg, tipo_item, capacidade_ml }
-		let gruposOpcionais = [];  // { key, chave, itens: [{ key, id_produto, quantidade }] }
-		let compostoIdEdicao = null;
-		let proximoKey = 1;
+    let itensFixos = []; // { key, id_produto, descricao, quantidade, peso_unitario_kg, tipo_item, capacidade_ml }
+    let gruposOpcionais = []; // { key, chave, itens: [{ key, id_produto, quantidade }] }
+    let compostoIdEdicao = null;
+    let proximoKey = 1;
 
-		// ── inicialização (modo "novo") ──────────────────────────────────────────
-		function inicializarModalComposto() {
-			compostoIdEdicao = null;
-			itensFixos = [];
-			gruposOpcionais = [];
-			$('#modalCompostoLabel').text('Novo Composto');
-			$('#composto_produto_busca').prop('disabled', false);
-			$('#composto_produto_hint').text('');
-			carregarCalculosDisponiveis();
-			renderItensFixos();
-			renderGruposOpcionais();
-		}
+    // ── inicialização (modo "novo") ──────────────────────────────────────────
+    function inicializarModalComposto() {
+      compostoIdEdicao = null;
+      itensFixos = [];
+      gruposOpcionais = [];
+      $("#modalCompostoLabel").text("Novo Composto");
+      $("#composto_produto_busca").prop("disabled", false);
+      $("#composto_produto_hint").text("");
+      carregarCalculosDisponiveis();
+      renderItensFixos();
+      renderGruposOpcionais();
+    }
 
-		// ── carrega dados pra edição ─────────────────────────────────────────────
-		function carregarCompostoEdicao(id) {
-			fetch(`/api/produtos_compostos/${id}`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({})
-			})
-		.then(res => res.json())
-		.then(data => {
-			compostoIdEdicao = data.id;
-			$('#modalCompostoLabel').text(`Editar Composto #${data.id}`);
-			$('#composto_id_produto').val(data.id);
-			$('#composto_produto_busca').val(data.nome_produto || '').prop('disabled', true);
-			$('#composto_produto_hint').text('ID não pode ser alterado após criação.');
-			$('#composto_tipo').val(data.tipo || '');
-			$('#composto_min_pessoas').val(data.pedido_min_pessoas ?? '');
+    // ── carrega dados pra edição ─────────────────────────────────────────────
+    function carregarCompostoEdicao(id) {
+      fetch(`/api/produtos_compostos/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          compostoIdEdicao = data.id;
+          $("#modalCompostoLabel").text(`Editar Composto #${data.id}`);
+          $("#composto_id_produto").val(data.id);
+          $("#composto_produto_busca")
+            .val(data.nome_produto || "")
+            .prop("disabled", true);
+          $("#composto_produto_hint").text(
+            "ID não pode ser alterado após criação.",
+          );
+          $("#composto_tipo").val(data.tipo || "");
+          $("#composto_min_pessoas").val(data.pedido_min_pessoas ?? "");
 
-			itensFixos = (data.itens_fixos || []).map(it => ({ key: proximoKey++, ...it }));
-			gruposOpcionais = (data.grupos_opcionais || []).map(g => ({
-				key: proximoKey++,
-				chave: g.chave,
-				quantidade_total: g.quantidade_total,       // preserva
-				itens: (g.itens || []).map(it => ({ key: proximoKey++, ...it })),
-			}));
+          itensFixos = (data.itens_fixos || []).map((it) => ({
+            key: proximoKey++,
+            ...it,
+          }));
+          gruposOpcionais = (data.grupos_opcionais || []).map((g) => ({
+            key: proximoKey++,
+            chave: g.chave,
+            quantidade_total: g.quantidade_total, // preserva
+            itens: (g.itens || []).map((it) => ({ key: proximoKey++, ...it })),
+          }));
 
-		renderItensFixos();
-		renderGruposOpcionais();
+          renderItensFixos();
+          renderGruposOpcionais();
 
-		carregarCalculosDisponiveis(() => {
-			if (data.calculo_pessoa) {
-				if (data.calculo_pessoa.id) {
-					$('#modo_calc_existente').prop('checked', true);
-					$('#calc_existente_id').val(data.calculo_pessoa.id);
-				} else {
-					$('#modo_calc_novo').prop('checked', true);
-					$('#calc_bebida_ml').val(data.calculo_pessoa.bebida_ml ?? '');
-					$('#calc_bolo_g').val(data.calculo_pessoa.bolo_g ?? '');
-					$('#calc_salgados_unid').val(data.calculo_pessoa.salgados_unid ?? '');
-				}
-			}
-			atualizarVisibilidadeCalculo();
-		});
-})
-.catch(() => alert('Erro ao carregar dados do composto.'));
-}
+          carregarCalculosDisponiveis(() => {
+            if (data.calculo_pessoa) {
+              if (data.calculo_pessoa.id) {
+                $("#modo_calc_existente").prop("checked", true);
+                $("#calc_existente_id").val(data.calculo_pessoa.id);
+              } else {
+                $("#modo_calc_novo").prop("checked", true);
+                $("#calc_bebida_ml").val(data.calculo_pessoa.bebida_ml ?? "");
+                $("#calc_bolo_g").val(data.calculo_pessoa.bolo_g ?? "");
+                $("#calc_salgados_unid").val(
+                  data.calculo_pessoa.salgados_unid ?? "",
+                );
+              }
+            }
+            atualizarVisibilidadeCalculo();
+          });
+        })
+        .catch(() => alert("Erro ao carregar dados do composto."));
+    }
 
-function carregarCalculosDisponiveis(callback) {
-	fetch('/api/produtos_compostos/calculos')
-	.then(res => res.json())
-	.then(lista => {
-		const $sel = $('#calc_existente_id');
-		$sel.empty().append('<option value="">Selecione...</option>');
-		(lista || []).forEach(c => {
-			$sel.append(`<option value="${c.id}">#${c.id} — ${c.bebida_ml}ml / ${c.salgados_unid} salg / ${c.bolo_g}g bolo</option>`);
-		});
-	if (typeof callback === 'function') callback();
-});
-}
+    function carregarCalculosDisponiveis(callback) {
+      fetch("/api/produtos_compostos/calculos")
+        .then((res) => res.json())
+        .then((lista) => {
+          const $sel = $("#calc_existente_id");
+          $sel.empty().append('<option value="">Selecione...</option>');
+          (lista || []).forEach((c) => {
+            $sel.append(
+              `<option value="${c.id}">#${c.id} — ${c.bebida_ml}ml / ${c.salgados_unid} salg / ${c.bolo_g}g bolo</option>`,
+            );
+          });
+          if (typeof callback === "function") callback();
+        });
+    }
 
-// ── abas ──────────────────────────────────────────────────────────────────
-window.trocarAbaComposto = function (aba) {
-	['itens', 'opcionais', 'calculo'].forEach(a => {
-		$(`#aba_${a}`).toggle(a === aba);
-		$(`.nav-link[data-aba="${a}"]`).toggleClass('active', a === aba);
-	});
-};
+    // ── abas ──────────────────────────────────────────────────────────────────
+    window.trocarAbaComposto = function (aba) {
+      ["itens", "opcionais", "calculo"].forEach((a) => {
+        $(`#aba_${a}`).toggle(a === aba);
+        $(`.nav-link[data-aba="${a}"]`).toggleClass("active", a === aba);
+      });
+    };
 
-// ── itens fixos ───────────────────────────────────────────────────────────
-window.adicionarItemFixo = function () {
-	itensFixos.push({ key: proximoKey++, id_produto: '', quantidade: '', peso_unitario_kg: '', tipo_item: '', capacidade_ml: '' });
-	renderItensFixos();
-};
+    // ── itens fixos ───────────────────────────────────────────────────────────
+    window.adicionarItemFixo = function () {
+      itensFixos.push({
+        key: proximoKey++,
+        id_produto: "",
+        quantidade: "",
+        peso_unitario_kg: "",
+        tipo_item: "",
+        capacidade_ml: "",
+      });
+      renderItensFixos();
+    };
 
-window.removerItemFixo = function (key) {
-	itensFixos = itensFixos.filter(it => it.key !== key);
-	lerItensFixosDoDom(); // sincroniza antes de re-renderizar
-	renderItensFixos();
-};
+    window.removerItemFixo = function (key) {
+      itensFixos = itensFixos.filter((it) => it.key !== key);
+      lerItensFixosDoDom(); // sincroniza antes de re-renderizar
+      renderItensFixos();
+    };
 
-// lê os valores atuais dos inputs de volta pro array (o DOM é fonte de verdade enquanto o usuário digita)
-function lerItensFixosDoDom() {
-	itensFixos = itensFixos.map(it => {
-		const $row = $(`#linha_item_${it.key}`);
-		if ($row.length === 0) return it;
-		return {
-			key: it.key,
-			id_produto: $row.find('.item_id_produto_hidden').val() || it.id_produto,
-			descricao: it.descricao,
-			quantidade: $row.find('.campo_quantidade').val(),
-			peso_unitario_kg: $row.find('.campo_peso').val(),
-			tipo_item: $row.find('.campo_tipo_item').val(),
-			capacidade_ml: $row.find('.campo_capacidade').val(),
-		};
-	});
-}
+    // lê os valores atuais dos inputs de volta pro array (o DOM é fonte de verdade enquanto o usuário digita)
+    function lerItensFixosDoDom() {
+      itensFixos = itensFixos.map((it) => {
+        const $row = $(`#linha_item_${it.key}`);
+        if ($row.length === 0) return it;
+        return {
+          key: it.key,
+          id_produto:
+            $row.find(".item_id_produto_hidden").val() || it.id_produto,
+          descricao: it.descricao,
+          quantidade: $row.find(".campo_quantidade").val(),
+          peso_unitario_kg: $row.find(".campo_peso").val(),
+          tipo_item: $row.find(".campo_tipo_item").val(),
+          capacidade_ml: $row.find(".campo_capacidade").val(),
+        };
+      });
+    }
 
-function renderItensFixos() {
-	lerItensFixosDoDom();
-	const $tbody = $('#tabela_itens_fixos');
-	$tbody.html('');
-	if (itensFixos.length === 0) {
-		$tbody.append('<tr id="linha_vazia_itens"><td colspan="6" class="text-center text-muted py-3">Nenhum item adicionado</td></tr>');
-		$('#contador_itens').text(0);
-		return;
-	}
-	itensFixos.forEach(it => {
-		const displayValue = it.id_produto || it.descricao
-		? `${it.id_produto || ''}${it.descricao ? ' - ' + it.descricao : ''}`
-		: '';
-		const isBebida = it.tipo_item === 'bebida';
-		$tbody.append(`
+    function renderItensFixos() {
+      lerItensFixosDoDom();
+      const $tbody = $("#tabela_itens_fixos");
+      $tbody.html("");
+      if (itensFixos.length === 0) {
+        $tbody.append(
+          '<tr id="linha_vazia_itens"><td colspan="6" class="text-center text-muted py-3">Nenhum item adicionado</td></tr>',
+        );
+        $("#contador_itens").text(0);
+        return;
+      }
+      itensFixos.forEach((it) => {
+        const displayValue =
+          it.id_produto || it.descricao
+            ? `${it.id_produto || ""}${it.descricao ? " - " + it.descricao : ""}`
+            : "";
+        const isBebida = it.tipo_item === "bebida";
+        $tbody.append(`
 			<tr id="linha_item_${it.key}">
 			<td>
 			<div style="position:relative">
 			<input type="text" class="form-control form-control-sm item_busca" value="${displayValue}" placeholder="ID ou nome..." autocomplete="off">
-			<input type="hidden" class="item_id_produto_hidden" value="${it.id_produto || ''}">
+			<input type="hidden" class="item_id_produto_hidden" value="${it.id_produto || ""}">
 			<ul class="list-group item_sugestoes" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
 			</div>
 			</td>
-			<td><input type="number" class="form-control form-control-sm campo_quantidade" value="${it.quantidade || ''}"></td>
-			<td><input type="text" class="form-control form-control-sm campo_peso" value="${it.peso_unitario_kg || ''}" placeholder="ex: 0,250"></td>
+			<td><input type="number" class="form-control form-control-sm campo_quantidade" value="${it.quantidade || ""}"></td>
+			<td><input type="text" class="form-control form-control-sm campo_peso" value="${it.peso_unitario_kg || ""}" placeholder="ex: 0,250"></td>
 			<td>
 			<select class="form-select form-select-sm campo_tipo_item">
 			<option value="">—</option>
-			${TIPOS_ITEM.map(t => `<option value="${t.value}" ${it.tipo_item === t.value ? 'selected' : ''}>${t.label}</option>`).join('')}
+			${TIPOS_ITEM.map((t) => `<option value="${t.value}" ${it.tipo_item === t.value ? "selected" : ""}>${t.label}</option>`).join("")}
 			</select>
 			</td>
-			<td><input type="number" class="form-control form-control-sm campo_capacidade" value="${it.capacidade_ml || ''}" placeholder="ml" ${isBebida ? '' : 'disabled'}></td>
+			<td><input type="number" class="form-control form-control-sm campo_capacidade" value="${it.capacidade_ml || ""}" placeholder="ml" ${isBebida ? "" : "disabled"}></td>
 			<td class="text-center">
 			<button type="button" class="btn btn-sm btn-danger" onclick="removerItemFixo(${it.key})"><i class="bi bi-trash"></i></button>
 			</td>
 			</tr>
 			`);
-			ativarBuscaProduto($(`#linha_item_${it.key} .item_busca`), $(`#linha_item_${it.key} .item_id_produto_hidden`), $(`#linha_item_${it.key} .item_sugestoes`));
-		});
-	$('#contador_itens').text(itensFixos.length);
-}
+        ativarBuscaProduto(
+          $(`#linha_item_${it.key} .item_busca`),
+          $(`#linha_item_${it.key} .item_id_produto_hidden`),
+          $(`#linha_item_${it.key} .item_sugestoes`),
+        );
+      });
+      $("#contador_itens").text(itensFixos.length);
+    }
 
-// habilita/desabilita capacidade quando tipo_item muda pra bebida
-$(document).on('change', '.campo_tipo_item', function () {
-	const $row = $(this).closest('tr');
-	const isBebida = $(this).val() === 'bebida';
-	$row.find('.campo_capacidade').prop('disabled', !isBebida).val(isBebida ? $row.find('.campo_capacidade').val() : '');
-});
+    // habilita/desabilita capacidade quando tipo_item muda pra bebida
+    $(document).on("change", ".campo_tipo_item", function () {
+      const $row = $(this).closest("tr");
+      const isBebida = $(this).val() === "bebida";
+      $row
+        .find(".campo_capacidade")
+        .prop("disabled", !isBebida)
+        .val(isBebida ? $row.find(".campo_capacidade").val() : "");
+    });
 
-// formata peso: só dígitos e vírgula
-$(document).on('input', '.campo_peso', function () {
-	this.value = this.value.replace('.', ',').replace(/[^0-9,]/g, '');
-});
+    // formata peso: só dígitos e vírgula
+    $(document).on("input", ".campo_peso", function () {
+      this.value = this.value.replace(".", ",").replace(/[^0-9,]/g, "");
+    });
 
-// ── grupos opcionais ──────────────────────────────────────────────────────
-window.adicionarGrupoOpcional = function () {
-	gruposOpcionais.push({ key: proximoKey++, chave: '', itens: [] });
-	renderGruposOpcionais();
-};
+    // ── grupos opcionais ──────────────────────────────────────────────────────
+    window.adicionarGrupoOpcional = function () {
+      gruposOpcionais.push({ key: proximoKey++, chave: "", itens: [] });
+      renderGruposOpcionais();
+    };
 
-window.removerGrupoOpcional = function (gKey) {
-	gruposOpcionais = gruposOpcionais.filter(g => g.key !== gKey);
-	renderGruposOpcionais();
-};
+    window.removerGrupoOpcional = function (gKey) {
+      gruposOpcionais = gruposOpcionais.filter((g) => g.key !== gKey);
+      renderGruposOpcionais();
+    };
 
-window.adicionarItemGrupo = function (gKey) {
-	lerGruposDoDom();
-	const grupo = gruposOpcionais.find(g => g.key === gKey);
-	grupo.itens.push({ key: proximoKey++, id_produto: '', quantidade: '' });
-	renderGruposOpcionais();
-};
+    window.adicionarItemGrupo = function (gKey) {
+      lerGruposDoDom();
+      const grupo = gruposOpcionais.find((g) => g.key === gKey);
+      grupo.itens.push({ key: proximoKey++, id_produto: "", quantidade: "" });
+      renderGruposOpcionais();
+    };
 
-window.removerItemGrupo = function (gKey, iKey) {
-	lerGruposDoDom();
-	const grupo = gruposOpcionais.find(g => g.key === gKey);
-	grupo.itens = grupo.itens.filter(it => it.key !== iKey);
-	renderGruposOpcionais();
-};
+    window.removerItemGrupo = function (gKey, iKey) {
+      lerGruposDoDom();
+      const grupo = gruposOpcionais.find((g) => g.key === gKey);
+      grupo.itens = grupo.itens.filter((it) => it.key !== iKey);
+      renderGruposOpcionais();
+    };
 
-function lerGruposDoDom() {
-	gruposOpcionais = gruposOpcionais.map(g => {
-		const $card = $(`#grupo_${g.key}`);
-		if ($card.length === 0) return g;
-		const chave = $card.find('.campo_chave_grupo').val();
-		const itens = g.itens.map(it => {
-			const $row = $(`#grupo_${g.key}_item_${it.key}`);
-			if ($row.length === 0) return it;
-			return {
-				key: g.key,
-				chave,
-				quantidade_total: $card.find('.campo_qtd_total').val() || null,
-				itens,
-			};
-		});
-	return { key: g.key, chave, itens };
-});
-}
+    function lerGruposDoDom() {
+      gruposOpcionais = gruposOpcionais.map((g) => {
+        const $card = $(`#grupo_${g.key}`);
+        if ($card.length === 0) return g;
+        const chave = $card.find(".campo_chave_grupo").val();
+        const itens = g.itens.map((it) => {
+          const $row = $(`#grupo_${g.key}_item_${it.key}`);
+          if ($row.length === 0) return it;
+          return {
+            key: g.key,
+            chave,
+            quantidade_total: $card.find(".campo_qtd_total").val() || null,
+            itens,
+          };
+        });
+        return { key: g.key, chave, itens };
+      });
+    }
 
-function renderGruposOpcionais() {
-	lerGruposDoDom();
-	const $container = $('#grupos_opcionais_container');
-	$container.html('');
-	if (gruposOpcionais.length === 0) {
-		$container.append('<p class="text-center text-muted py-3" id="msg_sem_grupos">Nenhum grupo opcional</p>');
-		$('#contador_grupos').text(0);
-		return;
-	}
-	gruposOpcionais.forEach(g => {
-		$container.append(`
+    function renderGruposOpcionais() {
+      lerGruposDoDom();
+      const $container = $("#grupos_opcionais_container");
+      $container.html("");
+      if (gruposOpcionais.length === 0) {
+        $container.append(
+          '<p class="text-center text-muted py-3" id="msg_sem_grupos">Nenhum grupo opcional</p>',
+        );
+        $("#contador_grupos").text(0);
+        return;
+      }
+      gruposOpcionais.forEach((g) => {
+        $container.append(`
 			<div class="card mb-3" id="grupo_${g.key}">
 			<div class="card-header d-flex align-items-center gap-2">
 			<label class="mb-0 me-1 text-nowrap">Chave do grupo:</label>
 			<select class="form-select form-select-sm campo_chave_grupo" style="max-width:200px">
 			<option value="">Selecione...</option>
-			${TIPOS_ITEM.map(t => `<option value="${t.value}" ${g.chave === t.value ? 'selected' : ''}>${t.label}</option>`).join('')}
+			${TIPOS_ITEM.map((t) => `<option value="${t.value}" ${g.chave === t.value ? "selected" : ""}>${t.label}</option>`).join("")}
 			</select>
 			<label class="mb-0 ms-3 me-1 text-nowrap">Qtd total:</label>
-			<input type="number" class="form-control form-control-sm campo_qtd_total" style="max-width:100px" value="${g.quantidade_total || ''}" placeholder="ex: 40">
+			<input type="number" class="form-control form-control-sm campo_qtd_total" style="max-width:100px" value="${g.quantidade_total || ""}" placeholder="ex: 40">
 			<button type="button" class="btn btn-outline-success btn-sm ms-auto" onclick="adicionarItemGrupo(${g.key})"><i class="bi bi-plus"></i> Item</button>
 			<button type="button" class="btn btn-outline-danger btn-sm" onclick="removerGrupoOpcional(${g.key})"><i class="bi bi-trash"></i> Remover grupo</button>
 			</div>
@@ -381,150 +537,187 @@ function renderGruposOpcionais() {
 			<table class="table table-sm table-bordered mb-0">
 			<thead class="table-light"><tr><th>ID Produto</th><th style="width:110px">Quantidade</th><th></th></tr></thead>
 			<tbody id="grupo_${g.key}_itens">
-			${g.itens.length === 0 ? '<tr><td colspan="3" class="text-center text-muted">Nenhum item neste grupo</td></tr>' : ''}
+			${g.itens.length === 0 ? '<tr><td colspan="3" class="text-center text-muted">Nenhum item neste grupo</td></tr>' : ""}
 			</tbody>
 			</table>
 			</div>
 			</div>
 			`);
-			g.itens.forEach(it => {
-				const $tbody = $(`#grupo_${g.key}_itens`);
-				$tbody.append(`
+        g.itens.forEach((it) => {
+          const $tbody = $(`#grupo_${g.key}_itens`);
+          $tbody.append(`
 					<tr id="grupo_${g.key}_item_${it.key}">
 					<td>
 					<div style="position:relative">
-					<input type="text" class="form-control form-control-sm item_busca" value="${it.id_produto || ''}" placeholder="ID ou nome..." autocomplete="off">
-					<input type="hidden" class="item_id_produto_hidden" value="${it.id_produto || ''}">
+					<input type="text" class="form-control form-control-sm item_busca" value="${it.id_produto || ""}" placeholder="ID ou nome..." autocomplete="off">
+					<input type="hidden" class="item_id_produto_hidden" value="${it.id_produto || ""}">
 					<ul class="list-group item_sugestoes" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
 					</div>
 					</td>
-					<td><input type="number" class="form-control form-control-sm campo_quantidade" value="${it.quantidade || ''}"></td>
+					<td><input type="number" class="form-control form-control-sm campo_quantidade" value="${it.quantidade || ""}"></td>
 					<td class="text-center"><button type="button" class="btn btn-sm btn-danger" onclick="removerItemGrupo(${g.key}, ${it.key})"><i class="bi bi-trash"></i></button></td>
 					</tr>
 					`);
-					ativarBuscaProduto($(`#grupo_${g.key}_item_${it.key} .item_busca`), $(`#grupo_${g.key}_item_${it.key} .item_id_produto_hidden`), $(`#grupo_${g.key}_item_${it.key} .item_sugestoes`));
-				});
-		});
-	$('#contador_grupos').text(gruposOpcionais.length);
-}
+          ativarBuscaProduto(
+            $(`#grupo_${g.key}_item_${it.key} .item_busca`),
+            $(`#grupo_${g.key}_item_${it.key} .item_id_produto_hidden`),
+            $(`#grupo_${g.key}_item_${it.key} .item_sugestoes`),
+          );
+        });
+      });
+      $("#contador_grupos").text(gruposOpcionais.length);
+    }
 
-// ── cálculo por pessoa ────────────────────────────────────────────────────
-function atualizarVisibilidadeCalculo() {
-	const modo = $('input[name="modo_calc"]:checked').val();
-	$('#calc_existente_box').toggle(modo === 'existente');
-	$('#calc_novo_box').toggle(modo === 'novo');
-	$('#calc_nenhum_msg').toggle(modo === 'nenhum');
-}
-$(document).on('change', 'input[name="modo_calc"]', atualizarVisibilidadeCalculo);
+    // ── cálculo por pessoa ────────────────────────────────────────────────────
+    function atualizarVisibilidadeCalculo() {
+      const modo = $('input[name="modo_calc"]:checked').val();
+      $("#calc_existente_box").toggle(modo === "existente");
+      $("#calc_novo_box").toggle(modo === "novo");
+      $("#calc_nenhum_msg").toggle(modo === "nenhum");
+    }
+    $(document).on(
+      "change",
+      'input[name="modo_calc"]',
+      atualizarVisibilidadeCalculo,
+    );
 
-// ── autocomplete de produto (busca ao digitar) ───────────────────────────
-function ativarBuscaProduto($input, $hidden, $sugestoes) {
-	let timer = null;
-	$input.on('input', function () {
-		$hidden.val('');
-		clearTimeout(timer);
-		const val = $input.val();
-		if (val.length < 1) { $sugestoes.hide().html(''); return; }
-		timer = setTimeout(() => {
-			const idLoja = $('#select_loja_composto').val() || window.ID_LOJA_ATUAL || '';
-			fetch(`/api/produtos/buscar?q=${encodeURIComponent(val)}&id_loja=${idLoja}`)
-			.then(res => res.json())
-			.then(data => {
-				if (!data || data.length === 0) { $sugestoes.hide().html(''); return; }
-				$sugestoes.html(data.map(p => `<li class="list-group-item list-group-item-action" style="cursor:pointer" data-id="${p.id}" data-nome="${p.nome}">${p.id} — ${p.nome}</li>`).join(''));
-				$sugestoes.show();
-			})
-		.catch(() => { $sugestoes.hide().html(''); });
-	}, 250);
-});
+    // ── autocomplete de produto (busca ao digitar) ───────────────────────────
+    function ativarBuscaProduto($input, $hidden, $sugestoes) {
+      let timer = null;
+      $input.on("input", function () {
+        $hidden.val("");
+        clearTimeout(timer);
+        const val = $input.val();
+        if (val.length < 1) {
+          $sugestoes.hide().html("");
+          return;
+        }
+        timer = setTimeout(() => {
+          const idLoja = 2;
+          fetch(
+            `/api/produtos/buscar?q=${encodeURIComponent(val)}&id_loja=${idLoja}`,
+          )
+            .then((res) => res.json())
+            .then((data) => {
+              if (!data || data.length === 0) {
+                $sugestoes.hide().html("");
+                return;
+              }
+              $sugestoes.html(
+                data
+                  .map(
+                    (p) =>
+                      `<li class="list-group-item list-group-item-action" style="cursor:pointer" data-id="${p.id}" data-nome="${p.nome}">${p.id} — ${p.nome}</li>`,
+                  )
+                  .join(""),
+              );
+              $sugestoes.show();
+            })
+            .catch(() => {
+              $sugestoes.hide().html("");
+            });
+        }, 250);
+      });
 
-$sugestoes.on('mousedown', 'li', function () {
-	const id = $(this).data('id');
-	const nome = $(this).data('nome');
-	$input.val(`${id} — ${nome}`);
-	$hidden.val(id);
-	$sugestoes.hide().html('');
-	if ($input.attr('id') === 'composto_produto_busca') {
-		$('#composto_id_produto').val(id);
-	}
-});
+      $sugestoes.on("mousedown", "li", function () {
+        const id = $(this).data("id");
+        const nome = $(this).data("nome");
+        $input.val(`${id} — ${nome}`);
+        $hidden.val(id);
+        $sugestoes.hide().html("");
+        if ($input.attr("id") === "composto_produto_busca") {
+          $("#composto_id_produto").val(id);
+        }
+      });
 
-$(document).on('click', function (e) {
-	if (!$(e.target).closest($input.parent()).length) $sugestoes.hide();
-});
-}
+      $(document).on("click", function (e) {
+        if (!$(e.target).closest($input.parent()).length) $sugestoes.hide();
+      });
+    }
 
-ativarBuscaProduto($('#composto_produto_busca'), $('#composto_id_produto'), $('#composto_produto_sugestoes'));
+    ativarBuscaProduto(
+      $("#composto_produto_busca"),
+      $("#composto_id_produto"),
+      $("#composto_produto_sugestoes"),
+    );
 
-// ── salvar ────────────────────────────────────────────────────────────────
-function montarCalculoPessoa() {
-	const modo = $('input[name="modo_calc"]:checked').val();
-	if (modo === 'existente') {
-		const id = $('#calc_existente_id').val();
-		return id ? { id: Number(id) } : null;
-	}
-	if (modo === 'novo') {
-		return {
-			bebida_ml: Number($('#calc_bebida_ml').val() || 0),
-			bolo_g: Number($('#calc_bolo_g').val() || 0),
-			salgados_unid: Number($('#calc_salgados_unid').val() || 0),
-		};
-	}
-	return null;
-}
+    // ── salvar ────────────────────────────────────────────────────────────────
+    function montarCalculoPessoa() {
+      const modo = $('input[name="modo_calc"]:checked').val();
+      if (modo === "existente") {
+        const id = $("#calc_existente_id").val();
+        return id ? { id: Number(id) } : null;
+      }
+      if (modo === "novo") {
+        return {
+          bebida_ml: Number($("#calc_bebida_ml").val() || 0),
+          bolo_g: Number($("#calc_bolo_g").val() || 0),
+          salgados_unid: Number($("#calc_salgados_unid").val() || 0),
+        };
+      }
+      return null;
+    }
 
-function salvarComposto() {
-	lerItensFixosDoDom();
-	lerGruposDoDom();
-	$('#modal_composto_error').html('');
+    function salvarComposto() {
+      lerItensFixosDoDom();
+      lerGruposDoDom();
+      $("#modal_composto_error").html("");
 
-	const payload = {
-		id_produto: compostoIdEdicao ?? Number($('#composto_id_produto').val()),
-		tipo: $('#composto_tipo').val() || null,
-		pedido_min_pessoas: $('#composto_min_pessoas').val() !== '' ? Number($('#composto_min_pessoas').val()) : null,
-		calculo_pessoa: montarCalculoPessoa(),
-		itens: itensFixos.map(it => ({
-			id_produto: it.id_produto || null,
-			quantidade: it.quantidade !== '' ? Number(it.quantidade) : null,
-			peso_unitario_kg: it.peso_unitario_kg ? Number(String(it.peso_unitario_kg).replace(',', '.')) : null,
-			tipo_item: it.tipo_item || null,
-			capacidade_ml: it.capacidade_ml !== '' ? Number(it.capacidade_ml) : null,
-		})),
-	grupos_opcionais: gruposOpcionais.map(g => ({
-		chave: g.chave || null,
-		itens: g.itens.map(it => ({
-			id_produto: it.id_produto || null,
-			quantidade: it.quantidade !== '' ? Number(it.quantidade) : null,
-		})),
-})),
-};
+      const payload = {
+        id_produto: compostoIdEdicao ?? Number($("#composto_id_produto").val()),
+        tipo: $("#composto_tipo").val() || null,
+        pedido_min_pessoas:
+          $("#composto_min_pessoas").val() !== ""
+            ? Number($("#composto_min_pessoas").val())
+            : null,
+        calculo_pessoa: montarCalculoPessoa(),
+        itens: itensFixos.map((it) => ({
+          id_produto: it.id_produto || null,
+          quantidade: it.quantidade !== "" ? Number(it.quantidade) : null,
+          peso_unitario_kg: it.peso_unitario_kg
+            ? Number(String(it.peso_unitario_kg).replace(",", "."))
+            : null,
+          tipo_item: it.tipo_item || null,
+          capacidade_ml:
+            it.capacidade_ml !== "" ? Number(it.capacidade_ml) : null,
+        })),
+        grupos_opcionais: gruposOpcionais.map((g) => ({
+          chave: g.chave || null,
+          itens: g.itens.map((it) => ({
+            id_produto: it.id_produto || null,
+            quantidade: it.quantidade !== "" ? Number(it.quantidade) : null,
+          })),
+        })),
+      };
 
-$('#btnSalvarComposto').prop('disabled', true).text('Salvando...');
+      $("#btnSalvarComposto").prop("disabled", true).text("Salvando...");
 
-fetch('/api/produtos_compostos/salvar', {
-	method: 'POST',
-	headers: { 'Content-Type': 'application/json' },
-	body: JSON.stringify(payload),
-})
-.then(async res => {
-	const json = await res.json().catch(() => ({}));
-	if (!res.ok) throw new Error(json.erro || 'Erro ao salvar.');
-	$('#modalComposto').modal('hide');
-	if (window.buscarCompostos) buscarCompostos();
-	if (window.notify) notify('Composto salvo com sucesso.');
-})
-.catch(err => {
-	$('#modal_composto_error').html(`<div class="alert alert-danger">${err.message}</div>`);
-})
-.finally(() => {
-	$('#btnSalvarComposto').prop('disabled', false).text('Salvar');
-});
-}
+      fetch("/api/produtos_compostos/salvar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+        .then(async (res) => {
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(json.erro || "Erro ao salvar.");
+          $("#modalComposto").modal("hide");
+          if (window.buscarCompostos) buscarCompostos();
+          if (window.notify) notify("Composto salvo com sucesso.");
+        })
+        .catch((err) => {
+          $("#modal_composto_error").html(
+            `<div class="alert alert-danger">${err.message}</div>`,
+          );
+        })
+        .finally(() => {
+          $("#btnSalvarComposto").prop("disabled", false).text("Salvar");
+        });
+    }
 
-$('#btnSalvarComposto').off('click').on('click', salvarComposto);
+    $("#btnSalvarComposto").off("click").on("click", salvarComposto);
 
-// expõe pro escopo global — chamado pela página que carregou o partial
-window.inicializarModalComposto = inicializarModalComposto;
-window.carregarCompostoEdicao = carregarCompostoEdicao;
-})();
+    // expõe pro escopo global — chamado pela página que carregou o partial
+    window.inicializarModalComposto = inicializarModalComposto;
+    window.carregarCompostoEdicao = carregarCompostoEdicao;
+  })();
 </script>

@@ -1,14 +1,17 @@
 # Importações (todas no topo)
-from flask import render_template, redirect, url_for, flash, request, session
-from app import app, db, bcrypt
+from flask import flash, redirect, render_template, request, session, url_for
+from flask_login import login_required, login_user, logout_user
+
+from app import app, bcrypt
 from app.models import Usuario
-from flask_login import login_user, logout_user, login_required
 
 # Rotas
 
+
 @app.route("/")
 def home():
-    return redirect(url_for('login'))
+    return redirect(url_for("login"))
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -28,7 +31,7 @@ def login():
 
         if usuario and senha_valida:
             login_user(usuario)
-            session['usuario_nome'] = usuario.nome
+            session["usuario_nome"] = usuario.nome
             return redirect(url_for("dashboard"))
         else:
             flash("Credenciais inválidas.")
@@ -40,10 +43,12 @@ def login():
 def dashboard():
     return render_template("dashboard.html")
 
+
 @app.route("/logout")
 def logout():
     logout_user()
     return redirect(url_for("login"))
+
 
 @app.route("/pedidos/novo", methods=["GET", "POST"])
 @login_required
@@ -52,6 +57,8 @@ def novo_pedido():
         # lógica para salvar o pedido no banco aqui
         pass
     return render_template("pedidos/novo_pedido.html")
-@app.route('/pedido')
+
+
+@app.route("/pedido")
 def tela_pedido():
-    return render_template('pedido.html')
+    return render_template("pedido.html")
