@@ -213,19 +213,6 @@ def salvar_pedido():
             quantidade_un = float(item.get('quantidade_un', '0').replace(',', '.')) if item.get('quantidade_un') else 0
             id_setor = int(item.get('id_setor', 0)) if item.get('id_setor') else 0
 
-            print('🧪 DEBUG INSERT VALORES:', (
-                id_pedido,
-                item.get('cod_produto'),
-                id_setor,
-                quantidade,
-                quantidade_un,
-                peso_bruto,
-                preco_venda,
-                item.get('observacao'),
-                item.get('cod_produto_associado') or None,
-                0
-            ))
-
             cursor.execute("""
                 INSERT INTO pedido_itens (
                     id_pedido, id_produto, id_setor, quantidade,
@@ -249,7 +236,6 @@ def salvar_pedido():
         return jsonify({"success": True})
 
     except Exception as e:
-        print('❌ Erro ao salvar pedido:', e)
         conn.rollback()
         return jsonify({"erro": str(e)}), 500
 
@@ -302,7 +288,6 @@ def api_preco_produto(id_produto, id_loja):
         })
 
     except Exception as e:
-        print('Erro ao buscar preço e setor:', str(e))
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
@@ -441,7 +426,6 @@ def buscar_pedido_edicao(id):
         return jsonify(pedido)
 
     except Exception as e:
-        print(f'ERRO AO CARREGAR PEDIDO: {e}')
         import traceback; traceback.print_exc()
         return jsonify({"erro": str(e)}), 500
 
@@ -594,7 +578,6 @@ def api_pedidos_consulta():
         return jsonify(pedidos)
 
     except Exception as e:
-        print('Erro ao buscar pedidos:', e)
         return jsonify({'erro': str(e)}), 500
 
     finally:
@@ -628,7 +611,6 @@ def api_pedidos_setor():
 
     cur_app.execute(query_app, (id_setor, id_loja))
     produtos_app = cur_app.fetchall()
-    print(f"DEBUG -> id_setor: {id_setor}, id_loja: {id_loja}")
     cur_app.close()
     conn_app.close()
 
@@ -1002,12 +984,10 @@ def api_encomendas_consulta():
         return jsonify(pedidos)
 
     except Exception as e:
-        print("Erro na consulta de encomendas:", str(e))
         return jsonify({"erro": str(e)}), 500
     finally:
         conn_app.close()
         conn_vr.close()
-
 
 
 @app.route("/api/encomenda/status", methods=["POST"])
@@ -1038,11 +1018,11 @@ def api_encomenda_status():
         return jsonify({"mensagem": "Status atualizado com sucesso"})
 
     except Exception as e:
-        print("Erro ao atualizar status:", str(e))
         return jsonify({"erro": str(e)}), 500
 
     finally:
         conn_app.close()
+
 
 @app.route("/api/encomenda/editar", methods=["POST"])
 def api_encomenda_editar():
@@ -1094,7 +1074,6 @@ def api_encomenda_editar():
         return jsonify({"mensagem": "Itens atualizados com sucesso"})
 
     except Exception as e:
-        print("Erro ao editar itens:", str(e))
         return jsonify({"erro": str(e)}), 500
 
     finally:
@@ -1224,7 +1203,6 @@ def api_finalizar_encomenda():
         return jsonify({"mensagem": "Pedido finalizado com sucesso."})
 
     except Exception as e:
-        print("Erro ao finalizar pedido:", str(e))
         return jsonify({"erro": str(e)}), 500
 
     finally:
@@ -1353,7 +1331,6 @@ def api_finalizar_encomenda_vrfood():
     except Exception as e:
         conn_app.rollback()
         conn_vr.rollback()
-        print("Erro ao finalizar VRFood:", str(e))
         return jsonify({"erro": str(e)}), 500
     finally:
         conn_app.close()
@@ -1391,7 +1368,6 @@ def api_buscar_usuario(id_usuario):
         return jsonify(usuario)
 
     except Exception as e:
-        print("Erro ao buscar usuário:", str(e))
         return jsonify({"erro": str(e)}), 500
 
     finally:
@@ -1427,7 +1403,6 @@ def api_novo_usuario():
         return jsonify({"mensagem": "Usuário criado com sucesso!"})
 
     except Exception as e:
-        print("Erro ao criar usuário:", str(e))
         return jsonify({"erro": str(e)}), 500
 
     finally:
@@ -1470,7 +1445,6 @@ def api_editar_usuario(id_usuario):
         return jsonify({"mensagem": "Usuário atualizado com sucesso!"})
 
     except Exception as e:
-        print("Erro ao editar usuário:", str(e))
         return jsonify({"erro": str(e)}), 500
 
     finally:
@@ -1691,7 +1665,6 @@ def salvar_produto_associado():
 
     except Exception as e:
         import traceback
-        print("ERRO AO SALVAR PRODUTO ASSOCIADO:")
         traceback.print_exc()
         return jsonify({"erro": str(e)}), 500
 
@@ -1928,8 +1901,7 @@ def produto_composto():
 @app.route("/api/produtos_compostos")
 def get_produtos_compostos():
     try:
-        a = svc_get_produtos_compostos()
-        return jsonify(a)
+        return jsonify(svc_get_produtos_compostos())
     except Exception as e:
         logger.exception(e)
         return jsonify({
@@ -1995,6 +1967,7 @@ def api_get_composto(id_produto):
         for chave, dados in grupos.items()
     ]
     return jsonify({
+        "id": id_produto,
         "id_produto": id_produto,
         "tipo": estrutura.get("tipo"),
         "min_pessoas": estrutura.get("pedido_min_pessoas"),
@@ -2534,7 +2507,6 @@ def imprimir_pedido(id_pedido):
         return jsonify({'sucesso': True})
     except Exception as e:
         conn_app.rollback()
-        print("Erro ao imprimir pedido:", str(e))
         return jsonify({"erro": str(e)}), 500
     finally:
         try:
