@@ -67,7 +67,7 @@ def repo_get_grupos_opcionais(id_produto):
         conn = conectar_app()
         cur = conn.cursor()
         cur.execute("""
-            SELECT g.chave, oi.id_produto, oi.quantidade
+            SELECT g.chave, g.quantidade_total, oi.id_produto, oi.quantidade
             FROM produto_composto_opcional_grupo g
             JOIN produto_composto_opcional_item oi ON oi.id_grupo = g.id
             WHERE g.id_produto_comp = %s
@@ -76,12 +76,29 @@ def repo_get_grupos_opcionais(id_produto):
         rows = cur.fetchall()
         grupos = {}
         for r in rows:
-            grupos.seedefault(r[0], []).append(
-                {"id_produto": r[1], "quantidade": r[2]})
+            grupos.setdefault(r[0], {"quantidade_total": r[1], "itens": []})
+            grupos[r[0]]["itens"].append({"id_produto": r[2], "quantidade": r[3]})
         return grupos
     except Exception as e:
         logger.error(e)
         return False
+    finally:
+        conn.close()
+
+
+def repo_get_quantidade_total_grupo(id_produto, chave):
+    try:
+        conn = conectar_app()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT quantidade_total FROM produto_composto_opcional_grupo
+            WHERE id_produto_comp = %s AND chave = %s
+        """, (id_produto, chave))
+        row = cur.fetchone()
+        return float(row[0]) if row else 0
+    except Exception as e:
+        logger.error(e)
+        return 0
     finally:
         conn.close()
 

@@ -35,16 +35,19 @@ def repo_vr_get_nomes_produtos(ids: list[int]):
     if not ids:
         return {}
     try:
-        with conectar_vr.cursor() as cur:
-            cur.execute("""
-                SELECT p.id, p.descricaocompleta
-                FROM produto p
-                JOIN produtocomplemento pc ON pc.id_produto = p.id
-                WHERE p.id = ANY(%s)
-                AND pc.id_situacaocadastro = 1
-            """, (ids,))
-            rows = cur.fetchall()
-            return {r[0]: r[1] for r in rows}
+        conn = conectar_vr()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT p.id, p.descricaocompleta
+            FROM produto p
+            JOIN produtocomplemento pc ON pc.id_produto = p.id
+            WHERE p.id = ANY(%s)
+            AND pc.id_situacaocadastro = 1
+        """, (ids,))
+        rows = cur.fetchall()
+        return {r[0]: r[1] for r in rows}
     except Exception as e:
         logger.error(e)
         return {}
+    finally:
+        conn.close()

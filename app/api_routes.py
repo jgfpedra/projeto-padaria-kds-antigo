@@ -13,6 +13,9 @@ from app.repo.produto_composto import (
         repo_get_grupos_opcionais,
         repo_get_composto_estrutura
         )
+from app.repo.produto_composto import (
+        repo_vr_get_nomes_produtos
+        )
 from app.services.produto_composto import (
         montar_itens,
         calcular_componentes,
@@ -1310,7 +1313,6 @@ def api_finalizar_encomenda_vrfood():
 
         # 4) Itens
         itens_inseridos = 0
-        print(itens)
         for id_produto, quantidade, precovenda, observacao, id_setor in itens:
             qtd = _to_decimal(quantidade) or Decimal('0')
             if qtd <= 0:
@@ -1916,7 +1918,6 @@ def carregar_produto_associado(id):
 def produto_composto():
     id_produto = request.args.get("id_produto", type=int)
     modal = request.args.get("modal")
-    print(id_produto, modal)
     return render_template(
         "produto_composto.html",
         id_produto=id_produto,
@@ -1977,19 +1978,33 @@ def api_get_composto(id_produto):
     grupos = repo_get_grupos_opcionais(id_produto)
     if grupos is False:
         return jsonify({"erro": "Erro ao buscar grupos opcionais."}), 500
+    todos_ids = [item["id_produto"]
+                 for dados in grupos.values()
+                 for item in dados["itens"]]
+    nomes = repo_vr_get_nomes_produtos(todos_ids) if todos_ids else {}
+    grupos_com_nomes = [{
+        "chave": chave,
+        "quantidade_total": dados["quantidade_total"],
+        "itens": [
+            {**item,
+             "descricao": nomes.get(item["id_produto"],
+                                    f"#{item['id_produto']}")}
+            for item in dados["itens"]
+        ]
+    }
+        for chave, dados in grupos.items()
+    ]
     return jsonify({
         "id_produto": id_produto,
         "tipo": estrutura.get("tipo"),
         "min_pessoas": estrutura.get("pedido_min_pessoas"),
         "calculo_pessoa": estrutura.get("calculo_pessoa"),
         "itens_fixos": itens_fixos,
-        "grupos_opcionais": [{"chave": k, "itens": v} for k,
-                             v in grupos.items()],
+        "grupos_opcionais": grupos_com_nomes,
     })
 
 
-@app.route("/api/produtos_compostos/explodir/<int:id_produto>",
-          methods=["POST"])
+@app.route("/api/produtos_compostos/explodir/<int:id_produto>", methods=["POST"])
 def api_explodir_composto(id_produto):
     dados = request.get_json(silent=True) or {}
     id_loja = dados.get("id_loja")
@@ -2004,8 +2019,7 @@ def api_explodir_composto(id_produto):
     elif quantidade is not None:
         fator = int(quantidade)
         if fator <= 0:
-            return jsonify({"erro": "quantidade deve ser maior que zero."}),
-        400
+            return jsonify({"erro": "quantidade deve ser maior que zero."}), 400
     else:
         return jsonify({"erro": "Informe pessoas ou quantidade."}), 400
     estrutura = repo_get_composto_estrutura(id_produto)
@@ -2015,16 +2029,12 @@ def api_explodir_composto(id_produto):
         return jsonify({"erro": "Produto não é composto."}), 404
     produto_pai = repo_get_produto_detalhe(id_produto, int(id_loja))
     if not produto_pai:
-        return jsonify({"erro": "Produto não encontrado na loja informada."}),
-    404
+        return jsonify({"erro": "Produto não encontrado na loja informada."}), 404
     tem_calculo_pessoa = bool(estrutura.get("calculo_pessoa"))
     if tem_calculo_pessoa and not dados.get("pessoas"):
-        return jsonify({"erro": "Este composto requer o campo pessoas."}),
-    400
+        return jsonify({"erro": "Este composto requer o campo pessoas."}), 400
     if not tem_calculo_pessoa and not dados.get("quantidade"):
-        return jsonify({"erro": "Este composto requer o campo quantidade."}),
-    400
-
+        return jsonify({"erro": "Este composto requer o campo quantidade."}), 400
     componentes = calcular_componentes(id_produto,
                                        fator,
                                        estrutura,

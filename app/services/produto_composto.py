@@ -6,7 +6,8 @@ from app.repo.produto_composto import (
     repo_get_produtos_compostos,
     repo_salvar_produto_composto,
     repo_remover_produto_composto,
-    repo_get_calculos_pessoa
+    repo_get_calculos_pessoa,
+    repo_get_quantidade_total_grupo
 )
 from app.utils.produto_composto import (
     salgados,
@@ -43,25 +44,33 @@ def calcular_componentes(id_produto, fator, estrutura, escolhas_opcionais):
             i["quantidade"]) * fator} for i in itens_fixos]
     else:
         calc = {"salgado": salgados, "bebida": bebidas, "bolo": bolos}
-        resultado = [{"id_produto": i["id_produto"], "quantidade": float(
-            i["quantidade"])} for i in itens_fixos if not i["tipo_item"]]
+        resultado = []
         por_tipo = {}
         for i in itens_fixos:
-            if i["tipo_item"]:
+            if not i["tipo_item"]:
+                resultado.append(
+                    {"id_produto": i["id_produto"],
+                     "quantidade": float(i["quantidade"]) * fator})
+            else:
                 por_tipo.setdefault(i["tipo_item"], []).append(i)
         args = {"salgado": cp["salgados_unid"],
                 "bebida": cp["bebida_ml"], "bolo": cp["bolo_g"]}
         for tipo, grupo in por_tipo.items():
             if tipo in calc:
                 resultado.extend(calc[tipo](grupo, fator, args[tipo]))
+
     for chave, ids in escolhas_opcionais.items():
         if not ids:
             continue
         opcionais = repo_get_opcionais_escolhidos(id_produto, chave, ids)
         if opcionais is False:
             return False
-        resultado.extend({"id_produto": op["id_produto"], "quantidade": float(
-            op["quantidade"])} for op in opcionais)
+        qtd_total = repo_get_quantidade_total_grupo(id_produto, chave)
+        qtd_por_item = qtd_total / len(ids) if ids else 0
+        resultado.extend({
+            "id_produto": op["id_produto"],
+            "quantidade": qtd_por_item * fator,
+        } for op in opcionais)
     return resultado
 
 

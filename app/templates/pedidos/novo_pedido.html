@@ -121,6 +121,11 @@
             </div>
         </div>
 
+        <div id="div-opcionais-composto" style="display:none;" class="mb-3 p-3 border rounded">
+            <h6>Opções do produto</h6>
+            <div id="grupos-opcionais-container"></div>
+        </div>
+
         <!-- Botão Adicionar Item -->
         <div class="row mb-3">
             <div class="col-md-12 text-end">
@@ -186,7 +191,7 @@
 </div>
 <script>
 let mapaProdutos = {};
-let produtoCompostoAtual = null;
+const TIPOS_MULTIPLOS = ['salgado', 'salgadosFritos', 'salgadosAssados'];
 
 async function buscarProdutoPorCodigo(codigo) {
     let lojaSelecionada = $('#loja').val();
@@ -242,11 +247,16 @@ async function buscarProdutoPorCodigo(codigo) {
     }
 }
 
-async function explodir_composto(item, id_loja, quantidade_un) {
+async function explodirComposto(composto, item, id_loja, quantidade_un, escolhas_opcionais) {
     const res = await fetch(`/api/produtos_compostos/explodir/${item.cod_produto}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_loja: parseInt(id_loja), pessoas: quantidade_un })
+        body: JSON.stringify({
+            id_loja: parseInt(id_loja),
+            pessoas: composto.calculo_pessoa ? quantidade_un : undefined,
+            quantidade: composto.calculo_pessoa ? undefined : quantidade_un,
+            escolhas_opcionais,
+        })
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -284,6 +294,72 @@ async function explodir_composto(item, id_loja, quantidade_un) {
     });
     atualizarTotalPedido();
     return true;
+}
+
+function renderizarOpcionais(grupos) {
+    const container = document.getElementById('grupos-opcionais-container');
+    container.innerHTML = '';
+
+    grupos.forEach(grupo => {
+        const multiplo = TIPOS_MULTIPLOS.includes(grupo.chave);
+        const tipo_input = multiplo ? 'checkbox' : 'radio';
+        const nome_grupo = `opcional_${grupo.chave}`;
+        const qtd_total = grupo.quantidade_total;
+
+        let html = `<div class="mb-2">
+            <strong>${grupo.chave}</strong>
+            <span class="text-muted ms-2" id="info_${nome_grupo}">
+                ${multiplo ? `Escolha até 2 sabores (total: ${qtd_total} un)` : `Escolha 1 opção (${qtd_total} un)`}
+            </span><br>`;
+
+        grupo.itens.forEach(item => {
+            html += `
+                <div class="form-check">
+                    <input class="form-check-input" type="${tipo_input}"
+                        name="${nome_grupo}"
+                        value="${item.id_produto}"
+                        data-qtd-total="${qtd_total}"
+                        ${multiplo ? `onchange="atualizarCheckboxes('${nome_grupo}')"` : ''}>
+                    <label class="form-check-label">
+                        ${item.descricao}
+                        <span class="text-muted" id="qtd_${nome_grupo}_${item.id_produto}"></span>
+                    </label>
+                </div>`;
+        });
+        html += `</div>`;
+        container.innerHTML += html;
+    });
+
+    document.getElementById('div-opcionais-composto').style.display = 'block';
+}
+
+function atualizarCheckboxes(nome_grupo) {
+    const inputs = document.querySelectorAll(`input[name="${nome_grupo}"]:checked`);
+    const todos = document.querySelectorAll(`input[name="${nome_grupo}"]`);
+    const qtd_total = parseInt(todos[0]?.dataset.qtdTotal || 0);
+    const escolhidos = inputs.length;
+
+    if (escolhidos > 2) {
+        this.checked = false; // não funciona aqui, precisa passar o elemento
+        return;
+    }
+
+    const qtd_por_item = escolhidos > 0 ? Math.floor(qtd_total / escolhidos) : 0;
+    todos.forEach(input => {
+        const span = document.getElementById(`qtd_${nome_grupo}_${input.value}`);
+        if (span) span.textContent = input.checked ? ` — ${qtd_por_item} un` : '';
+        if (!input.checked) input.disabled = escolhidos >= 2;
+    });
+}
+
+function coletarEscolhasOpcionais() {
+    const escolhas = {};
+    document.querySelectorAll('#grupos-opcionais-container input:checked').forEach(input => {
+        const chave = input.name.replace('opcional_', '');
+        escolhas[chave] = escolhas[chave] || [];
+        escolhas[chave].push(parseInt(input.value));
+    });
+    return escolhas;
 }
 
 function sincronizarCampos(evt = null) {
@@ -373,19 +449,37 @@ async function adicionarItem() {
         alert('Selecione o item associado!');
         return;
     }
-    // Verifica se é composto
     const resComposto = await fetch(`/api/produtos_compostos/${item.cod_produto}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
     });
     if (resComposto.ok) {
+        const composto = await resComposto.json();
         const qtd_un = parseInt(item.quantidade_un) || 0;
-        if (qtd_un < 10) {
-            alert('Produto composto requer mínimo de 10 pessoas.');
+        const min = composto.min_pessoas;
+        if (min && qtd_un < min) {
+            alert(`Produto composto requer mínimo de ${min} pessoas.`);
             return;
         }
-        await explodir_composto(item, id_loja, qtd_un);
+
+        if (composto.grupos_opcionais.length > 0) {
+            // ainda não escolheu — renderiza e aguarda
+            if (document.getElementById('div-opcionais-composto').style.display === 'none') {
+                window._compostoAtual = { composto, item, id_loja, qtd_un };
+                renderizarOpcionais(composto.grupos_opcionais);
+                return;
+            }
+            // já renderizou — coleta e explode
+            const escolhas = coletarEscolhasOpcionais();
+            const { composto: c, item: i, id_loja: l, qtd_un: q } = window._compostoAtual;
+            document.getElementById('div-opcionais-composto').style.display = 'none';
+            window._compostoAtual = null;
+            await explodirComposto(c, i, l, q, escolhas);
+            return;
+        }
+
+        await explodirComposto(composto, item, id_loja, qtd_un, {});
         return;
     }
     adicionarLinhaItemPedido(item);
@@ -419,12 +513,7 @@ function adicionarLinhaItemPedido(item) {
         <button type="button" class="btn btn-warning btn-sm me-1" onclick="editarItem(this)">Editar</button>
         <button type="button" class="btn btn-danger btn-sm" onclick="excluirItem(this)">Excluir</button>
     `;
-    // Se quiser pode manter o botão de opções
-    actionsCell.innerHTML += `
-        <button type="button" class="btn btn-info btn-sm" onclick="verOpcoes('${item.cod_produto}')">Ver Opções</button>
-    `;
 
-    // Limpar campos após adicionar
     [
         'cod_produto',
         'desc_produto',

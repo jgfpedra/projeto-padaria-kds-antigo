@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 def conectar_vr():
     try:
         conn = psycopg2.connect(
@@ -18,12 +19,13 @@ def conectar_vr():
     except Exception as e:
         print(f"Erro na conexão com VR: {e}")
         return None
-        
+
+
 def buscar_clientes():
     conn = conectar_vr()
     if not conn:
         return []
-    
+
     try:
         cursor = conn.cursor()
         query = """
@@ -46,11 +48,12 @@ def buscar_clientes():
     finally:
         conn.close()
 
+
 def buscar_produtos():
     conn = conectar_vr()
     if not conn:
         return []
-    
+
     try:
         cursor = conn.cursor()
         query = """
