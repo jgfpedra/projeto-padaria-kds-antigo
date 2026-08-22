@@ -112,8 +112,8 @@ def repo_get_produto_detalhe(id_produto, id_loja):
         cur = conn_vr.cursor()
         cur.execute("""
             SELECT p.id, p.descricaocompleta, te.descricao,
-                    p.pesoliquido, pc.precovenda,
-                    s.id, s.descricao
+                   p.pesoliquido, pc.precovenda,
+                   s.id, s.descricao
             FROM produto p
             LEFT JOIN tipoembalagem te ON te.id = p.id_tipoembalagem
             LEFT JOIN produtocomplemento pc ON pc.id_produto = p.id
@@ -121,6 +121,7 @@ def repo_get_produto_detalhe(id_produto, id_loja):
             LEFT JOIN ficha.setorproduto sp ON sp.id_produto = p.id
             LEFT JOIN ficha.setor s ON s.id = sp.id_setor AND s.id_loja = %s
             WHERE p.id = %s
+            ORDER BY s.id_loja DESC NULLS LAST
             LIMIT 1
         """, (id_loja, id_loja, id_produto))
         row = cur.fetchone()

@@ -248,20 +248,14 @@ async function explodir_composto(item, id_loja, quantidade_un) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id_loja: parseInt(id_loja), pessoas: quantidade_un })
     });
-
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         alert(err.erro || 'Erro ao processar composto.');
         return false;
     }
-
     const data = await res.json();
     const tabela = document.getElementById('tabela_itens');
-
-    // Pai vem dos campos do formulário, já preenchidos normalmente
     adicionarLinhaItemPedido(item);
-
-    // Filhos vêm do backend
     data.itens.forEach(filho => {
         const row = tabela.insertRow();
         row.dataset.idSetor = filho.id_setor || '';
@@ -394,7 +388,6 @@ async function adicionarItem() {
         await explodir_composto(item, id_loja, qtd_un);
         return;
     }
-    // não é composto, fluxo normal
     adicionarLinhaItemPedido(item);
     document.getElementById('div-item-associado').style.display = 'none';
 }
