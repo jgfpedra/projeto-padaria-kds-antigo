@@ -10,25 +10,55 @@
         <div id="modal_composto_error"></div>
 
         <div class="row mb-3">
-          <div class="col-md-4">
-            <label class="form-label">Produto pai <span class="text-danger">*</span></label>
+          <div class="col-md-2">
+            <label class="form-label">
+              ID Produto Pai <span class="text-danger">*</span>
+            </label>
+
             <div style="position: relative">
-              <input type="text" class="form-control" id="composto_produto_busca" placeholder="ID ou nome..."
+              <input type="text" class="form-control" id="composto_produto_id_busca" placeholder="ID..."
                 autocomplete="off" />
+
               <input type="hidden" id="composto_id_produto" />
-              <ul id="composto_produto_sugestoes" class="list-group" style="
-                  position: absolute;
-                  z-index: 999;
-                  width: 100%;
-                  max-height: 180px;
-                  overflow-y: auto;
-                  display: none;
-                "></ul>
+
+              <ul id="composto_produto_id_sugestoes" class="list-group" style="
+                position: absolute;
+                z-index: 999;
+                width: 100%;
+                max-height: 180px;
+                overflow-y: auto;
+                display: none;
+              "></ul>
+
+              <small id="composto_produto_hint" class="text-muted"></small>
             </div>
-            <small id="composto_produto_hint" class="text-muted"></small>
           </div>
+
           <div class="col-md-4">
-            <label class="form-label">Tipo <span class="text-danger">*</span></label>
+            <label class="form-label">
+              Descrição Produto Pai <span class="text-danger">*</span>
+            </label>
+
+            <div style="position: relative">
+              <input type="text" class="form-control" id="composto_produto_descricao_busca" placeholder="Descrição..."
+                autocomplete="off" />
+
+              <ul id="composto_produto_descricao_sugestoes" class="list-group" style="
+          position: absolute;
+          z-index: 999;
+          width: 100%;
+          max-height: 180px;
+          overflow-y: auto;
+          display: none;
+        "></ul>
+            </div>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label">
+              Tipo <span class="text-danger">*</span>
+            </label>
+
             <select class="form-select" id="composto_tipo">
               <option value="">Selecione...</option>
               <option value="combo">Combo</option>
@@ -38,8 +68,10 @@
               <option value="coffeeBreak">Coffee Break</option>
             </select>
           </div>
+
           <div class="col-md-4">
             <label class="form-label">Mín. Pessoas</label>
+
             <input type="number" min="1" class="form-control" id="composto_min_pessoas" placeholder="ex: 10" />
           </div>
         </div>
@@ -205,31 +237,48 @@
         .then((res) => res.json())
         .then((data) => {
           compostoIdEdicao = data.id;
-          $("#modalCompostoLabel").text(`Editar Composto #${data.id}`);
-          $("#composto_id_produto").val(data.id);
-          $("#composto_produto_busca")
-            .val(data.nome_produto || "")
-            .prop("disabled", true);
-          $("#composto_produto_hint").text(
-            "ID não pode ser alterado após criação.",
-          );
-          $("#composto_tipo").val(data.tipo || "");
-          $("#composto_min_pessoas").val(data.pedido_min_pessoas ?? "");
 
+          $("#modalCompostoLabel").text(`Editar Composto #${data.id}`);
+
+          console.log(data);
+
+          // Produto pai
+          $("#composto_id_produto").val(data.id);
+          $("#composto_produto_id_busca").val(data.id);
+
+          $("#composto_produto_descricao_busca")
+            .val(data.descricao || "")
+            .prop("disabled", true);
+
+          $("#composto_produto_hint").text(
+            "ID não pode ser alterado após criação."
+          );
+
+          // Tipo
+          $("#composto_tipo").val(data.tipo || "");
+
+          // Mínimo de pessoas
+          $("#composto_min_pessoas").val(data.min_pessoas ?? "");
+
+          // Itens fixos
           itensFixos = (data.itens_fixos || []).map((it) => ({
             key: proximoKey++,
             ...it,
           }));
+
+          // Grupos opcionais
           gruposOpcionais = (data.grupos_opcionais || []).map((g) => ({
             key: proximoKey++,
             chave: g.chave,
             quantidade_total: g.quantidade_total,
-            itens: (g.itens || []).map((it) => ({key: proximoKey++, ...it})),
+            itens: (g.itens || []).map((it) => ({
+              key: proximoKey++,
+              ...it,
+            })),
           }));
 
           renderItensFixos();
           renderGruposOpcionais();
-
           carregarCalculosDisponiveis(() => {
             if (data.calculo_pessoa) {
               if (data.calculo_pessoa.id) {
@@ -237,10 +286,14 @@
                 $("#calc_existente_id").val(data.calculo_pessoa.id);
               } else {
                 $("#modo_calc_novo").prop("checked", true);
-                $("#calc_bebida_ml").val(data.calculo_pessoa.bebida_ml ?? "");
-                $("#calc_bolo_g").val(data.calculo_pessoa.bolo_g ?? "");
+                $("#calc_bebida_ml").val(
+                  data.calculo_pessoa.bebida_ml ?? ""
+                );
+                $("#calc_bolo_g").val(
+                  data.calculo_pessoa.bolo_g ?? ""
+                );
                 $("#calc_salgados_unid").val(
-                  data.calculo_pessoa.salgados_unid ?? "",
+                  data.calculo_pessoa.salgados_unid ?? ""
                 );
               }
             }
@@ -581,7 +634,6 @@
       });
     }
 
-    // autocomplete do produto pai (mantido como campo único combinado)
     function ativarBuscaProduto($input, $hidden, $sugestoes) {
       let timer = null;
       $input.on("input", function () {

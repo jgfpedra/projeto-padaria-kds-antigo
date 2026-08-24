@@ -19,7 +19,8 @@ def _coletar_ids_produtos(compostos: list[dict]) -> set[int]:
     return ids_set
 
 
-def _preencher_descricoes(compostos: list[dict], nomes: dict[int, str]) -> None:
+def _preencher_descricoes(compostos: list[dict],
+                          nomes: dict[int, str]) -> None:
     for c in compostos:
         c["nome_produto"] = nomes.get(c["id"], "—")
 
@@ -52,5 +53,30 @@ def repo_vr_get_nomes_produtos(ids: list[int]):
     except Exception as e:
         logger.error(e)
         return {}
+    finally:
+        conn.close()
+
+
+def repo_vr_get_nome_produto(id_produto):
+    if not id_produto:
+        return None
+    try:
+        conn = conectar_vr()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT p.descricaocompleta
+            FROM produto p
+            JOIN produtocomplemento pc ON pc.id_produto = p.id
+            WHERE p.id = %s
+              AND pc.id_situacaocadastro = 1
+            """,
+            (id_produto,),
+        )
+        row = cur.fetchone()
+        return row[0] if row else None
+    except Exception as e:
+        logger.error(e)
+        return False
     finally:
         conn.close()

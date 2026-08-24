@@ -33,7 +33,8 @@ def repo_get_composto_estrutura(id_produto):
             "tipo": row[0],
             "pedido_min_pessoas": row[2],
             "calculo_pessoa": (
-                {"bebida_ml": row[3], "bolo_g": row[4], "salgados_unid": row[5]}
+                {"bebida_ml": row[3], "bolo_g": row[4],
+                    "salgados_unid": row[5]}
                 if row[1]
                 else None
             ),
@@ -94,7 +95,8 @@ def repo_get_grupos_opcionais(id_produto):
         grupos = {}
         for r in rows:
             grupos.setdefault(r[0], {"quantidade_total": r[1], "itens": []})
-            grupos[r[0]]["itens"].append({"id_produto": r[2], "quantidade": r[3]})
+            grupos[r[0]]["itens"].append(
+                {"id_produto": r[2], "quantidade": r[3]})
         return grupos
     except Exception as e:
         logger.error(e)
@@ -223,7 +225,10 @@ def repo_get_calculos_pessoa():
             """)
         rows = cur.fetchall()
         return [
-            {"id": r[0], "bebida_ml": r[1], "bolo_g": r[2], "salgados_unid": r[3]}
+            {"id": r[0],
+             "bebida_ml": r[1],
+             "bolo_g": r[2],
+             "salgados_unid": r[3]}
             for r in rows
         ]
     except Exception as e:

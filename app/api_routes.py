@@ -22,10 +22,9 @@ from app.repo.produto_composto import (
     repo_get_grupos_opcionais,
     repo_get_itens_fixos,
     repo_get_produto_detalhe,
-    repo_vr_get_nomes_produtos,
 )
 from app.services.produto import (
-    adicionar_nomes_produtos
+    adicionar_nomes_produtos,
 )
 from app.services.produto_composto import (
     calcular_componentes,
@@ -47,6 +46,10 @@ from app.services.pedido import (
 )
 from app.repo.pedido import (
     marcar_pedido_impresso,
+)
+from app.repo.produto import (
+    repo_vr_get_nomes_produtos,
+    repo_vr_get_nome_produto
 )
 from app.utils.conversions import (
     to_float,
@@ -475,16 +478,7 @@ def buscar_pedido_edicao(id):
                 tipo_embalagem = ""
             desc_produto_associado = ""
             if id_produto_associado:
-                cursor_vr.execute(
-                    """
-                    SELECT descricaocompleta
-                    FROM produto
-                    WHERE id = %s
-                    LIMIT 1
-                """,
-                    (id_produto_associado,),
-                )
-                associado_row = cursor_vr.fetchone()
+                associado_row = repo_vr_get_nome_produto(id_produto_associado)
                 if associado_row:
                     desc_produto_associado = associado_row[0]
                 else:
@@ -1099,23 +1093,12 @@ def api_encomendas_consulta():
 
             itens = []
             for id_produto, _, qtd_un, observacao, id_associado in itens_rows:
-                # principal
-                cursor_vr.execute(
-                    """SELECT descricaocompleta
-                    FROM produto WHERE id = %s""", (id_produto,)
-                )
-                prod_row = cursor_vr.fetchone()
+                prod_row = repo_vr_get_nome_produto(id_produto)
                 desc_princ = prod_row[0] if prod_row else ""
                 # associado (se houver)
                 desc_assoc = ""
                 if id_associado:
-                    cursor_vr.execute(
-                        "SELECT descricaocompleta FROM produto WHERE id = %s",
-                        (id_associado,),
-                    )
-                    assoc_row = cursor_vr.fetchone()
-                    desc_assoc = assoc_row[0] if assoc_row else ""
-
+                    desc_assoc = repo_vr_get_nome_produto(id_associado)
                 itens.append(
                     {
                         "descricao": desc_princ,
@@ -1675,19 +1658,12 @@ if __name__ == "__main__":
 
 @app.route("/pesquisar_opcoes", methods=["GET"])
 def pesquisar_opcoes():
-    # Conectar à base de dados conectar_app para buscar os produtos e opções
     conn_app = conectar_app()
     cursor_app = conn_app.cursor()
-
-    # Conectar à base de dados conectar_vr para puxar as descrições
     conn_vr = conectar_vr()
     cursor_vr = conn_vr.cursor()
-
-    # Captura os parâmetros de filtro
     codigo_produto = request.args.get("codigo_produto")
     descricao_produto = request.args.get("descricao_produto")
-
-    # Construção da query dinâmica para buscar produtos e suas opções
     query = """
         SELECT
             p.id AS id,
@@ -1719,17 +1695,7 @@ def pesquisar_opcoes():
         produto_id = produto[0]
         descricao_produto_principal = produto[2]
         descricao_setor = produto[3]
-        # Buscar a descrição completa do produto no banco conectar_vr
-        cursor_vr.execute(
-            """
-            SELECT descricaocompleta
-            FROM produto
-            WHERE id = %s
-        """,
-            (produto_id,),
-        )
-        produto_row = cursor_vr.fetchone()
-
+        produto_row = repo_vr_get_nome_produto(produto_id)
         descricao_produto_completa = (
             produto_row[0] if produto_row else descricao_produto_principal
         )
@@ -1912,27 +1878,6 @@ def tela_produto_associado():
     return render_template(
         "produto_associado.html", titulo_tela="Cadastro de Associados"
     )
-
-
-@app.route("/api/produto_vr/<int:id_produto>")
-def api_detalhe_produto_vr(id_produto):
-    conn = conectar_vr()
-    try:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT p.descricaocompleta
-            FROM produto p
-            WHERE p.id = %s
-        """,
-            (id_produto,),
-        )
-        row = cur.fetchone()
-        return jsonify({"descricao": row[0] if row else ""})
-    except Exception as e:
-        return jsonify({"erro": str(e)}), 500
-    finally:
-        conn.close()
 
 
 @app.route("/consulta_associado")
@@ -2191,6 +2136,7 @@ def api_get_composto(id_produto):
     ]
     todos_ids = list(set(ids_fixos + ids_opcionais))
     nomes = repo_vr_get_nomes_produtos(todos_ids) if todos_ids else {}
+    nome_pai = repo_vr_get_nome_produto(id_produto)
     itens_fixos_com_nomes = adicionar_nomes_produtos(
         itens_fixos,
         nomes
@@ -2210,7 +2156,7 @@ def api_get_composto(id_produto):
     return jsonify(
         {
             "id": id_produto,
-            "id_produto": id_produto,
+            "descricao": nome_pai,
             "tipo": estrutura.get("tipo"),
             "min_pessoas": estrutura.get("pedido_min_pessoas"),
             "calculo_pessoa": estrutura.get("calculo_pessoa"),
