@@ -13,16 +13,19 @@ from flask import (
 from app import app, bcrypt
 from app.conexao_app import conectar_app
 from app.conexao_vr import (
-        buscar_clientes,
-        conectar_vr,
-        fechar_conexao
-        )
+    buscar_clientes,
+    conectar_vr,
+    fechar_conexao
+)
 from app.repo.produto_composto import (
     repo_get_composto_estrutura,
     repo_get_grupos_opcionais,
     repo_get_itens_fixos,
     repo_get_produto_detalhe,
     repo_vr_get_nomes_produtos,
+)
+from app.services.produto import (
+    adicionar_nomes_produtos
 )
 from app.services.produto_composto import (
     calcular_componentes,
@@ -33,26 +36,26 @@ from app.services.produto_composto import (
     svc_salvar_produtos_compostos,
 )
 from app.services.pedido import (
-        buscar_nome_loja,
-        buscar_pedido,
-        buscar_itens,
-        buscar_status,
-        buscar_cliente,
-        buscar_impressora,
-        buscar_valor_total,
-        montar_texto_pedido
-        )
+    buscar_nome_loja,
+    buscar_pedido,
+    buscar_itens,
+    buscar_status,
+    buscar_cliente,
+    buscar_impressora,
+    buscar_valor_total,
+    montar_texto_pedido
+)
 from app.repo.pedido import (
-        marcar_pedido_impresso,
-        )
+    marcar_pedido_impresso,
+)
 from app.utils.conversions import (
-        to_float,
-        to_decimal
-        )
+    to_float,
+    to_decimal
+)
 from app.utils.printer import (
-        gerar_dados_impressao,
-        enviar_para_impressora,
-        )
+    gerar_dados_impressao,
+    enviar_para_impressora,
+)
 logger = logging.getLogger("api.api_routes")
 
 
@@ -2025,19 +2028,19 @@ def produto_associado():
             conn = conectar_app()
             cur = conn.cursor()
             cur.execute(
-                    """SELECT id, descricao, id_loja
+                """SELECT id, descricao, id_loja
                     FROM controle_id_produtoopcoes
                     WHERE id = %s""",
-                    (id_grupo,),
+                (id_grupo,),
             )
             grupo = cur.fetchone()
             principais, opcoes = [], []
             if grupo:
                 cur.execute(
-                        """SELECT id_produto_principal
+                    """SELECT id_produto_principal
                         FROM produto_opcoes_principal
                         WHERE id_produtoopcoes = %s""",
-                        (id_grupo,),
+                    (id_grupo,),
                 )
                 principais = [r[0] for r in cur.fetchall()]
                 cur.execute(
@@ -2177,27 +2180,33 @@ def api_get_composto(id_produto):
     grupos = repo_get_grupos_opcionais(id_produto)
     if grupos is False:
         return jsonify({"erro": "Erro ao buscar grupos opcionais."}), 500
-    todos_ids = [
+    ids_fixos = [
         item["id_produto"]
-        for dados in grupos.values() for item in dados["itens"]
+        for item in itens_fixos
     ]
+    ids_opcionais = [
+        item["id_produto"]
+        for dados in grupos.values()
+        for item in dados["itens"]
+    ]
+    todos_ids = list(set(ids_fixos + ids_opcionais))
     nomes = repo_vr_get_nomes_produtos(todos_ids) if todos_ids else {}
+    itens_fixos_com_nomes = adicionar_nomes_produtos(
+        itens_fixos,
+        nomes
+    )
     grupos_com_nomes = [
         {
             "chave": chave,
             "quantidade_total": dados["quantidade_total"],
-            "itens": [
-                {
-                    **item,
-                    "descricao": nomes.get(
-                        item["id_produto"], f"#{item['id_produto']}"
-                    ),
-                }
-                for item in dados["itens"]
-            ],
+            "itens": adicionar_nomes_produtos(
+                dados["itens"],
+                nomes
+            ),
         }
         for chave, dados in grupos.items()
     ]
+
     return jsonify(
         {
             "id": id_produto,
@@ -2205,7 +2214,7 @@ def api_get_composto(id_produto):
             "tipo": estrutura.get("tipo"),
             "min_pessoas": estrutura.get("pedido_min_pessoas"),
             "calculo_pessoa": estrutura.get("calculo_pessoa"),
-            "itens_fixos": itens_fixos,
+            "itens_fixos": itens_fixos_com_nomes,
             "grupos_opcionais": grupos_com_nomes,
         }
     )
@@ -2910,7 +2919,7 @@ def api_kds_imprimir_coluna():
                         para esta Loja/Setor"""}), 404
 
     titulo = f"""KDS - Setor {id_setor}
-    - {'AGUARDANDO' if coluna=='aguardando' else 'EM PRODUÇÃO'}"""
+    - {'AGUARDANDO' if coluna == 'aguardando' else 'EM PRODUÇÃO'}"""
     texto = _montar_texto_impressao_kds(titulo, itens)
     ok, msg = _enviar_para_impressora_kds(row[0], texto)
     if not ok:

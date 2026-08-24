@@ -73,7 +73,8 @@
           <table class="table table-sm table-bordered">
             <thead class="table-light">
               <tr>
-                <th style="width: 150px">ID Produto</th>
+                <th style="width: 130px">ID Produto</th>
+                <th style="width: 130px">Descrição</th>
                 <th style="width: 100px">Quantidade</th>
                 <th style="width: 130px">Peso Unit. (kg)</th>
                 <th style="width: 150px">Tipo Item</th>
@@ -83,7 +84,7 @@
             </thead>
             <tbody id="tabela_itens_fixos">
               <tr id="linha_vazia_itens">
-                <td colspan="6" class="text-center text-muted py-3">
+                <td colspan="7" class="text-center text-muted py-3">
                   Nenhum item adicionado
                 </td>
               </tr>
@@ -177,7 +178,7 @@
     ];
 
     let itensFixos = []; // { key, id_produto, descricao, quantidade, peso_unitario_kg, tipo_item, capacidade_ml }
-    let gruposOpcionais = []; // { key, chave, itens: [{ key, id_produto, quantidade }] }
+    let gruposOpcionais = []; // { key, chave, quantidade_total, itens: [{ key, id_produto, descricao, quantidade }] }
     let compostoIdEdicao = null;
     let proximoKey = 1;
 
@@ -222,7 +223,7 @@
           gruposOpcionais = (data.grupos_opcionais || []).map((g) => ({
             key: proximoKey++,
             chave: g.chave,
-            quantidade_total: g.quantidade_total, // preserva
+            quantidade_total: g.quantidade_total,
             itens: (g.itens || []).map((it) => ({key: proximoKey++, ...it})),
           }));
 
@@ -277,6 +278,7 @@
       itensFixos.push({
         key: proximoKey++,
         id_produto: "",
+        descricao: "",
         quantidade: "",
         peso_unitario_kg: "",
         tipo_item: "",
@@ -298,9 +300,8 @@
         if ($row.length === 0) return it;
         return {
           key: it.key,
-          id_produto:
-            $row.find(".item_id_produto_hidden").val() || it.id_produto,
-          descricao: it.descricao,
+          id_produto: $row.find(".campo_id_item").val() || "",
+          descricao: $row.find(".campo_nome_item").val() || "",
           quantidade: $row.find(".campo_quantidade").val(),
           peso_unitario_kg: $row.find(".campo_peso").val(),
           tipo_item: $row.find(".campo_tipo_item").val(),
@@ -315,24 +316,25 @@
       $tbody.html("");
       if (itensFixos.length === 0) {
         $tbody.append(
-          '<tr id="linha_vazia_itens"><td colspan="6" class="text-center text-muted py-3">Nenhum item adicionado</td></tr>',
+          '<tr id="linha_vazia_itens"><td colspan="7" class="text-center text-muted py-3">Nenhum item adicionado</td></tr>',
         );
         $("#contador_itens").text(0);
         return;
       }
       itensFixos.forEach((it) => {
-        const displayValue =
-          it.id_produto || it.descricao
-            ? `${it.id_produto || ""}${it.descricao ? " - " + it.descricao : ""}`
-            : "";
         const isBebida = it.tipo_item === "bebida";
         $tbody.append(`
 			<tr id="linha_item_${it.key}">
 			<td>
 			<div style="position:relative">
-			<input type="text" class="form-control form-control-sm item_busca" value="${displayValue}" placeholder="ID ou nome..." autocomplete="off">
-			<input type="hidden" class="item_id_produto_hidden" value="${it.id_produto || ""}">
-			<ul class="list-group item_sugestoes" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
+			<input type="text" class="form-control form-control-sm campo_id_item" value="${it.id_produto || ""}" placeholder="Código..." autocomplete="off">
+			<ul class="list-group sugestoes_id" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
+			</div>
+			</td>
+			<td>
+			<div style="position:relative">
+			<input type="text" class="form-control form-control-sm campo_nome_item" value="${it.descricao || ""}" placeholder="Nome do produto..." autocomplete="off">
+			<ul class="list-group sugestoes_nome" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
 			</div>
 			</td>
 			<td><input type="number" class="form-control form-control-sm campo_quantidade" value="${it.quantidade || ""}"></td>
@@ -349,11 +351,7 @@
 			</td>
 			</tr>
 			`);
-        ativarBuscaProduto(
-          $(`#linha_item_${it.key} .item_busca`),
-          $(`#linha_item_${it.key} .item_id_produto_hidden`),
-          $(`#linha_item_${it.key} .item_sugestoes`),
-        );
+        ativarBuscaProdutoDupla($(`#linha_item_${it.key}`));
       });
       $("#contador_itens").text(itensFixos.length);
     }
@@ -375,7 +373,12 @@
 
     // ── grupos opcionais ──────────────────────────────────────────────────────
     window.adicionarGrupoOpcional = function () {
-      gruposOpcionais.push({key: proximoKey++, chave: "", itens: []});
+      gruposOpcionais.push({
+        key: proximoKey++,
+        chave: "",
+        quantidade_total: "",
+        itens: [],
+      });
       renderGruposOpcionais();
     };
 
@@ -387,7 +390,7 @@
     window.adicionarItemGrupo = function (gKey) {
       lerGruposDoDom();
       const grupo = gruposOpcionais.find((g) => g.key === gKey);
-      grupo.itens.push({key: proximoKey++, id_produto: "", quantidade: ""});
+      grupo.itens.push({key: proximoKey++, id_produto: "", descricao: "", quantidade: ""});
       renderGruposOpcionais();
     };
 
@@ -403,17 +406,18 @@
         const $card = $(`#grupo_${g.key}`);
         if ($card.length === 0) return g;
         const chave = $card.find(".campo_chave_grupo").val();
+        const quantidade_total = $card.find(".campo_qtd_total").val() || "";
         const itens = g.itens.map((it) => {
           const $row = $(`#grupo_${g.key}_item_${it.key}`);
           if ($row.length === 0) return it;
           return {
-            key: g.key,
-            chave,
-            quantidade_total: $card.find(".campo_qtd_total").val() || null,
-            itens,
+            key: it.key,
+            id_produto: $row.find(".campo_id_item").val() || "",
+            descricao: $row.find(".campo_nome_item").val() || "",
+            quantidade: $row.find(".campo_quantidade").val(),
           };
         });
-        return {key: g.key, chave, itens};
+        return {key: g.key, chave, quantidade_total, itens};
       });
     }
 
@@ -446,14 +450,14 @@
 			<table class="table table-sm table-bordered mb-0">
 			<thead class="table-light">
           <tr>
-            <th>ID Produto</th>
+            <th style="width:130px">ID Produto</th>
             <th>Descrição</th>
             <th style="width:110px">Quantidade</th>
-            <th></th>
+            <th style="width:42px"></th>
           </tr>
       </thead>
 			<tbody id="grupo_${g.key}_itens">
-			${g.itens.length === 0 ? '<tr><td colspan="3" class="text-center text-muted">Nenhum item neste grupo</td></tr>' : ""}
+			${g.itens.length === 0 ? '<tr><td colspan="4" class="text-center text-muted">Nenhum item neste grupo</td></tr>' : ""}
 			</tbody>
 			</table>
 			</div>
@@ -465,20 +469,21 @@
 					<tr id="grupo_${g.key}_item_${it.key}">
 					<td>
 					<div style="position:relative">
-					<input type="text" class="form-control form-control-sm item_busca" value="${it.id_produto || ""}" placeholder="ID ou nome..." autocomplete="off">
-					<input type="hidden" class="item_id_produto_hidden" value="${it.id_produto || ""}">
-					<ul class="list-group item_sugestoes" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
+					<input type="text" class="form-control form-control-sm campo_id_item" value="${it.id_produto || ""}" placeholder="Código..." autocomplete="off">
+					<ul class="list-group sugestoes_id" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
+					</div>
+					</td>
+					<td>
+					<div style="position:relative">
+					<input type="text" class="form-control form-control-sm campo_nome_item" value="${it.descricao || ""}" placeholder="Nome do produto..." autocomplete="off">
+					<ul class="list-group sugestoes_nome" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
 					</div>
 					</td>
 					<td><input type="number" class="form-control form-control-sm campo_quantidade" value="${it.quantidade || ""}"></td>
 					<td class="text-center"><button type="button" class="btn btn-sm btn-danger" onclick="removerItemGrupo(${g.key}, ${it.key})"><i class="bi bi-trash"></i></button></td>
 					</tr>
 					`);
-          ativarBuscaProduto(
-            $(`#grupo_${g.key}_item_${it.key} .item_busca`),
-            $(`#grupo_${g.key}_item_${it.key} .item_id_produto_hidden`),
-            $(`#grupo_${g.key}_item_${it.key} .item_sugestoes`),
-          );
+          ativarBuscaProdutoDupla($(`#grupo_${g.key}_item_${it.key}`));
         });
       });
       $("#contador_grupos").text(gruposOpcionais.length);
@@ -497,7 +502,86 @@
       atualizarVisibilidadeCalculo,
     );
 
-    // ── autocomplete de produto (busca ao digitar) ───────────────────────────
+    // ── autocomplete de produto: campo ID busca por código, campo Nome busca por nome ──
+    function ativarBuscaProdutoDupla($row) {
+      const $idInput = $row.find(".campo_id_item");
+      const $nomeInput = $row.find(".campo_nome_item");
+      const $sugestoesId = $row.find(".sugestoes_id");
+      const $sugestoesNome = $row.find(".sugestoes_nome");
+
+      function selecionar(p) {
+        $idInput.val(p.id);
+        $nomeInput.val(p.nome);
+        $sugestoesId.hide().html("");
+        $sugestoesNome.hide().html("");
+      }
+
+      function buscar(valor, $sugestoes) {
+        const idLoja = 2;
+        return fetch(
+          `/api/produtos/buscar?q=${encodeURIComponent(valor)}&id_loja=${idLoja}`,
+        )
+          .then((res) => res.json())
+          .then((data) => {
+            if (!data || data.length === 0) {
+              $sugestoes.hide().html("");
+              return;
+            }
+            $sugestoes.html(
+              data
+                .map(
+                  (p) =>
+                    `<li class="list-group-item list-group-item-action" style="cursor:pointer" data-id="${p.id}" data-nome="${p.nome}">${p.id} — ${p.nome}</li>`,
+                )
+                .join(""),
+            );
+            $sugestoes.show();
+          })
+          .catch(() => {
+            $sugestoes.hide().html("");
+          });
+      }
+
+      // busca por ID/código
+      let timerId = null;
+      $idInput.on("input", function () {
+        $sugestoesNome.hide().html("");
+        clearTimeout(timerId);
+        const val = $idInput.val();
+        if (val.length < 1) {
+          $sugestoesId.hide().html("");
+          return;
+        }
+        timerId = setTimeout(() => buscar(val, $sugestoesId), 250);
+      });
+
+      // busca por nome/descrição
+      let timerNome = null;
+      $nomeInput.on("input", function () {
+        $sugestoesId.hide().html("");
+        clearTimeout(timerNome);
+        const val = $nomeInput.val();
+        if (val.length < 1) {
+          $sugestoesNome.hide().html("");
+          return;
+        }
+        timerNome = setTimeout(() => buscar(val, $sugestoesNome), 250);
+      });
+
+      $sugestoesId.on("mousedown", "li", function () {
+        selecionar({id: $(this).data("id"), nome: $(this).data("nome")});
+      });
+      $sugestoesNome.on("mousedown", "li", function () {
+        selecionar({id: $(this).data("id"), nome: $(this).data("nome")});
+      });
+
+      $(document).on("click", function (e) {
+        if (!$(e.target).closest($idInput.parent()).length) $sugestoesId.hide();
+        if (!$(e.target).closest($nomeInput.parent()).length) $sugestoesNome.hide();
+      });
+    }
+
+    // autocomplete do produto pai (mantido como campo único combinado)
     function ativarBuscaProduto($input, $hidden, $sugestoes) {
       let timer = null;
       $input.on("input", function () {
@@ -599,6 +683,8 @@
         })),
         grupos_opcionais: gruposOpcionais.map((g) => ({
           chave: g.chave || null,
+          quantidade_total:
+            g.quantidade_total !== "" ? Number(g.quantidade_total) : null,
           itens: g.itens.map((it) => ({
             id_produto: it.id_produto || null,
             quantidade: it.quantidade !== "" ? Number(it.quantidade) : null,

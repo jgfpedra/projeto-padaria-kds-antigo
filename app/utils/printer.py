@@ -10,12 +10,14 @@ def gerar_dados_impressao(texto, cortar=True, tipo_corte="full"):
     try:
         select_cp = ESC + b"t" + b"\x03"
 
-        dados = init_printer + select_cp + texto.encode("cp860", errors="replace")
+        dados = init_printer + select_cp + \
+            texto.encode("cp860", errors="replace")
 
     except LookupError:
         select_cp = ESC + b"t" + b"\x02"
 
-        dados = init_printer + select_cp + texto.encode("cp850", errors="replace")
+        dados = init_printer + select_cp + \
+            texto.encode("cp850", errors="replace")
 
     if cortar:
         corte = b"\x00" if tipo_corte == "full" else b"\x01"
