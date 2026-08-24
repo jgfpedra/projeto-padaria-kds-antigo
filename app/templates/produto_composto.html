@@ -564,126 +564,187 @@
 
       function selecionar(p) {
         $idInput.val(p.id);
-        $nomeInput.val(p.nome);
+        $nomeInput.val(p.descricao);
+
         $sugestoesId.hide().html("");
         $sugestoesNome.hide().html("");
       }
 
       function buscar(valor, $sugestoes) {
-        const idLoja = 2;
-        return fetch(
-          `/api/produtos/buscar?q=${encodeURIComponent(valor)}&id_loja=${idLoja}`,
-        )
-          .then((res) => res.json())
-          .then((data) => {
+        return $.ajax({
+          url: "/api/produtos/busca_descricao",
+          method: "POST",
+          contentType: "application/json",
+          data: JSON.stringify({
+            termo: valor,
+          }),
+        })
+          .done(function (data) {
             if (!data || data.length === 0) {
               $sugestoes.hide().html("");
               return;
             }
+
             $sugestoes.html(
               data
                 .map(
-                  (p) =>
-                    `<li class="list-group-item list-group-item-action" style="cursor:pointer" data-id="${p.id}" data-nome="${p.nome}">${p.id} — ${p.nome}</li>`,
+                  (p) => `
+                <li
+                  class="list-group-item list-group-item-action"
+                  style="cursor:pointer"
+                  data-id="${p.id}"
+                  data-descricao="${p.descricaocompleta}"
+                >
+                  ${p.id} — ${p.descricaocompleta}
+                </li>
+              `
                 )
-                .join(""),
+                .join("")
             );
+
             $sugestoes.show();
           })
-          .catch(() => {
+          .fail(function () {
             $sugestoes.hide().html("");
           });
       }
 
-      // busca por ID/código
+      // Busca por ID
       let timerId = null;
+
       $idInput.on("input", function () {
         $sugestoesNome.hide().html("");
+
         clearTimeout(timerId);
-        const val = $idInput.val();
+
+        const val = $idInput.val().trim();
+
         if (val.length < 1) {
           $sugestoesId.hide().html("");
           return;
         }
-        timerId = setTimeout(() => buscar(val, $sugestoesId), 250);
+
+        timerId = setTimeout(() => {
+          buscar(val, $sugestoesId);
+        }, 250);
       });
 
-      // busca por nome/descrição
+      // Busca por descrição
       let timerNome = null;
+
       $nomeInput.on("input", function () {
         $sugestoesId.hide().html("");
+
         clearTimeout(timerNome);
-        const val = $nomeInput.val();
+
+        const val = $nomeInput.val().trim();
+
         if (val.length < 1) {
           $sugestoesNome.hide().html("");
           return;
         }
-        timerNome = setTimeout(() => buscar(val, $sugestoesNome), 250);
+
+        timerNome = setTimeout(() => {
+          buscar(val, $sugestoesNome);
+        }, 250);
       });
 
+      // Seleciona pelo ID
       $sugestoesId.on("mousedown", "li", function () {
-        selecionar({id: $(this).data("id"), nome: $(this).data("nome")});
+        selecionar({
+          id: $(this).data("id"),
+          descricao: $(this).data("descricao"),
+        });
       });
+
+      // Seleciona pela descrição
       $sugestoesNome.on("mousedown", "li", function () {
-        selecionar({id: $(this).data("id"), nome: $(this).data("nome")});
+        selecionar({
+          id: $(this).data("id"),
+          descricao: $(this).data("descricao"),
+        });
       });
 
       $(document).on("click", function (e) {
-        if (!$(e.target).closest($idInput.parent()).length) $sugestoesId.hide();
-        if (!$(e.target).closest($nomeInput.parent()).length) $sugestoesNome.hide();
+        if (!$(e.target).closest($idInput.parent()).length) {
+          $sugestoesId.hide();
+        }
+
+        if (!$(e.target).closest($nomeInput.parent()).length) {
+          $sugestoesNome.hide();
+        }
       });
     }
 
     function ativarBuscaProduto($input, $hidden, $sugestoes) {
       let timer = null;
+
       $input.on("input", function () {
         $hidden.val("");
+
         clearTimeout(timer);
-        const val = $input.val();
-        if (val.length < 1) {
+
+        const termo = $input.val().trim();
+
+        if (termo.length < 1) {
           $sugestoes.hide().html("");
           return;
         }
+
         timer = setTimeout(() => {
-          const idLoja = 2;
-          fetch(
-            `/api/produtos/buscar?q=${encodeURIComponent(val)}&id_loja=${idLoja}`,
-          )
-            .then((res) => res.json())
-            .then((data) => {
-              if (!data || data.length === 0) {
+          $.ajax({
+            url: "/api/produtos/busca_descricao",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+              termo: termo,
+            }),
+            success: function (produtos) {
+              if (!produtos || produtos.length === 0) {
                 $sugestoes.hide().html("");
                 return;
               }
+
               $sugestoes.html(
-                data
+                produtos
                   .map(
-                    (p) =>
-                      `<li class="list-group-item list-group-item-action" style="cursor:pointer" data-id="${p.id}" data-nome="${p.nome}">${p.id} — ${p.nome}</li>`,
+                    (prod) => `
+                  <li
+                    class="list-group-item list-group-item-action"
+                    style="cursor: pointer"
+                    data-id="${prod.id}"
+                    data-descricao="${prod.descricaocompleta}"
+                  >
+                    ${prod.id} — ${prod.descricaocompleta}
+                  </li>
+                `
                   )
-                  .join(""),
+                  .join("")
               );
+
               $sugestoes.show();
-            })
-            .catch(() => {
+            },
+            error: function () {
               $sugestoes.hide().html("");
-            });
+            },
+          });
         }, 250);
       });
 
       $sugestoes.on("mousedown", "li", function () {
         const id = $(this).data("id");
-        const nome = $(this).data("nome");
-        $input.val(`${id} — ${nome}`);
+        const descricao = $(this).data("descricao");
+
+        $input.val(id);
         $hidden.val(id);
+
         $sugestoes.hide().html("");
-        if ($input.attr("id") === "composto_produto_busca") {
-          $("#composto_id_produto").val(id);
-        }
       });
 
       $(document).on("click", function (e) {
-        if (!$(e.target).closest($input.parent()).length) $sugestoes.hide();
+        if (!$(e.target).closest($input.parent()).length) {
+          $sugestoes.hide();
+        }
       });
     }
 
