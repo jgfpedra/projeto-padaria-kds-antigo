@@ -7,13 +7,16 @@ from flask import (
     redirect,
     render_template,
     request,
-    url_for,
     send_from_directory,
 )
 
 from app import app, bcrypt
 from app.conexao_app import conectar_app
-from app.conexao_vr import buscar_clientes, conectar_vr
+from app.conexao_vr import (
+    buscar_clientes,
+    conectar_vr,
+    fechar_conexao
+)
 from app.repo.produto_composto import (
     repo_get_composto_estrutura,
     repo_get_grupos_opcionais,
@@ -29,11 +32,27 @@ from app.services.produto_composto import (
     svc_remover_produtos_compostos,
     svc_salvar_produtos_compostos,
 )
+from app.services.pedido import (
+    buscar_nome_loja,
+    buscar_pedido,
+    buscar_itens,
+    buscar_status,
+    buscar_cliente,
+    buscar_impressora,
+    buscar_valor_total,
+    montar_texto_pedido
+)
+from app.repo.pedido import (
+    marcar_pedido_impresso,
+)
 from app.utils.conversions import (
-        to_float,
-        to_decimal
-        )
-
+    to_float,
+    to_decimal
+)
+from app.utils.printer import (
+    gerar_dados_impressao,
+    enviar_para_impressora,
+)
 logger = logging.getLogger("api.api_routes")
 
 
@@ -1012,7 +1031,6 @@ def api_encomendas_consulta():
 
         cursor_app.execute(sql, tuple(params))
         pedidos_rows = cursor_app.fetchall()
-
         pedidos = []
         for row in pedidos_rows:
             id_pedido = row[0]
@@ -1104,7 +1122,6 @@ def api_encomendas_consulta():
                         "observacao": observacao or "",
                     }
                 )
-
             pedidos.append(
                 {
                     "id": id_pedido,
@@ -1122,12 +1139,10 @@ def api_encomendas_consulta():
                     "nome_loja": nome_loja,
                     "itens": itens,
                     "impresso": impresso_b,
-                    "data_finalizacao": row[10].isoformat(),
+                    "data_finalizacao": row[10].isoformat() if row[10] else "",
                 }
             )
-
         return jsonify(pedidos)
-
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
     finally:
@@ -2010,7 +2025,7 @@ def produto_associado():
             conn = conectar_app()
             cur = conn.cursor()
             cur.execute(
-                    """SELECT id, descricao, id_loja
+                """SELECT id, descricao, id_loja
                     FROM controle_id_produtoopcoes
                     WHERE id = %s""",
                 (id_grupo,),
@@ -2019,12 +2034,16 @@ def produto_associado():
             principais, opcoes = [], []
             if grupo:
                 cur.execute(
-                    "SELECT id_produto_principal FROM produto_opcoes_principal WHERE id_produtoopcoes = %s",
+                    """SELECT id_produto_principal
+                        FROM produto_opcoes_principal
+                        WHERE id_produtoopcoes = %s""",
                     (id_grupo,),
                 )
                 principais = [r[0] for r in cur.fetchall()]
                 cur.execute(
-                    "SELECT id_produto_associado FROM produto_opcoes_associado WHERE id_produtoopcoes = %s",
+                    """SELECT id_produto_associado
+                    FROM produto_opcoes_associado
+                    WHERE id_produtoopcoes = %s""",
                     (id_grupo,),
                 )
                 opcoes = [r[0] for r in cur.fetchall()]
@@ -2033,13 +2052,16 @@ def produto_associado():
                     "descricao": grupo[1],
                     "id_loja": grupo[2],
                     "principais": [
-                        {"cod": cod, "desc": "", "setor": ""} for cod in principais
+                        {"cod": cod,
+                         "desc": "",
+                         "setor": ""} for cod in principais
                     ],
-                    "opcoes": [{"cod": cod, "desc": "", "setor": ""} for cod in opcoes],
+                    "opcoes": [{"cod": cod,
+                                "desc": "",
+                                "setor": ""} for cod in opcoes],
                 }
             cur.close()
             conn.close()
-        # Renderiza o modal já com o contexto (ou vazio se for novo)
         return render_template("produto_associado.html", **contexto)
     else:
         return redirect("/consulta_associado")
@@ -2051,7 +2073,9 @@ def carregar_produto_associado(id):
     try:
         cur = conn.cursor()
         cur.execute(
-            "SELECT id, descricao, id_loja FROM controle_id_produtoopcoes WHERE id = %s",
+            """SELECT id, descricao, id_loja
+            FROM controle_id_produtoopcoes
+            WHERE id = %s""",
             (id,),
         )
         grupo = cur.fetchone()
@@ -2060,13 +2084,17 @@ def carregar_produto_associado(id):
 
         # Busca produtos principais
         cur.execute(
-            "SELECT id_produto_principal FROM produto_opcoes_principal WHERE id_produtoopcoes = %s",
+            """SELECT id_produto_principal
+            FROM produto_opcoes_principal
+            WHERE id_produtoopcoes = %s""",
             (id,),
         )
         principais = [r[0] for r in cur.fetchall()]
         # Busca produtos de opção
         cur.execute(
-            "SELECT id_produto_associado FROM produto_opcoes_associado WHERE id_produtoopcoes = %s",
+            """SELECT id_produto_associado
+            FROM produto_opcoes_associado
+            WHERE id_produtoopcoes = %s""",
             (id,),
         )
         opcoes = [r[0] for r in cur.fetchall()]
@@ -2079,7 +2107,9 @@ def carregar_produto_associado(id):
                 "principais": [
                     {"cod": cod, "desc": "", "setor": ""} for cod in principais
                 ],
-                "opcoes": [{"cod": cod, "desc": "", "setor": ""} for cod in opcoes],
+                "opcoes": [{"cod": cod,
+                            "desc": "",
+                            "setor": ""} for cod in opcoes],
             }
         )
     except Exception as e:
@@ -2092,7 +2122,9 @@ def carregar_produto_associado(id):
 def produto_composto():
     id_produto = request.args.get("id_produto", type=int)
     modal = request.args.get("modal")
-    return render_template("produto_composto.html", id_produto=id_produto, modal=modal)
+    return render_template("produto_composto.html",
+                           id_produto=id_produto,
+                           modal=modal)
 
 
 @app.route("/api/produtos_compostos")
@@ -2115,7 +2147,8 @@ def api_salvar_composto():
     return jsonify({"ok": True})
 
 
-@app.route("/api/produtos_compostos/remover/<int:id_produto>", methods=["DELETE"])
+@app.route("/api/produtos_compostos/remover/<int:id_produto>",
+           methods=["DELETE"])
 def api_remover_composto(id_produto):
     ok = svc_remover_produtos_compostos(id_produto)
     if not ok:
@@ -2145,7 +2178,8 @@ def api_get_composto(id_produto):
     if grupos is False:
         return jsonify({"erro": "Erro ao buscar grupos opcionais."}), 500
     todos_ids = [
-        item["id_produto"] for dados in grupos.values() for item in dados["itens"]
+        item["id_produto"]
+        for dados in grupos.values() for item in dados["itens"]
     ]
     nomes = repo_vr_get_nomes_produtos(todos_ids) if todos_ids else {}
     grupos_com_nomes = [
@@ -2177,7 +2211,8 @@ def api_get_composto(id_produto):
     )
 
 
-@app.route("/api/produtos_compostos/explodir/<int:id_produto>", methods=["POST"])
+@app.route("/api/produtos_compostos/explodir/<int:id_produto>",
+           methods=["POST"])
 def api_explodir_composto(id_produto):
     dados = request.get_json(silent=True) or {}
     id_loja = dados.get("id_loja")
@@ -2192,7 +2227,8 @@ def api_explodir_composto(id_produto):
     elif quantidade is not None:
         fator = int(quantidade)
         if fator <= 0:
-            return jsonify({"erro": "quantidade deve ser maior que zero."}), 400
+            return jsonify({"erro": """quantidade deve ser
+                            maior que zero."""}), 400
     else:
         return jsonify({"erro": "Informe pessoas ou quantidade."}), 400
     estrutura = repo_get_composto_estrutura(id_produto)
@@ -2202,12 +2238,14 @@ def api_explodir_composto(id_produto):
         return jsonify({"erro": "Produto não é composto."}), 404
     produto_pai = repo_get_produto_detalhe(id_produto, int(id_loja))
     if not produto_pai:
-        return jsonify({"erro": "Produto não encontrado na loja informada."}), 404
+        return jsonify({"erro": """Produto não encontrado
+                        na loja informada."""}), 404
     tem_calculo_pessoa = bool(estrutura.get("calculo_pessoa"))
     if tem_calculo_pessoa and not dados.get("pessoas"):
         return jsonify({"erro": "Este composto requer o campo pessoas."}), 400
     if not tem_calculo_pessoa and not dados.get("quantidade"):
-        return jsonify({"erro": "Este composto requer o campo quantidade."}), 400
+        return jsonify({"erro": """Este composto requer
+                        o campo quantidade."""}), 400
     componentes = calcular_componentes(
         id_produto, fator, estrutura, dados.get("escolhas_opcionais") or {}
     )
@@ -2219,7 +2257,8 @@ def api_explodir_composto(id_produto):
 
 
 @app.route(
-    "/api/produtos/opcoes_associadas/<int:id_produto_principal>", methods=["GET"]
+    "/api/produtos/opcoes_associadas/<int:id_produto_principal>",
+    methods=["GET"]
 )
 def opcoes_associadas(id_produto_principal):
     conn_app = conectar_app()
@@ -2289,16 +2328,17 @@ def api_kds_pedidos():
         """
         SELECT p.id                                         AS id_pedido,
                pi.id                                        AS id_item,
-               COALESCE(pi.id_produto_associado, pi.id_produto) AS id_produto_preferencial,
+               COALESCE(pi.id_produto_associado, pi.id_produto)
+               AS id_produto_preferencial,
                pi.quantidade_un,
                p.data_entrega,
                p.hora_entrega,
                pi.observacao,
                pi.id_produto_associado,
                pi.id_setor,
-               pi.id_status                                 AS id_status_item,
+               pi.id_status AS id_status_item,
                p.tipo_entrega,
-               p.id_status                                  AS id_status_pedido,
+               p.id_status AS id_status_pedido,
                pi.quantidade
           FROM pedidos p
           JOIN pedido_itens pi ON pi.id_pedido = p.id
@@ -2306,7 +2346,7 @@ def api_kds_pedidos():
            AND pi.id_setor = %s
            AND (p.data_entrega = CURRENT_DATE
             OR  p.data_entrega = CURRENT_DATE + INTERVAL '1 day')
-           AND (p.id_status NOT IN (5, 7))  
+           AND (p.id_status NOT IN (5, 7))
     """,
         (loja, setor),
     )
@@ -2367,12 +2407,13 @@ def kds_produzir():
     data = request.get_json()
     id_pedidos = data.get("ids", [])
     if not id_pedidos:
-        return jsonify({"success": False, "msg": "Nenhum pedido informado!"}), 400
+        return jsonify({"success": False, "msg": """Nenhum pedido
+                        informado!"""}), 400
 
     conn = conectar_app()
     cursor = conn.cursor()
-    # Atualiza todos os pedidos para status = 1 (em produção)
-    cursor.execute("UPDATE pedidos SET id_status = 1 WHERE id = ANY(%s)", (id_pedidos,))
+    cursor.execute("UPDATE pedidos SET id_status = 1 WHERE id = ANY(%s)",
+                   (id_pedidos,))
     conn.commit()
     cursor.close()
     conn.close()
@@ -2384,11 +2425,13 @@ def kds_finalizar():
     data = request.get_json()
     id_pedidos = data.get("ids", [])
     if not id_pedidos:
-        return jsonify({"success": False, "msg": "Nenhum pedido informado!"}), 400
+        return jsonify({"success": False,
+                        "msg": "Nenhum pedido informado!"}), 400
 
     conn = conectar_app()
     cursor = conn.cursor()
-    cursor.execute("UPDATE pedidos SET id_status = 7 WHERE id = ANY(%s)", (id_pedidos,))
+    cursor.execute("UPDATE pedidos SET id_status = 7 WHERE id = ANY(%s)",
+                   (id_pedidos,))
     conn.commit()
     cursor.close()
     conn.close()
@@ -2400,21 +2443,23 @@ def kds_item_produzir():
     data = request.get_json()
     ids_itens = data.get("ids", [])
     if not ids_itens:
-        return jsonify({"success": False, "msg": "Nenhum item informado!"}), 400
+        return jsonify({"success": False,
+                        "msg": "Nenhum item informado!"}), 400
 
     conn = conectar_app()
     cursor = conn.cursor()
     # Atualiza apenas os itens para status = 1 (em produção)
     cursor.execute(
-        "UPDATE pedido_itens SET id_status = 1 WHERE id = ANY(%s)", (ids_itens,)
+        "UPDATE pedido_itens SET id_status = 1 WHERE id = ANY(%s)",
+        (ids_itens,)
     )
     conn.commit()
     cursor.close()
 
-    # Agora, para cada item, analise se todos os itens do pedido estão com mesmo status
     cursor = conn.cursor()
     for id_item in ids_itens:
-        cursor.execute("SELECT id_pedido FROM pedido_itens WHERE id = %s", (id_item,))
+        cursor.execute("SELECT id_pedido FROM pedido_itens WHERE id = %s",
+                       (id_item,))
         id_pedido_row = cursor.fetchone()
         if not id_pedido_row:
             continue
@@ -2441,21 +2486,23 @@ def kds_item_finalizar():
     data = request.get_json()
     ids_itens = data.get("ids", [])
     if not ids_itens:
-        return jsonify({"success": False, "msg": "Nenhum item informado!"}), 400
+        return jsonify({"success": False,
+                        "msg": "Nenhum item informado!"}), 400
 
     conn = conectar_app()
     cursor = conn.cursor()
     # Atualiza apenas os itens para status = 2 (produzido)
     cursor.execute(
-        "UPDATE pedido_itens SET id_status = 2 WHERE id = ANY(%s)", (ids_itens,)
+        "UPDATE pedido_itens SET id_status = 2 WHERE id = ANY(%s)",
+        (ids_itens,)
     )
     conn.commit()
     cursor.close()
 
-    # Agora, para cada item, analise se todos os itens do pedido estão com mesmo status
     cursor = conn.cursor()
     for id_item in ids_itens:
-        cursor.execute("SELECT id_pedido FROM pedido_itens WHERE id = %s", (id_item,))
+        cursor.execute("SELECT id_pedido FROM pedido_itens WHERE id = %s",
+                       (id_item,))
         id_pedido_row = cursor.fetchone()
         if not id_pedido_row:
             continue
@@ -2500,7 +2547,8 @@ def imprimir_pedido(id_pedido):
         pedido = buscar_pedido(cursor_app, id_pedido)
 
         if not pedido:
-            return jsonify({"sucesso": False, "mensagem": "Pedido não encontrado"}), 404
+            return jsonify({"sucesso": False,
+                            "mensagem": "Pedido não encontrado"}), 404
 
         impressora = buscar_impressora(cursor_app, pedido["id_loja"])
 
@@ -2509,7 +2557,8 @@ def imprimir_pedido(id_pedido):
                 jsonify(
                     {
                         "sucesso": False,
-                        "mensagem": "Nenhuma impressora configurada para esta loja (setor em branco).",
+                        "mensagem": """Nenhuma impressora
+                        configurada para esta loja (setor em branco).""",
                         "id_loja": pedido["id_loja"],
                     }
                 ),
@@ -2532,7 +2581,9 @@ def imprimir_pedido(id_pedido):
             linhas_extras=linhas_extras,
         )
 
-        dados = gerar_dados_impressao(texto=texto, cortar=cortar, tipo_corte=tipo_corte)
+        dados = gerar_dados_impressao(texto=texto,
+                                      cortar=cortar,
+                                      tipo_corte=tipo_corte)
 
         enviar_para_impressora(
             caminho_impressora=impressora, dados=dados, id_pedido=id_pedido
@@ -2621,7 +2672,6 @@ def buscar_produtos_por_descricao():
 
     where_clauses = " AND ".join([predicado] * len(tokens))
 
-    # ✅ Filtro garantido: só traz produtos cujo produtocomplemento.id_situacaocadastro = 1
     sql = f"""
         SELECT DISTINCT p.id, p.descricaocompleta
         FROM produto p
@@ -2636,7 +2686,8 @@ def buscar_produtos_por_descricao():
     cursor.execute(sql, params)
     resultados = cursor.fetchall()
 
-    produtos = [{"id": row[0], "descricaocompleta": row[1]} for row in resultados]
+    produtos = [{"id": row[0],
+                 "descricaocompleta": row[1]} for row in resultados]
     return jsonify(produtos)
 
 
@@ -2651,7 +2702,8 @@ def api_produtos_kds_horario():
         data = request.get_json()
         id_produto = data.get("id_produto")
         cursor_app.execute(
-            "INSERT INTO produto_exibir_horario (id_produto) VALUES (%s)", (id_produto,)
+            "INSERT INTO produto_exibir_horario (id_produto) VALUES (%s)",
+            (id_produto,)
         )
         conn_app.commit()
         return jsonify({"success": True})
@@ -2660,7 +2712,8 @@ def api_produtos_kds_horario():
         data = request.get_json()
         id_produto = data.get("id_produto")
         cursor_app.execute(
-            "DELETE FROM produto_exibir_horario WHERE id_produto = %s", (id_produto,)
+            "DELETE FROM produto_exibir_horario WHERE id_produto = %s",
+            (id_produto,)
         )
         conn_app.commit()
         return jsonify({"success": True})
@@ -2680,7 +2733,8 @@ def api_produtos_kds_horario():
         cursor_vr.execute(query, tuple(id_list))
         produtos = cursor_vr.fetchall()
 
-        resultado = [{"id_produto": row[0], "nome": row[1]} for row in produtos]
+        resultado = [{"id_produto": row[0],
+                      "nome": row[1]} for row in produtos]
         return jsonify(resultado)
 
 
@@ -2698,8 +2752,12 @@ def api_produtos_ocultar_horario():
 @app.route("/api/impressora/setor", methods=["GET"])
 def api_impressora_por_setor_get():
     id_loja = request.args.get("loja", type=int)
-    setor_qs = request.args.get("setor", default=None)  # pode vir "", None ou "123"
-    id_setor = int(setor_qs) if (setor_qs and setor_qs.strip().isdigit()) else None
+    setor_qs = request.args.get("setor",
+                                default=None)  # pode vir "", None ou "123"
+    if (setor_qs and setor_qs.strip().isdigit()):
+        id_setor = int(setor_qs)
+    else:
+        id_setor = None
 
     if not id_loja:
         return jsonify({"erro": "Parâmetro 'loja' é obrigatório"}), 400
@@ -2752,7 +2810,8 @@ def api_impressora_por_setor_post():
     caminho = (dados.get("caminho_impressora") or "").strip()
 
     if not id_loja or not caminho:
-        return jsonify({"erro": "id_loja e caminho_impressora são obrigatórios"}), 400
+        return jsonify({"erro": """id_loja e caminho_impressora
+                        são obrigatórios"""}), 400
 
     try:
         id_loja = int(id_loja)
@@ -2847,9 +2906,11 @@ def api_kds_imprimir_coluna():
         conn.close()
 
     if not row or not row[0]:
-        return jsonify({"erro": "Impressora não configurada para esta Loja/Setor"}), 404
+        return jsonify({"erro": """Impressora não configurada
+                        para esta Loja/Setor"""}), 404
 
-    titulo = f"KDS - Setor {id_setor} - {'AGUARDANDO' if coluna=='aguardando' else 'EM PRODUÇÃO'}"
+    titulo = f"""KDS - Setor {id_setor}
+    - {'AGUARDANDO' if coluna == 'aguardando' else 'EM PRODUÇÃO'}"""
     texto = _montar_texto_impressao_kds(titulo, itens)
     ok, msg = _enviar_para_impressora_kds(row[0], texto)
     if not ok:

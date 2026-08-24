@@ -1,1183 +1,726 @@
-{% extends "layout_base.html" %} {% block conteudo_central %}
-
-<div class="container mt-4">
-  <h2 class="mb-4">Novo Pedido</h2>
-
-  <!-- Seção: Dados do Cliente -->
-  <form id="form-novo-pedido" method="POST" action="/pedidos/novo">
-    <div class="mb-3">
-      <input type="hidden" id="id_cliente_hidden" />
-      <label for="cliente" class="form-label">Cliente</label>
-      <input
-        type="text"
-        class="form-control"
-        id="cliente"
-        name="cliente"
-        placeholder="Nome ou telefone..."
-        autocomplete="off"
-      />
-      <div id="sugestoes-clientes" class="list-group"></div>
-    </div>
-    <div class="mb-3">
-      <label for="telefone" class="form-label">Telefone</label>
-      <input
-        type="text"
-        class="form-control"
-        id="telefone"
-        name="telefone"
-        readonly
-      />
-    </div>
-    <!-- Tipo de Entrega -->
-    <div class="mb-3">
-      <label class="form-label">Tipo de Entrega</label><br />
-      <div class="form-check form-check-inline">
-        <input
-          class="form-check-input"
-          type="radio"
-          name="tipo_entrega"
-          id="retirada"
-          value="retirada"
-          checked
-        />
-        <label class="form-check-label" for="retirada">Retirada na loja</label>
-      </div>
-      <div class="form-check form-check-inline">
-        <input
-          class="form-check-input"
-          type="radio"
-          name="tipo_entrega"
-          id="entrega"
-          value="entrega"
-        />
-        <label class="form-check-label" for="entrega">Entrega</label>
-      </div>
-      <div class="form-check form-check-inline">
-        <input
-          class="form-check-input"
-          type="radio"
-          name="tipo_entrega"
-          id="balcao"
-          value="balcao"
-        />
-        <label class="form-check-label" for="balcao">Balcão</label>
-      </div>
-    </div>
-    <!-- Endereço (somente se for entrega) -->
-    <div id="endereco-container" style="display: none">
-      <div class="mb-3">
-        <label class="form-label">Endereço</label>
-        <input
-          type="text"
-          class="form-control"
-          id="endereco"
-          name="endereco"
-          readonly
-        />
-      </div>
-    </div>
-    <!-- Loja e Data de Entrega -->
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <label for="loja" class="form-label">Loja</label>
-        <select class="form-select" id="loja" name="loja">
-          <option selected>Selecione...</option>
-        </select>
-      </div>
-      <div class="col-md-3 mb-3">
-        <label for="data" class="form-label">Data entrega</label>
-        <input type="date" class="form-control" id="data" name="data" />
-      </div>
-      <div class="col-md-3 mb-3">
-        <label for="hora" class="form-label">Hora entrega</label>
-        <input type="time" class="form-control" id="hora" name="hora" />
-      </div>
-    </div>
-    <!-- Observação geral -->
-    <div class="mb-4">
-      <label class="form-label">Observações do pedido</label>
-      <textarea class="form-control" name="observacoes" rows="2"></textarea>
-    </div>
-
-    <!-- Seção: Itens do Pedido -->
-    <h5>Itens do Pedido</h5>
-    <div class="row mb-3">
-      <div class="col-md-2">
-        <label for="cod_produto" class="form-label">Cód Produto</label>
-        <input
-          type="text"
-          class="form-control"
-          id="cod_produto"
-          name="cod_produto"
-          placeholder="Código..."
-        />
-      </div>
-      <div class="col-md-4">
-        <label for="desc_produto" class="form-label">Descrição Produto</label>
-        <input
-          type="text"
-          class="form-control"
-          id="desc_produto"
-          name="desc_produto"
-          placeholder="Descrição..."
-        />
-        <div id="sugestoes-produtos" class="list-group"></div>
-      </div>
-      <div
-        class="col-md-4"
-        id="div-item-associado"
-        style="display: none; margin-top: 10px"
-      >
-        <label for="item-associado">Item Produção</label>
-        <select id="item-associado" class="form-control"></select>
-      </div>
-      <div class="col-md-2">
-        <label for="tipo_embalagem" class="form-label">Tipo Embalagem</label>
-        <input
-          type="text"
-          class="form-control"
-          id="tipo_embalagem"
-          name="tipo_embalagem"
-          placeholder="Tipo Embalagem..."
-          readonly
-        />
-      </div>
-      <div class="col-md-2">
-        <label for="peso_bruto" class="form-label">Peso Un</label>
-        <input
-          type="text"
-          class="form-control"
-          id="peso_bruto"
-          name="peso_bruto"
-          placeholder="Peso..."
-        />
-      </div>
-      <input type="hidden" id="id_setor_hidden" />
-      <div class="col-md-2">
-        <label for="setor" class="form-label">Setor</label>
-        <input
-          type="text"
-          class="form-control"
-          id="setor"
-          name="setor"
-          placeholder="Setor..."
-          readonly
-        />
-      </div>
-    </div>
-
-    <div class="row mb-3">
-      <div class="col-md-2">
-        <label for="quantidade" class="form-label">Qtd</label>
-        <input
-          type="number"
-          class="form-control"
-          id="quantidade"
-          name="quantidade"
-          placeholder="Qtd"
-          oninput="calcularTotal()"
-        />
-      </div>
-      <div class="col-md-2">
-        <label for="quantidade_un" class="form-label">Qtd Unidades</label>
-        <input
-          type="number"
-          class="form-control"
-          id="quantidade_un"
-          name="quantidade_un"
-          placeholder="Qtd Un"
-          oninput="sincronizarCampos(event)"
-          step="any"
-        />
-      </div>
-      <div class="col-md-2">
-        <label for="preco_venda" class="form-label">Preço Venda</label>
-        <input
-          type="text"
-          class="form-control"
-          id="preco_venda"
-          name="preco_venda"
-          placeholder="Preço"
-          readonly
-        />
-      </div>
-      <div class="col-md-2">
-        <label for="total" class="form-label">Total</label>
-        <input
-          type="text"
-          class="form-control"
-          id="total"
-          name="total"
-          placeholder="Total"
-          readonly
-        />
-      </div>
-    </div>
-
-    <!-- Campo Observação do Produto -->
-    <div class="row mb-3">
-      <div class="col-md-12">
-        <label for="obs_item" class="form-label">Observação</label>
-        <input
-          type="text"
-          class="form-control"
-          id="obs_item"
-          name="obs_item"
-          placeholder="Detalhes do item..."
-        />
-      </div>
-    </div>
-
-    <div
-      id="div-opcionais-composto"
-      style="display: none"
-      class="mb-3 p-3 border rounded"
-    >
-      <h6>Opções do produto</h6>
-      <div id="grupos-opcionais-container"></div>
-    </div>
-
-    <!-- Botão Adicionar Item -->
-    <div class="row mb-3">
-      <div class="col-md-12 d-flex justify-content-between">
-        <button
-          type="button"
-          class="btn btn-outline-danger"
-          onclick="limparItens()"
-        >
-          Limpar Itens
-        </button>
-        <button type="button" class="btn btn-primary" onclick="adicionarItem()">
-          Adicionar Produto
-        </button>
-      </div>
-    </div>
-
-    <!-- Tabela de Itens -->
-    <table class="table table-bordered" id="tabela_itens">
-      <thead>
-        <tr>
-          <th>Cód</th>
-          <th>Descrição</th>
-          <th>Item Produção</th>
-          <th>Embalagem</th>
-          <th>Peso</th>
-          <th>Setor</th>
-          <th>Qtd</th>
-          <th>Qtd Un</th>
-          <th>Preço</th>
-          <th>Total</th>
-          <th>Obs</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <div class="row mb-3">
-      <div class="col-md-12 text-end">
-        <div class="d-inline-flex" style="gap: 10px">
-          <a href="/pedidos/consulta" class="btn btn-secondary">Voltar</a>
-          <button
-            type="button"
-            class="btn btn-success"
-            onclick="salvarPedido()"
-          >
-            Salvar Pedido
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="row mb-3">
-      <div class="col-md-3 offset-md-9 text-end">
-        <label for="valor_total_pedido" class="form-label"
-          >Valor Total do Pedido:</label
-        >
-        <input
-          type="text"
-          id="valor_total_pedido"
-          class="form-control text-end"
-          readonly
-          value="0,00"
-        />
-      </div>
-    </div>
-  </form>
-</div>
-
-<!-- Modal Opções do Produto -->
-<div
-  class="modal fade"
-  id="modalOpcoes"
-  tabindex="-1"
-  aria-labelledby="modalOpcoesLabel"
-  aria-hidden="true"
->
-  <div class="modal-dialog modal-lg">
+<div class="modal fade" id="modalComposto" tabindex="-1" aria-labelledby="modalCompostoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="modalOpcoesLabel">Opções do Produto</h5>
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="modal"
-          aria-label="Fechar"
-        ></button>
+        <h5 class="modal-title" id="modalCompostoLabel">Novo Composto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
-      <div class="modal-body" id="modalOpcoesBody">
-        <!-- conteúdo inserido via JS -->
+
+      <div class="modal-body">
+        <div id="modal_composto_error"></div>
+
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label class="form-label">Produto pai <span class="text-danger">*</span></label>
+            <div style="position: relative">
+              <input type="text" class="form-control" id="composto_produto_busca" placeholder="ID ou nome..."
+                autocomplete="off" />
+              <input type="hidden" id="composto_id_produto" />
+              <ul id="composto_produto_sugestoes" class="list-group" style="
+                  position: absolute;
+                  z-index: 999;
+                  width: 100%;
+                  max-height: 180px;
+                  overflow-y: auto;
+                  display: none;
+                "></ul>
+            </div>
+            <small id="composto_produto_hint" class="text-muted"></small>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Tipo <span class="text-danger">*</span></label>
+            <select class="form-select" id="composto_tipo">
+              <option value="">Selecione...</option>
+              <option value="combo">Combo</option>
+              <option value="cestaPaes">Cesta de Pães</option>
+              <option value="cestaCafeManha">Cesta Café da Manhã</option>
+              <option value="kitHibrido">Kit Híbrido</option>
+              <option value="coffeeBreak">Coffee Break</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Mín. Pessoas</label>
+            <input type="number" min="1" class="form-control" id="composto_min_pessoas" placeholder="ex: 10" />
+          </div>
+        </div>
+
+        <ul class="nav nav-tabs mb-3">
+          <li class="nav-item">
+            <button type="button" class="nav-link active" data-aba="itens" onclick="trocarAbaComposto('itens')">
+              Itens Fixos (<span id="contador_itens">0</span>)
+            </button>
+          </li>
+          <li class="nav-item">
+            <button type="button" class="nav-link" data-aba="opcionais" onclick="trocarAbaComposto('opcionais')">
+              Grupos Opcionais (<span id="contador_grupos">0</span>)
+            </button>
+          </li>
+          <li class="nav-item">
+            <button type="button" class="nav-link" data-aba="calculo" onclick="trocarAbaComposto('calculo')">
+              Cálculo / Pessoa
+            </button>
+          </li>
+        </ul>
+
+        <!-- Aba: Itens fixos -->
+        <div id="aba_itens">
+          <div class="d-flex justify-content-end mb-2">
+            <button type="button" class="btn btn-outline-success btn-sm" onclick="adicionarItemFixo()">
+              <i class="bi bi-plus"></i>
+              Adicionar item
+            </button>
+          </div>
+          <table class="table table-sm table-bordered">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 130px">ID Produto</th>
+                <th style="width: 130px">Descrição</th>
+                <th style="width: 100px">Quantidade</th>
+                <th style="width: 130px">Peso Unit. (kg)</th>
+                <th style="width: 150px">Tipo Item</th>
+                <th style="width: 120px">Capacidade (ml)</th>
+                <th style="width: 42px"></th>
+              </tr>
+            </thead>
+            <tbody id="tabela_itens_fixos">
+              <tr id="linha_vazia_itens">
+                <td colspan="7" class="text-center text-muted py-3">
+                  Nenhum item adicionado
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Aba: Grupos opcionais -->
+        <div id="aba_opcionais" style="display: none">
+          <div class="d-flex justify-content-end mb-2">
+            <button type="button" class="btn btn-outline-success btn-sm" onclick="adicionarGrupoOpcional()">
+              <i class="bi bi-plus"></i>
+              Adicionar grupo
+            </button>
+          </div>
+          <div id="grupos_opcionais_container">
+            <p class="text-center text-muted py-3" id="msg_sem_grupos">
+              Nenhum grupo opcional
+            </p>
+          </div>
+        </div>
+
+        <!-- Aba: Cálculo por pessoa -->
+        <div id="aba_calculo" style="display: none">
+          <div class="d-flex gap-3 mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="modo_calc" id="modo_calc_nenhum" value="nenhum"
+                checked />
+              <label class="form-check-label" for="modo_calc_nenhum">Nenhum</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="modo_calc" id="modo_calc_existente"
+                value="existente" />
+              <label class="form-check-label" for="modo_calc_existente">Usar existente</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="modo_calc" id="modo_calc_novo" value="novo" />
+              <label class="form-check-label" for="modo_calc_novo">Criar novo</label>
+            </div>
+          </div>
+
+          <div id="calc_existente_box" style="display: none; max-width: 420px">
+            <label class="form-label">Selecionar cálculo</label>
+            <select class="form-select" id="calc_existente_id">
+              <option value="">Selecione...</option>
+            </select>
+          </div>
+
+          <div id="calc_novo_box" class="row" style="display: none">
+            <div class="col-md-4">
+              <label class="form-label">Bebida (ml / pessoa)</label>
+              <input type="number" class="form-control" id="calc_bebida_ml" placeholder="ex: 500" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Bolo (g / pessoa)</label>
+              <input type="number" class="form-control" id="calc_bolo_g" placeholder="ex: 100" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Salgados (un / pessoa)</label>
+              <input type="number" class="form-control" id="calc_salgados_unid" placeholder="ex: 8" />
+            </div>
+          </div>
+
+          <p class="text-muted" id="calc_nenhum_msg">
+            Sem cálculo por pessoa vinculado.
+          </p>
+        </div>
       </div>
+
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Fechar
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-success" id="btnSalvarComposto">
+          Salvar
         </button>
       </div>
     </div>
   </div>
 </div>
+
 <script>
-  let mapaProdutos = {};
-  const TIPOS_MULTIPLOS = ["salgado", "salgadosFritos", "salgadosAssados"];
+  (function () {
+    const TIPOS_ITEM = [
+      {value: "salgado", label: "Salgado"},
+      {value: "bolo", label: "Bolo"},
+      {value: "paoMetro", label: "Pão Metro"},
+      {value: "bebida", label: "Bebida"},
+      {value: "salgadosFritos", label: "Salgados Fritos"},
+      {value: "salgadosAssados", label: "Salgados Assados"},
+    ];
 
-  async function buscarProdutoPorCodigo(codigo) {
-    let lojaSelecionada = $("#loja").val();
-    if (
-      !lojaSelecionada ||
-      lojaSelecionada === "" ||
-      lojaSelecionada === "Selecione..."
-    ) {
-      alert("Selecione uma loja antes de buscar o produto!");
-      return;
+    let itensFixos = []; // { key, id_produto, descricao, quantidade, peso_unitario_kg, tipo_item, capacidade_ml }
+    let gruposOpcionais = []; // { key, chave, quantidade_total, itens: [{ key, id_produto, descricao, quantidade }] }
+    let compostoIdEdicao = null;
+    let proximoKey = 1;
+
+    // ── inicialização (modo "novo") ──────────────────────────────────────────
+    function inicializarModalComposto() {
+      compostoIdEdicao = null;
+      itensFixos = [];
+      gruposOpcionais = [];
+      $("#modalCompostoLabel").text("Novo Composto");
+      $("#composto_produto_busca").prop("disabled", false);
+      $("#composto_produto_hint").text("");
+      carregarCalculosDisponiveis();
+      renderItensFixos();
+      renderGruposOpcionais();
     }
-    if (!codigo) {
-      alert("Informe o código do produto!");
-      return;
-    }
 
-    const codigoNum = parseInt(codigo);
-    const produto = mapaProdutos[codigoNum];
-    if (!produto) {
-      alert("Produto não encontrado!");
-      limparCamposProduto();
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `/api/preco/${produto.id_produto}/${lojaSelecionada}`,
-      );
-      const data = await response.json();
-
-      if (data && data.ativo === false) {
-        alert("Produto inativo/excluído para esta loja. Selecione outro item.");
-        if (typeof limparCamposProduto === "function") limparCamposProduto();
-        return;
-      }
-
-      produto.precovenda = data.precovenda ?? 0;
-      produto.setor = data.id_setor ?? "";
-      await preencherProduto(produto);
-      let associados = await buscarAssociados(produto.id_produto);
-      let divAssoc = document.getElementById("div-item-associado");
-      let select = document.getElementById("item-associado");
-      select.innerHTML = "";
-      if (associados.length > 0) {
-        select.innerHTML = '<option value="">Selecione...</option>';
-        associados.forEach(function (assoc) {
-          let opt = document.createElement("option");
-          opt.value = assoc.id;
-          opt.text = assoc.nome;
-          select.appendChild(opt);
-        });
-        divAssoc.style.display = "block";
-      } else {
-        divAssoc.style.display = "none";
-      }
-    } catch (error) {
-      console.error("Erro ao buscar preço/setor do produto:", error);
-      alert("Erro ao buscar preço e setor!");
-    }
-  }
-
-  function limparItens() {
-    document.querySelector("#tabela_itens tbody").innerHTML = "";
-    atualizarTotalPedido();
-  }
-
-  async function explodirComposto(
-    composto,
-    item,
-    id_loja,
-    quantidade_un,
-    escolhas_opcionais,
-  ) {
-    const res = await fetch(
-      `/api/produtos_compostos/explodir/${item.cod_produto}`,
-      {
+    // ── carrega dados pra edição ─────────────────────────────────────────────
+    function carregarCompostoEdicao(id) {
+      fetch(`/api/produtos_compostos/${id}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id_loja: parseInt(id_loja),
-          pessoas: composto.calculo_pessoa ? quantidade_un : undefined,
-          quantidade: composto.calculo_pessoa ? undefined : quantidade_un,
-          escolhas_opcionais,
-        }),
-      },
-    );
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      alert(err.erro || "Erro ao processar composto.");
-      return false;
-    }
-    const data = await res.json();
-    const tabela = document.getElementById("tabela_itens");
-    adicionarLinhaItemPedido(item);
-    data.itens.forEach((filho) => {
-      const row = tabela.insertRow();
-      row.dataset.idSetor = filho.id_setor || "";
-      row.dataset.codProdutoAssociado = filho.cod_produto_associado || "";
-      [
-        filho.cod_produto,
-        filho.descricao,
-        filho.desc_produto_associado,
-        filho.tipo_embalagem,
-        filho.peso_liquido,
-        filho.setor,
-        filho.quantidade,
-        filho.quantidade_un,
-        filho.preco_venda,
-        filho.total,
-        filho.observacao,
-      ].forEach((valor) => {
-        const cell = row.insertCell();
-        cell.textContent = valor ?? "";
-      });
-      const actionsCell = row.insertCell();
-      actionsCell.innerHTML = `
-            <button type="button" class="btn btn-warning btn-sm me-1" onclick="editarItem(this)">Editar</button>
-            <button type="button" class="btn btn-danger btn-sm" onclick="excluirItem(this)">Excluir</button>
-        `;
-    });
-    atualizarTotalPedido();
-    return true;
-  }
-
-  function renderizarOpcionais(grupos) {
-    const container = document.getElementById("grupos-opcionais-container");
-    container.innerHTML = "";
-
-    grupos.forEach((grupo) => {
-      const multiplo = TIPOS_MULTIPLOS.includes(grupo.chave);
-      const tipo_input = multiplo ? "checkbox" : "radio";
-      const nome_grupo = `opcional_${grupo.chave}`;
-      const qtd_total = grupo.quantidade_total;
-
-      let html = `<div class="mb-2">
-            <strong>${grupo.chave}</strong>
-            <span class="text-muted ms-2" id="info_${nome_grupo}">
-                ${multiplo ? `Escolha até 2 sabores (total: ${qtd_total} un)` : `Escolha 1 opção (${qtd_total} un)`}
-            </span><br>`;
-
-      grupo.itens.forEach((item) => {
-        html += `
-                <div class="form-check">
-                    <input class="form-check-input" type="${tipo_input}"
-                        name="${nome_grupo}"
-                        value="${item.id_produto}"
-                        data-qtd-total="${qtd_total}"
-                        ${multiplo ? `onchange="atualizarCheckboxes('${nome_grupo}')"` : ""}>
-                    <label class="form-check-label">
-                        ${item.descricao}
-                        <span class="text-muted" id="qtd_${nome_grupo}_${item.id_produto}"></span>
-                    </label>
-                </div>`;
-      });
-      html += `</div>`;
-      container.innerHTML += html;
-    });
-
-    document.getElementById("div-opcionais-composto").style.display = "block";
-  }
-
-  function atualizarCheckboxes(nome_grupo) {
-    const inputs = document.querySelectorAll(
-      `input[name="${nome_grupo}"]:checked`,
-    );
-    const todos = document.querySelectorAll(`input[name="${nome_grupo}"]`);
-    const qtd_total = parseInt(todos[0]?.dataset.qtdTotal || 0);
-    const escolhidos = inputs.length;
-
-    if (escolhidos > 2) {
-      this.checked = false; // não funciona aqui, precisa passar o elemento
-      return;
-    }
-
-    const qtd_por_item =
-      escolhidos > 0 ? Math.floor(qtd_total / escolhidos) : 0;
-    todos.forEach((input) => {
-      const span = document.getElementById(`qtd_${nome_grupo}_${input.value}`);
-      if (span) span.textContent = input.checked ? ` — ${qtd_por_item} un` : "";
-      if (!input.checked) input.disabled = escolhidos >= 2;
-    });
-  }
-
-  function coletarEscolhasOpcionais() {
-    const escolhas = {};
-    document
-      .querySelectorAll("#grupos-opcionais-container input:checked")
-      .forEach((input) => {
-        const chave = input.name.replace("opcional_", "");
-        escolhas[chave] = escolhas[chave] || [];
-        escolhas[chave].push(parseInt(input.value));
-      });
-    return escolhas;
-  }
-
-  function sincronizarCampos(evt = null) {
-    const quantidade =
-      parseFloat(
-        document.getElementById("quantidade").value.replace(",", "."),
-      ) || 0;
-    const pesoBruto =
-      parseFloat(
-        document.getElementById("peso_bruto").value.replace(",", "."),
-      ) || 0;
-    const qtdUn =
-      parseFloat(
-        document.getElementById("quantidade_un").value.replace(",", "."),
-      ) || 0;
-
-    const origem = evt ? evt.target.id : null;
-
-    if (origem === "quantidade") {
-      if (pesoBruto > 0) {
-        document.getElementById("quantidade_un").value = (
-          quantidade / pesoBruto
-        ).toFixed(0);
-      }
-    }
-
-    if (origem === "quantidade_un") {
-      if (pesoBruto > 0) {
-        const pesoTotal = qtdUn * pesoBruto;
-        document.getElementById("quantidade").value = pesoTotal.toFixed(3);
-      }
-    }
-
-    if (origem === "peso_bruto") {
-      if (qtdUn > 0) {
-        const pesoTotal = qtdUn * pesoBruto;
-        document.getElementById("quantidade").value = pesoTotal.toFixed(3);
-      } else if (quantidade > 0) {
-        document.getElementById("quantidade_un").value = (
-          quantidade / pesoBruto
-        ).toFixed(0);
-      }
-    }
-
-    calcularTotal();
-  }
-
-  function calcularTotal() {
-    const quantidade =
-      parseFloat(
-        document.getElementById("quantidade").value.replace(",", "."),
-      ) || 0;
-    const precoVenda =
-      parseFloat(
-        document.getElementById("preco_venda").value.replace(",", "."),
-      ) || 0;
-    const total = quantidade * precoVenda;
-    document.getElementById("total").value = total.toFixed(2);
-  }
-
-  $("#cod_produto").on("keydown", function (e) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      let codigo = $("#cod_produto").val().trim();
-      buscarProdutoPorCodigo(codigo);
-    }
-  });
-
-  async function buscarAssociados(id_produto_principal) {
-    // Troque a rota conforme seu backend
-    const response = await fetch(
-      `/api/produtos/opcoes_associadas/${id_produto_principal}`,
-    );
-    if (!response.ok) return [];
-    return await response.json();
-  }
-
-  async function adicionarItem() {
-    const id_loja = document.getElementById("loja").value;
-    if (!id_loja || id_loja === "Selecione...") {
-      alert("Selecione uma loja antes de adicionar produtos!");
-      return;
-    }
-    const item = {
-      cod_produto: document.getElementById("cod_produto").value.trim(),
-      descricao: document.getElementById("desc_produto").value.trim(),
-      cod_produto_associado:
-        document.getElementById("item-associado").value || "",
-      desc_produto_associado:
-        document.getElementById("item-associado").selectedOptions.length > 0
-          ? document.getElementById("item-associado").selectedOptions[0].text
-          : "",
-      tipo_embalagem: document.getElementById("tipo_embalagem").value.trim(),
-      peso_bruto: document.getElementById("peso_bruto").value.trim(),
-      id_setor: document.getElementById("id_setor_hidden").value.trim(),
-      quantidade: document.getElementById("quantidade").value.trim(),
-      quantidade_un: document.getElementById("quantidade_un").value.trim(),
-      preco_venda: document.getElementById("preco_venda").value.trim(),
-      total: document.getElementById("total").value.trim(),
-      observacao: document.getElementById("obs_item").value.trim(),
-    };
-    if (!item.cod_produto) {
-      alert("Informe o código do produto antes de adicionar!");
-      return;
-    }
-    if (!item.quantidade || parseFloat(item.quantidade) <= 0) {
-      alert("Informe uma quantidade válida antes de adicionar!");
-      return;
-    }
-    if (
-      document.getElementById("div-item-associado").style.display === "block" &&
-      !item.cod_produto_associado
-    ) {
-      alert("Selecione o item associado!");
-      return;
-    }
-    const resComposto = await fetch(
-      `/api/produtos_compostos/${item.cod_produto}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {"Content-Type": "application/json"},
         body: JSON.stringify({}),
-      },
-    );
-    if (resComposto.ok) {
-      const composto = await resComposto.json();
-      const qtd_un = parseInt(item.quantidade_un) || 0;
-      const min = composto.min_pessoas;
-      if (min && qtd_un < min) {
-        alert(`Produto composto requer mínimo de ${min} pessoas.`);
-        return;
-      }
-
-      if (composto.grupos_opcionais.length > 0) {
-        // ainda não escolheu — renderiza e aguarda
-        if (
-          document.getElementById("div-opcionais-composto").style.display ===
-          "none"
-        ) {
-          window._compostoAtual = { composto, item, id_loja, qtd_un };
-          renderizarOpcionais(composto.grupos_opcionais);
-          return;
-        }
-        // já renderizou — coleta e explode
-        const escolhas = coletarEscolhasOpcionais();
-        const {
-          composto: c,
-          item: i,
-          id_loja: l,
-          qtd_un: q,
-        } = window._compostoAtual;
-        document.getElementById("div-opcionais-composto").style.display =
-          "none";
-        window._compostoAtual = null;
-        await explodirComposto(c, i, l, q, escolhas);
-        return;
-      }
-
-      await explodirComposto(composto, item, id_loja, qtd_un, {});
-      return;
-    }
-    adicionarLinhaItemPedido(item);
-    document.getElementById("div-item-associado").style.display = "none";
-  }
-
-  function adicionarLinhaItemPedido(item) {
-    const tbody = document.querySelector("#tabela_itens tbody");
-    const row = tbody.insertRow();
-    row.dataset.idSetor = document.getElementById("id_setor_hidden").value;
-    row.dataset.codProdutoAssociado = item.cod_produto_associado;
-    [
-      item.cod_produto,
-      item.descricao,
-      item.desc_produto_associado,
-      item.tipo_embalagem,
-      item.peso_bruto,
-      document.getElementById("setor").value, // setor
-      item.quantidade,
-      item.quantidade_un,
-      item.preco_venda,
-      item.total,
-      item.observacao,
-    ].forEach((valor) => {
-      const cell = row.insertCell();
-      cell.textContent = valor;
-    });
-
-    const actionsCell = row.insertCell();
-    actionsCell.innerHTML = `
-        <button type="button" class="btn btn-warning btn-sm me-1" onclick="editarItem(this)">Editar</button>
-        <button type="button" class="btn btn-danger btn-sm" onclick="excluirItem(this)">Excluir</button>
-    `;
-
-    [
-      "cod_produto",
-      "desc_produto",
-      "tipo_embalagem",
-      "peso_bruto",
-      "setor",
-      "quantidade",
-      "quantidade_un",
-      "preco_venda",
-      "total",
-      "obs_item",
-    ].forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) el.value = "";
-    });
-
-    document.getElementById("div-item-associado").style.display = "none";
-    document.getElementById("cod_produto").focus();
-    atualizarTotalPedido();
-  }
-
-  function atualizarTotalPedido() {
-    let total = 0;
-    const tabela = document.getElementById("tabela_itens");
-    const linhas = tabela.getElementsByTagName("tr");
-
-    for (let i = 0; i < linhas.length; i++) {
-      const celulas = linhas[i].getElementsByTagName("td");
-      if (celulas.length > 8) {
-        let valorLinha =
-          parseFloat(celulas[9].textContent.replace(",", ".")) || 0;
-        total += valorLinha;
-      }
-    }
-
-    document.getElementById("valor_total_pedido").value = total
-      .toFixed(2)
-      .replace(".", ",");
-  }
-
-  function editarItem(botao) {
-    const row = botao.parentElement.parentElement;
-    const cells = row.querySelectorAll("td");
-
-    document.getElementById("cod_produto").value = cells[0].textContent;
-    document.getElementById("desc_produto").value = cells[1].textContent;
-    document.getElementById("tipo_embalagem").value = cells[2].textContent;
-    document.getElementById("peso_bruto").value = cells[3].textContent;
-    document.getElementById("setor").value = cells[4].textContent;
-    document.getElementById("quantidade").value = cells[5].textContent;
-    document.getElementById("quantidade_un").value = cells[6].textContent;
-    document.getElementById("preco_venda").value = cells[7].textContent;
-    document.getElementById("total").value = cells[8].textContent;
-    document.getElementById("obs_item").value = cells[9].textContent;
-
-    row.remove();
-  }
-
-  function excluirItem(botao) {
-    const row = botao.parentElement.parentElement;
-    row.remove();
-  }
-
-  // Impede que Enter submeta o form (exceto em <textarea>)
-  document.addEventListener("DOMContentLoaded", () => {
-    const inputData = document.getElementById("data");
-    const inputHora = document.getElementById("hora");
-    const form = document.getElementById("form-novo-pedido");
-
-    function validarDataHora() {
-      const data = inputData.value;
-      const hora = inputHora.value;
-
-      if (!data || !hora) return;
-
-      const dataHoraSelecionada = new Date(`${data}T${hora}`);
-      const agora = new Date();
-
-      if (dataHoraSelecionada < agora) {
-        alert("Data/hora inválida!");
-        inputHora.value = "";
-      }
-    }
-
-    inputData.addEventListener("change", validarDataHora);
-    inputHora.addEventListener("change", validarDataHora);
-
-    form.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") {
-        e.preventDefault();
-      }
-    });
-  });
-
-  // (Opcional) Se quiser reforçar só no campo "Tipo Embalagem"
-  document.getElementById("tipo_embalagem").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") e.preventDefault();
-  });
-
-  async function salvarPedido() {
-    // Pergunta antes de salvar
-    const confirmar = window.confirm("Salvar pedido?");
-    if (!confirmar) {
-      // usuário clicou "Não" -> não chama API e não limpa a tela
-      return;
-    }
-
-    const tabela = document.getElementById("tabela_itens");
-    const linhas = Array.from(tabela.getElementsByTagName("tr")).slice(1);
-    const id_cliente =
-      document.getElementById("id_cliente_hidden").value || null;
-
-    if (linhas.length === 0) {
-      alert("Nenhum item adicionado!");
-      return;
-    }
-
-    const itens = [];
-    linhas.forEach((row) => {
-      const cells = row.querySelectorAll("td");
-      itens.push({
-        cod_produto: cells[0].textContent,
-        descricao: cells[1].textContent,
-        cod_produto_associado: row.dataset.codProdutoAssociado || "",
-        desc_produto_associado: cells[2].textContent,
-        tipo_embalagem: cells[3].textContent,
-        peso_bruto: cells[4].textContent,
-        id_setor: row.dataset.idSetor || "",
-        setor: cells[5].textContent,
-        quantidade: cells[6].textContent,
-        quantidade_un: cells[7].textContent,
-        valor_unitario: parseFloat(cells[8].textContent.replace(",", ".")) || 0,
-        total: cells[9].textContent,
-        observacao: cells[10].textContent,
-      });
-    });
-
-    // CAPTURAR OS DADOS FALTANTES
-    const id_loja = document.getElementById("loja").value;
-    const data_entrega = document.getElementById("data").value;
-    const hora_entrega = document.getElementById("hora").value;
-    const telefone = document.getElementById("telefone").value;
-    const observacoes = document.querySelector(
-      'textarea[name="observacoes"]',
-    ).value;
-    const tipo_entrega = document.querySelector(
-      'input[name="tipo_entrega"]:checked',
-    ).value;
-
-    if (!id_cliente) {
-      alert("Selecione um cliente válido!");
-      return;
-    }
-    if (!id_loja || id_loja === "Selecione...") {
-      alert("Selecione uma loja!");
-      return;
-    }
-    if (!data_entrega) {
-      alert("Informe a data de entrega!");
-      return;
-    }
-    if (!hora_entrega) {
-      alert("Informe a hora de entrega!");
-      return;
-    }
-
-    const dataHoraEntrega = new Date(`${data_entrega}T${hora_entrega}`);
-    const agora = new Date();
-
-    if (dataHoraEntrega < agora) {
-      alert(
-        "A data e hora de entrega não podem ser menores que o momento atual!",
-      );
-      return;
-    }
-
-    const dadosPedido = {
-      id_cliente,
-      id_loja,
-      data_entrega,
-      hora_entrega,
-      telefone,
-      observacoes,
-      tipo_entrega,
-      itens,
-      id_status: 0,
-    };
-
-    try {
-      const response = await fetch("/api/pedido/salvar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dadosPedido),
-      });
-
-      if (response.ok) {
-        alert("Pedido salvo com sucesso!");
-        // recarrega a tela para inserir um novo pedido
-        // (se preferir, pode redirecionar para a rota de "novo")
-        // window.location.href = '/pedidos/novo';
-        window.location.reload();
-      } else {
-        const erro = await response.json().catch(() => ({}));
-        alert("Erro ao salvar pedido! " + (erro.erro || ""));
-      }
-    } catch (error) {
-      console.error("Erro:", error);
-      alert("Erro ao salvar pedido!");
-    }
-  }
-
-  // Exibe/oculta campo de endereço conforme tipo de entrega
-  const entregaRadio = document.getElementById("entrega");
-  const retiradaRadio = document.getElementById("retirada");
-  const balcaoRadio = document.getElementById("balcao");
-  const enderecoContainer = document.getElementById("endereco-container");
-
-  entregaRadio.addEventListener(
-    "change",
-    () => (enderecoContainer.style.display = "block"),
-  );
-  retiradaRadio.addEventListener(
-    "change",
-    () => (enderecoContainer.style.display = "none"),
-  );
-  balcaoRadio.addEventListener(
-    "change",
-    () => (enderecoContainer.style.display = "none"),
-  );
-
-  let clientesCache = [];
-  let lojasCache = [];
-  async function preencherProduto(produto) {
-    document.getElementById("cod_produto").value = produto.id_produto;
-    document.getElementById("desc_produto").value = produto.descricaocompleta;
-    document.getElementById("tipo_embalagem").value = produto.tipoembalagem;
-    document.getElementById("peso_bruto").value = produto.pesobruto ?? "";
-
-    let idProduto = produto.id_produto;
-    let idLoja = document.getElementById("loja").value;
-
-    if (idProduto && idLoja && idLoja !== "Selecione...") {
-      try {
-        const response = await fetch(`/api/preco/${idProduto}/${idLoja}`);
-        const data = await response.json();
-        document.getElementById("preco_venda").value = data.precovenda ?? 0;
-        document.getElementById("setor").value = data.descricao_setor ?? "";
-        document.getElementById("id_setor_hidden").value = data.id_setor ?? "";
-        calcularTotal(); // Só calcula depois que preencheu o preço
-      } catch (error) {
-        console.error("Erro ao buscar preço e setor:", error);
-        document.getElementById("preco_venda").value = 0;
-        document.getElementById("setor").value = "";
-        calcularTotal();
-      }
-    } else {
-      alert("Selecione a loja antes de buscar produto!");
-      limparCamposProduto();
-    }
-  }
-  $(document).ready(function () {
-    $.getJSON("/api/clientes", function (data) {
-      clientesCache = data.map((c) => ({
-        ...c,
-        nome_normalizado: c.nome
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[^\w\s]/gi, ""),
-      }));
-    });
-
-    function carregarMapaProdutos(lojaId) {
-      mapaProdutos = {};
-      if (!lojaId) return;
-
-      $.getJSON(`/api/produtos?ativos=1&id_loja=${lojaId}`, function (data) {
-        data.forEach((prod) => {
-          mapaProdutos[prod.id_produto] = prod;
-        });
-      });
-    }
-
-    // quando preencher o select de lojas, adicione este handler:
-    $("#loja").on("change", function () {
-      const lojaId = $(this).val();
-      carregarMapaProdutos(lojaId);
-
-      // opcional: limpar campos do produto atual (se existir a função)
-      if (typeof limparCamposProduto === "function") {
-        limparCamposProduto();
-      }
-    });
-
-    $.getJSON("/api/lojas", function (data) {
-      lojasCache = data;
-      const $select = $("#loja");
-      $select.empty();
-      $select.append("<option selected>Selecione...</option>");
-      data.forEach((l) => {
-        $select.append(`<option value="${l.id}">${l.descricao}</option>`);
-      });
-    });
-
-    $("#cliente").on("input", function () {
-      if (clientesCache.length === 0) return;
-
-      let buscaOriginal = $(this).val();
-      let busca = buscaOriginal
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[^\w\s]/gi, "");
-      let buscaNumerica = buscaOriginal.replace(/\D/g, "");
-
-      if (busca.length < 3 && buscaNumerica.length < 3) {
-        $("#sugestoes-clientes").empty();
-        return;
-      }
-
-      let sugestoesFiltradas = clientesCache
-        .filter((c) => {
-          const telefoneLimpo = c.telefone.replace(/\D/g, "");
-
-          const achouNome = c.nome_normalizado.includes(busca);
-          const achouTelefone = telefoneLimpo.includes(buscaNumerica);
-          return (busca && achouNome) || (buscaNumerica && achouTelefone);
-        })
-        .slice(0, 10);
-      clientesCache.filter((c) => c.nome_normalizado.includes("pedro"));
-
-      $("#sugestoes-clientes").empty();
-      sugestoesFiltradas.forEach((c) => {
-        $("#sugestoes-clientes").append(
-          `<button type="button" class="list-group-item list-group-item-action" data-cliente='${JSON.stringify(c)}'>${c.nome} - ${c.telefone}</button>`,
-        );
-      });
-    });
-
-    $("#sugestoes-clientes").on("click", "button", function () {
-      preencherCliente($(this).data("cliente"));
-      $("#sugestoes-clientes").empty();
-    });
-
-    $("#cliente").on("keydown", function (e) {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        if (clientesCache.length === 0) return;
-
-        const buscaOriginal = $(this).val();
-        const busca = buscaOriginal
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[^\w\s]/gi, "");
-        const buscaNumerica = buscaOriginal.replace(/\D/g, "");
-
-        const cliente = clientesCache.find((c) => {
-          const telefoneLimpo = c.telefone.replace(/\D/g, "");
-          return (
-            c.nome_normalizado === busca || telefoneLimpo === buscaNumerica
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          compostoIdEdicao = data.id;
+          $("#modalCompostoLabel").text(`Editar Composto #${data.id}`);
+          $("#composto_id_produto").val(data.id);
+          $("#composto_produto_busca")
+            .val(data.nome_produto || "")
+            .prop("disabled", true);
+          $("#composto_produto_hint").text(
+            "ID não pode ser alterado após criação.",
           );
-        });
+          $("#composto_tipo").val(data.tipo || "");
+          $("#composto_min_pessoas").val(data.pedido_min_pessoas ?? "");
 
-        if (cliente) preencherCliente(cliente);
-        else alert("Cliente não encontrado!");
-      }
-    });
+          itensFixos = (data.itens_fixos || []).map((it) => ({
+            key: proximoKey++,
+            ...it,
+          }));
+          gruposOpcionais = (data.grupos_opcionais || []).map((g) => ({
+            key: proximoKey++,
+            chave: g.chave,
+            quantidade_total: g.quantidade_total,
+            itens: (g.itens || []).map((it) => ({key: proximoKey++, ...it})),
+          }));
 
-    $("#quantidade, #preco_venda").on("input", function () {
-      calcularTotal();
-    });
+          renderItensFixos();
+          renderGruposOpcionais();
 
-    function preencherCliente(cliente) {
-      $("#cliente").val(cliente.nome);
-      $("#telefone").val(cliente.telefone);
-      $("#endereco").val(
-        `${cliente.endereco}, ${cliente.cidade} - ${cliente.estado}`,
-      );
-      $("#obs_endereco").val(cliente.observacao);
-      $("#id_cliente_hidden").val(cliente.id);
+          carregarCalculosDisponiveis(() => {
+            if (data.calculo_pessoa) {
+              if (data.calculo_pessoa.id) {
+                $("#modo_calc_existente").prop("checked", true);
+                $("#calc_existente_id").val(data.calculo_pessoa.id);
+              } else {
+                $("#modo_calc_novo").prop("checked", true);
+                $("#calc_bebida_ml").val(data.calculo_pessoa.bebida_ml ?? "");
+                $("#calc_bolo_g").val(data.calculo_pessoa.bolo_g ?? "");
+                $("#calc_salgados_unid").val(
+                  data.calculo_pessoa.salgados_unid ?? "",
+                );
+              }
+            }
+            atualizarVisibilidadeCalculo();
+          });
+        })
+        .catch(() => alert("Erro ao carregar dados do composto."));
     }
 
-    function calcularTotal() {
-      const qtd = parseFloat($("#quantidade").val().replace(",", ".")) || 0;
-      const preco = parseFloat($("#preco_venda").val().replace(",", ".")) || 0;
-      const total = qtd * preco;
-      $("#total").val(total.toFixed(2));
-    }
-  });
-
-  $("#desc_produto").on("keydown", function (e) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      let termo = $("#desc_produto").val().trim();
-      if (termo.length < 3) {
-        alert("Digite pelo menos 3 letras!");
-        return;
-      }
-      $.ajax({
-        url: "/api/produtos/busca_descricao",
-        method: "POST",
-        contentType: "application/json",
-        data: JSON.stringify({ termo: termo }),
-        success: function (produtos) {
-          let $lista = $("#sugestoes-produtos");
-          $lista.empty();
-          if (produtos.length === 0) {
-            $lista.append(
-              '<button type="button" class="list-group-item list-group-item-action disabled">Nenhum produto encontrado</button>',
-            );
-            return;
-          }
-          produtos.forEach(function (prod) {
-            $lista.append(
-              `<button type="button" class="list-group-item list-group-item-action"
-                            data-id="${prod.id}"
-                            data-descricao="${prod.descricaocompleta}">
-                            [${prod.id}] - ${prod.descricaocompleta}
-                        </button>`,
+    function carregarCalculosDisponiveis(callback) {
+      fetch("/api/produtos_compostos/calculos")
+        .then((res) => res.json())
+        .then((lista) => {
+          const $sel = $("#calc_existente_id");
+          $sel.empty().append('<option value="">Selecione...</option>');
+          (lista || []).forEach((c) => {
+            $sel.append(
+              `<option value="${c.id}">#${c.id} — ${c.bebida_ml}ml / ${c.salgados_unid} salg / ${c.bolo_g}g bolo</option>`,
             );
           });
-        },
+          if (typeof callback === "function") callback();
+        });
+    }
+
+    // ── abas ──────────────────────────────────────────────────────────────────
+    window.trocarAbaComposto = function (aba) {
+      ["itens", "opcionais", "calculo"].forEach((a) => {
+        $(`#aba_${a}`).toggle(a === aba);
+        $(`.nav-link[data-aba="${a}"]`).toggleClass("active", a === aba);
+      });
+    };
+
+    // ── itens fixos ───────────────────────────────────────────────────────────
+    window.adicionarItemFixo = function () {
+      itensFixos.push({
+        key: proximoKey++,
+        id_produto: "",
+        descricao: "",
+        quantidade: "",
+        peso_unitario_kg: "",
+        tipo_item: "",
+        capacidade_ml: "",
+      });
+      renderItensFixos();
+    };
+
+    window.removerItemFixo = function (key) {
+      itensFixos = itensFixos.filter((it) => it.key !== key);
+      lerItensFixosDoDom(); // sincroniza antes de re-renderizar
+      renderItensFixos();
+    };
+
+    // lê os valores atuais dos inputs de volta pro array (o DOM é fonte de verdade enquanto o usuário digita)
+    function lerItensFixosDoDom() {
+      itensFixos = itensFixos.map((it) => {
+        const $row = $(`#linha_item_${it.key}`);
+        if ($row.length === 0) return it;
+        return {
+          key: it.key,
+          id_produto: $row.find(".campo_id_item").val() || "",
+          descricao: $row.find(".campo_nome_item").val() || "",
+          quantidade: $row.find(".campo_quantidade").val(),
+          peso_unitario_kg: $row.find(".campo_peso").val(),
+          tipo_item: $row.find(".campo_tipo_item").val(),
+          capacidade_ml: $row.find(".campo_capacidade").val(),
+        };
       });
     }
-  });
 
-  $("#sugestoes-produtos").on("click", "button", function () {
-    let id_produto = $(this).data("id");
-    let descricao = $(this).data("descricao");
-
-    // Garante que o produto existe no mapa para o fluxo
-    if (!mapaProdutos[id_produto]) {
-      mapaProdutos[id_produto] = {
-        id_produto: id_produto,
-        descricaocompleta: descricao,
-        pesobruto: "",
-        tipoembalagem: "",
-        setor: "",
-      };
+    function renderItensFixos() {
+      lerItensFixosDoDom();
+      const $tbody = $("#tabela_itens_fixos");
+      $tbody.html("");
+      if (itensFixos.length === 0) {
+        $tbody.append(
+          '<tr id="linha_vazia_itens"><td colspan="7" class="text-center text-muted py-3">Nenhum item adicionado</td></tr>',
+        );
+        $("#contador_itens").text(0);
+        return;
+      }
+      console.log("a" + itensFixos)
+      itensFixos.forEach((it) => {
+        const isBebida = it.tipo_item === "bebida";
+        $tbody.append(`
+			<tr id="linha_item_${it.key}">
+			<td>
+			<div style="position:relative">
+			<input type="text" class="form-control form-control-sm campo_id_item" value="${it.id_produto || ""}" placeholder="Código..." autocomplete="off">
+			<ul class="list-group sugestoes_id" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
+			</div>
+			</td>
+			<td>
+			<div style="position:relative">
+			<input type="text" class="form-control form-control-sm campo_nome_item" value="${it.descricao || ""}" placeholder="Nome do produto..." autocomplete="off">
+			<ul class="list-group sugestoes_nome" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
+			</div>
+			</td>
+			<td><input type="number" class="form-control form-control-sm campo_quantidade" value="${it.quantidade || ""}"></td>
+			<td><input type="text" class="form-control form-control-sm campo_peso" value="${it.peso_unitario_kg || ""}" placeholder="ex: 0,250"></td>
+			<td>
+			<select class="form-select form-select-sm campo_tipo_item">
+			<option value="">—</option>
+			${TIPOS_ITEM.map((t) => `<option value="${t.value}" ${it.tipo_item === t.value ? "selected" : ""}>${t.label}</option>`).join("")}
+			</select>
+			</td>
+			<td><input type="number" class="form-control form-control-sm campo_capacidade" value="${it.capacidade_ml || ""}" placeholder="ml" ${isBebida ? "" : "disabled"}></td>
+			<td class="text-center">
+			<button type="button" class="btn btn-sm btn-danger" onclick="removerItemFixo(${it.key})"><i class="bi bi-trash"></i></button>
+			</td>
+			</tr>
+			`);
+        ativarBuscaProdutoDupla($(`#linha_item_${it.key}`));
+      });
+      $("#contador_itens").text(itensFixos.length);
     }
 
-    $("#cod_produto").val(id_produto);
-    buscarProdutoPorCodigo(id_produto);
-    $("#desc_produto").val(descricao); // Agora não trava o campo!
+    // habilita/desabilita capacidade quando tipo_item muda pra bebida
+    $(document).on("change", ".campo_tipo_item", function () {
+      const $row = $(this).closest("tr");
+      const isBebida = $(this).val() === "bebida";
+      $row
+        .find(".campo_capacidade")
+        .prop("disabled", !isBebida)
+        .val(isBebida ? $row.find(".campo_capacidade").val() : "");
+    });
 
-    $("#sugestoes-produtos").empty();
-  });
-  $("#desc_produto").on("input", function () {
-    $("#cod_produto").val("");
-    $("#tipo_embalagem").val("");
-    $("#peso_bruto").val("");
-    $("#setor").val("");
-    $("#id_setor_hidden").val("");
-    $("#preco_venda").val("");
-    $("#total").val("");
-  });
+    // formata peso: só dígitos e vírgula
+    $(document).on("input", ".campo_peso", function () {
+      this.value = this.value.replace(".", ",").replace(/[^0-9,]/g, "");
+    });
+
+    // ── grupos opcionais ──────────────────────────────────────────────────────
+    window.adicionarGrupoOpcional = function () {
+      gruposOpcionais.push({
+        key: proximoKey++,
+        chave: "",
+        quantidade_total: "",
+        itens: [],
+      });
+      renderGruposOpcionais();
+    };
+
+    window.removerGrupoOpcional = function (gKey) {
+      gruposOpcionais = gruposOpcionais.filter((g) => g.key !== gKey);
+      renderGruposOpcionais();
+    };
+
+    window.adicionarItemGrupo = function (gKey) {
+      lerGruposDoDom();
+      const grupo = gruposOpcionais.find((g) => g.key === gKey);
+      grupo.itens.push({key: proximoKey++, id_produto: "", descricao: "", quantidade: ""});
+      renderGruposOpcionais();
+    };
+
+    window.removerItemGrupo = function (gKey, iKey) {
+      lerGruposDoDom();
+      const grupo = gruposOpcionais.find((g) => g.key === gKey);
+      grupo.itens = grupo.itens.filter((it) => it.key !== iKey);
+      renderGruposOpcionais();
+    };
+
+    function lerGruposDoDom() {
+      gruposOpcionais = gruposOpcionais.map((g) => {
+        const $card = $(`#grupo_${g.key}`);
+        if ($card.length === 0) return g;
+        const chave = $card.find(".campo_chave_grupo").val();
+        const quantidade_total = $card.find(".campo_qtd_total").val() || "";
+        const itens = g.itens.map((it) => {
+          const $row = $(`#grupo_${g.key}_item_${it.key}`);
+          if ($row.length === 0) return it;
+          return {
+            key: it.key,
+            id_produto: $row.find(".campo_id_item").val() || "",
+            descricao: $row.find(".campo_nome_item").val() || "",
+            quantidade: $row.find(".campo_quantidade").val(),
+          };
+        });
+        return {key: g.key, chave, quantidade_total, itens};
+      });
+    }
+
+    function renderGruposOpcionais() {
+      lerGruposDoDom();
+      const $container = $("#grupos_opcionais_container");
+      $container.html("");
+      if (gruposOpcionais.length === 0) {
+        $container.append(
+          '<p class="text-center text-muted py-3" id="msg_sem_grupos">Nenhum grupo opcional</p>',
+        );
+        $("#contador_grupos").text(0);
+        return;
+      }
+      gruposOpcionais.forEach((g) => {
+        $container.append(`
+			<div class="card mb-3" id="grupo_${g.key}">
+			<div class="card-header d-flex align-items-center gap-2">
+			<label class="mb-0 me-1 text-nowrap">Chave do grupo:</label>
+			<select class="form-select form-select-sm campo_chave_grupo" style="max-width:200px">
+			<option value="">Selecione...</option>
+			${TIPOS_ITEM.map((t) => `<option value="${t.value}" ${g.chave === t.value ? "selected" : ""}>${t.label}</option>`).join("")}
+			</select>
+			<label class="mb-0 ms-3 me-1 text-nowrap">Qtd total:</label>
+			<input type="number" class="form-control form-control-sm campo_qtd_total" style="max-width:100px" value="${g.quantidade_total || ""}" placeholder="ex: 40">
+			<button type="button" class="btn btn-outline-success btn-sm ms-auto" onclick="adicionarItemGrupo(${g.key})"><i class="bi bi-plus"></i> Item</button>
+			<button type="button" class="btn btn-outline-danger btn-sm" onclick="removerGrupoOpcional(${g.key})"><i class="bi bi-trash"></i> Remover grupo</button>
+			</div>
+			<div class="card-body p-2">
+			<table class="table table-sm table-bordered mb-0">
+			<thead class="table-light">
+          <tr>
+            <th style="width:130px">ID Produto</th>
+            <th>Descrição</th>
+            <th style="width:110px">Quantidade</th>
+            <th style="width:42px"></th>
+          </tr>
+      </thead>
+			<tbody id="grupo_${g.key}_itens">
+			${g.itens.length === 0 ? '<tr><td colspan="4" class="text-center text-muted">Nenhum item neste grupo</td></tr>' : ""}
+			</tbody>
+			</table>
+			</div>
+			</div>
+			`);
+        g.itens.forEach((it) => {
+          const $tbody = $(`#grupo_${g.key}_itens`);
+          $tbody.append(`
+					<tr id="grupo_${g.key}_item_${it.key}">
+					<td>
+					<div style="position:relative">
+					<input type="text" class="form-control form-control-sm campo_id_item" value="${it.id_produto || ""}" placeholder="Código..." autocomplete="off">
+					<ul class="list-group sugestoes_id" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
+					</div>
+					</td>
+					<td>
+					<div style="position:relative">
+					<input type="text" class="form-control form-control-sm campo_nome_item" value="${it.descricao || ""}" placeholder="Nome do produto..." autocomplete="off">
+					<ul class="list-group sugestoes_nome" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
+					</div>
+					</td>
+					<td><input type="number" class="form-control form-control-sm campo_quantidade" value="${it.quantidade || ""}"></td>
+					<td class="text-center"><button type="button" class="btn btn-sm btn-danger" onclick="removerItemGrupo(${g.key}, ${it.key})"><i class="bi bi-trash"></i></button></td>
+					</tr>
+					`);
+          ativarBuscaProdutoDupla($(`#grupo_${g.key}_item_${it.key}`));
+        });
+      });
+      $("#contador_grupos").text(gruposOpcionais.length);
+    }
+
+    // ── cálculo por pessoa ────────────────────────────────────────────────────
+    function atualizarVisibilidadeCalculo() {
+      const modo = $('input[name="modo_calc"]:checked').val();
+      $("#calc_existente_box").toggle(modo === "existente");
+      $("#calc_novo_box").toggle(modo === "novo");
+      $("#calc_nenhum_msg").toggle(modo === "nenhum");
+    }
+    $(document).on(
+      "change",
+      'input[name="modo_calc"]',
+      atualizarVisibilidadeCalculo,
+    );
+
+    // ── autocomplete de produto: campo ID busca por código, campo Nome busca por nome ──
+    function ativarBuscaProdutoDupla($row) {
+      const $idInput = $row.find(".campo_id_item");
+      const $nomeInput = $row.find(".campo_nome_item");
+      const $sugestoesId = $row.find(".sugestoes_id");
+      const $sugestoesNome = $row.find(".sugestoes_nome");
+
+      function selecionar(p) {
+        $idInput.val(p.id);
+        $nomeInput.val(p.nome);
+        $sugestoesId.hide().html("");
+        $sugestoesNome.hide().html("");
+      }
+
+      function buscar(valor, $sugestoes) {
+        const idLoja = 2;
+        return fetch(
+          `/api/produtos/buscar?q=${encodeURIComponent(valor)}&id_loja=${idLoja}`,
+        )
+          .then((res) => res.json())
+          .then((data) => {
+            if (!data || data.length === 0) {
+              $sugestoes.hide().html("");
+              return;
+            }
+            $sugestoes.html(
+              data
+                .map(
+                  (p) =>
+                    `<li class="list-group-item list-group-item-action" style="cursor:pointer" data-id="${p.id}" data-nome="${p.nome}">${p.id} — ${p.nome}</li>`,
+                )
+                .join(""),
+            );
+            $sugestoes.show();
+          })
+          .catch(() => {
+            $sugestoes.hide().html("");
+          });
+      }
+
+      // busca por ID/código
+      let timerId = null;
+      $idInput.on("input", function () {
+        $sugestoesNome.hide().html("");
+        clearTimeout(timerId);
+        const val = $idInput.val();
+        if (val.length < 1) {
+          $sugestoesId.hide().html("");
+          return;
+        }
+        timerId = setTimeout(() => buscar(val, $sugestoesId), 250);
+      });
+
+      // busca por nome/descrição
+      let timerNome = null;
+      $nomeInput.on("input", function () {
+        $sugestoesId.hide().html("");
+        clearTimeout(timerNome);
+        const val = $nomeInput.val();
+        if (val.length < 1) {
+          $sugestoesNome.hide().html("");
+          return;
+        }
+        timerNome = setTimeout(() => buscar(val, $sugestoesNome), 250);
+      });
+
+      $sugestoesId.on("mousedown", "li", function () {
+        selecionar({id: $(this).data("id"), nome: $(this).data("nome")});
+      });
+      $sugestoesNome.on("mousedown", "li", function () {
+        selecionar({id: $(this).data("id"), nome: $(this).data("nome")});
+      });
+
+      $(document).on("click", function (e) {
+        if (!$(e.target).closest($idInput.parent()).length) $sugestoesId.hide();
+        if (!$(e.target).closest($nomeInput.parent()).length) $sugestoesNome.hide();
+      });
+    }
+
+    // autocomplete do produto pai (mantido como campo único combinado)
+    function ativarBuscaProduto($input, $hidden, $sugestoes) {
+      let timer = null;
+      $input.on("input", function () {
+        $hidden.val("");
+        clearTimeout(timer);
+        const val = $input.val();
+        if (val.length < 1) {
+          $sugestoes.hide().html("");
+          return;
+        }
+        timer = setTimeout(() => {
+          const idLoja = 2;
+          fetch(
+            `/api/produtos/buscar?q=${encodeURIComponent(val)}&id_loja=${idLoja}`,
+          )
+            .then((res) => res.json())
+            .then((data) => {
+              if (!data || data.length === 0) {
+                $sugestoes.hide().html("");
+                return;
+              }
+              $sugestoes.html(
+                data
+                  .map(
+                    (p) =>
+                      `<li class="list-group-item list-group-item-action" style="cursor:pointer" data-id="${p.id}" data-nome="${p.nome}">${p.id} — ${p.nome}</li>`,
+                  )
+                  .join(""),
+              );
+              $sugestoes.show();
+            })
+            .catch(() => {
+              $sugestoes.hide().html("");
+            });
+        }, 250);
+      });
+
+      $sugestoes.on("mousedown", "li", function () {
+        const id = $(this).data("id");
+        const nome = $(this).data("nome");
+        $input.val(`${id} — ${nome}`);
+        $hidden.val(id);
+        $sugestoes.hide().html("");
+        if ($input.attr("id") === "composto_produto_busca") {
+          $("#composto_id_produto").val(id);
+        }
+      });
+
+      $(document).on("click", function (e) {
+        if (!$(e.target).closest($input.parent()).length) $sugestoes.hide();
+      });
+    }
+
+    ativarBuscaProduto(
+      $("#composto_produto_busca"),
+      $("#composto_id_produto"),
+      $("#composto_produto_sugestoes"),
+    );
+
+    // ── salvar ────────────────────────────────────────────────────────────────
+    function montarCalculoPessoa() {
+      const modo = $('input[name="modo_calc"]:checked').val();
+      if (modo === "existente") {
+        const id = $("#calc_existente_id").val();
+        return id ? {id: Number(id)} : null;
+      }
+      if (modo === "novo") {
+        return {
+          bebida_ml: Number($("#calc_bebida_ml").val() || 0),
+          bolo_g: Number($("#calc_bolo_g").val() || 0),
+          salgados_unid: Number($("#calc_salgados_unid").val() || 0),
+        };
+      }
+      return null;
+    }
+
+    function salvarComposto() {
+      lerItensFixosDoDom();
+      lerGruposDoDom();
+      $("#modal_composto_error").html("");
+
+      const payload = {
+        id_produto: compostoIdEdicao ?? Number($("#composto_id_produto").val()),
+        tipo: $("#composto_tipo").val() || null,
+        pedido_min_pessoas:
+          $("#composto_min_pessoas").val() !== ""
+            ? Number($("#composto_min_pessoas").val())
+            : null,
+        calculo_pessoa: montarCalculoPessoa(),
+        itens: itensFixos.map((it) => ({
+          id_produto: it.id_produto || null,
+          quantidade: it.quantidade !== "" ? Number(it.quantidade) : null,
+          peso_unitario_kg: it.peso_unitario_kg
+            ? Number(String(it.peso_unitario_kg).replace(",", "."))
+            : null,
+          tipo_item: it.tipo_item || null,
+          capacidade_ml:
+            it.capacidade_ml !== "" ? Number(it.capacidade_ml) : null,
+        })),
+        grupos_opcionais: gruposOpcionais.map((g) => ({
+          chave: g.chave || null,
+          quantidade_total:
+            g.quantidade_total !== "" ? Number(g.quantidade_total) : null,
+          itens: g.itens.map((it) => ({
+            id_produto: it.id_produto || null,
+            quantidade: it.quantidade !== "" ? Number(it.quantidade) : null,
+          })),
+        })),
+      };
+
+      $("#btnSalvarComposto").prop("disabled", true).text("Salvando...");
+
+      fetch("/api/produtos_compostos/salvar", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload),
+      })
+        .then(async (res) => {
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(json.erro || "Erro ao salvar.");
+          $("#modalComposto").modal("hide");
+          if (window.buscarCompostos) buscarCompostos();
+          if (window.notify) notify("Composto salvo com sucesso.");
+        })
+        .catch((err) => {
+          $("#modal_composto_error").html(
+            `<div class="alert alert-danger">${err.message}</div>`,
+          );
+        })
+        .finally(() => {
+          $("#btnSalvarComposto").prop("disabled", false).text("Salvar");
+        });
+    }
+
+    $("#btnSalvarComposto").off("click").on("click", salvarComposto);
+
+    // expõe pro escopo global — chamado pela página que carregou o partial
+    window.inicializarModalComposto = inicializarModalComposto;
+    window.carregarCompostoEdicao = carregarCompostoEdicao;
+  })();
 </script>
-{% endblock %}

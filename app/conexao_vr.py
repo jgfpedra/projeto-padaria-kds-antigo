@@ -30,9 +30,10 @@ def buscar_clientes():
     try:
         cursor = conn.cursor()
         query = """
-            SELECT 
+            SELECT
                 fc.id, fc.nome, fct.telefone, fc.endereco, fc.numero,
-                fc.bairro, fc.observacao, m.descricao AS cidade, e.descricao AS estado
+                fc.bairro, fc.observacao,
+                m.descricao AS cidade, e.descricao AS estado
             FROM food.cliente AS fc
             INNER JOIN municipio AS m ON m.id = fc.id_municipio
             INNER JOIN estado AS e ON e.id = m.id_estado
@@ -58,7 +59,7 @@ def buscar_produtos():
     try:
         cursor = conn.cursor()
         query = """
-            SELECT 
+            SELECT
                 fsp.id_produto, p.descricaocompleta, p.pesobruto,
                 tp.descricao AS tipoembalagem, fs.descricao AS setor
             FROM ficha.setorproduto AS fsp

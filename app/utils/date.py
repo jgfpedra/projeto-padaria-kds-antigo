@@ -9,7 +9,8 @@ def br_date(data):
         return data.strftime("%d/%m/%Y")
 
     try:
-        return datetime.strptime(str(data)[:10], "%Y-%m-%d").strftime("%d/%m/%Y")
+        return datetime.strptime(str(data)[:10],
+                                 "%Y-%m-%d").strftime("%d/%m/%Y")
     except Exception:
         return str(data)
 

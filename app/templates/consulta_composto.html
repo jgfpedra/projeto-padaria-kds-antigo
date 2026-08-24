@@ -155,7 +155,6 @@
 
   // ABRE MODAL DE CADASTRO/EDIÇÃO — mesmo padrão do produto_associado
   function abrirModalComposto(id = null) {
-    console.log(id);
     $("#modalCompostoContainer").empty();
     fetch(
       id ? `/produto_composto?id=${id}&modal=1` : "/produto_composto?modal=1",
