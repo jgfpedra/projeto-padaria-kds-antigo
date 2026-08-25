@@ -11,6 +11,7 @@ from app.repo.produto_composto import (
     repo_salvar_produto_composto,
 )
 from app.utils.produto_composto import bebidas, bolos, salgados
+from app.utils.conversions import to_float
 
 logger = logging.getLogger("api.services.produto_composto")
 
@@ -101,13 +102,12 @@ def montar_itens(produto_pai, fator, componentes, id_loja):
                 "peso_liquido": detalhe["peso_liquido"],
                 "setor": detalhe["setor"],
                 "id_setor": detalhe["id_setor"],
-                "quantidade": comp["quantidade"],
+                "quantidade": (to_float(comp["quantidade"]) *
+                               to_float(detalhe["peso_liquido"])),
                 "quantidade_un": comp["quantidade"],
                 "preco_venda": 0,
                 "total": 0,
                 "observacao": f"Composto: {produto_pai["descricao"]}",
-                "cod_produto_associado": produto_pai["id"],
-                "desc_produto_associado": produto_pai["descricao"],
             }
         )
     return itens

@@ -366,12 +366,14 @@ def salvar_grupos(cur, id_produto, grupos):
 
 def repo_salvar_produto_composto(dados: dict):
     try:
-        with conectar_app.cursor() as cur:
-            id_produto = dados["id_produto"]
-            id_calculo = salvar_calculo(cur, dados.get("calculo_pessoa"))
-            salvar_produto(cur, id_produto, dados, id_calculo)
-            salvar_itens(cur, id_produto, dados.get("itens", []))
-            salvar_grupos(cur, id_produto, dados.get("grupos_opcionais", []))
+        conn_app = conectar_app()
+        cur = conn_app.cursor()
+        id_produto = dados["id_produto"]
+        id_calculo = salvar_calculo(cur, dados.get("calculo_pessoa"))
+        salvar_produto(cur, id_produto, dados, id_calculo)
+        salvar_itens(cur, id_produto, dados.get("itens", []))
+        salvar_grupos(cur, id_produto, dados.get("grupos_opcionais", []))
+        conn_app.commit()
         return True
     except Exception as e:
         logger.error(f"[repo_salvar_produto_composto] {e}")
@@ -380,38 +382,40 @@ def repo_salvar_produto_composto(dados: dict):
 
 def repo_remover_produto_composto(id_produto: int):
     try:
-        with conectar_app.cursor() as cur:
-            cur.execute(
-                """
+
+        conn_app = conectar_app()
+        cur = conn_app.cursor()
+        cur.execute(
+            """
                 SELECT id_calculo_pessoa FROM produto_composto
                 WHERE id_produto = %s
             """,
-                (id_produto,),
-            )
-            row = cur.fetchone()
-            cur.execute(
-                """
+            (id_produto,),
+        )
+        row = cur.fetchone()
+        cur.execute(
+            """
                 DELETE FROM produto_composto WHERE id_produto = %s
             """,
-                (id_produto,),
-            )
-            if row and row[0]:
-                cur.execute(
-                    """
+            (id_produto,),
+        )
+        if row and row[0]:
+            cur.execute(
+                """
                     SELECT COUNT(*) FROM produto_composto
                     WHERE id_calculo_pessoa = %s
                 """,
-                    (row[0],),
-                )
-                still_used = cur.fetchone()[0]
-                if not still_used:
-                    cur.execute(
-                        """
+                (row[0],),
+            )
+            still_used = cur.fetchone()[0]
+            if not still_used:
+                cur.execute(
+                    """
                         DELETE FROM produto_composto_calculo_pessoa
                         WHERE id = %s
                     """,
-                        (row[0],),
-                    )
+                    (row[0],),
+                )
         return True
     except Exception as e:
         logger.error(e)

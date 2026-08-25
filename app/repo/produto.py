@@ -91,7 +91,8 @@ def repo_vr_buscar_produtos(termo, por_id=False, limite=20):
             sql = """
                 SELECT DISTINCT
                     p.id,
-                    p.descricaocompleta
+                    p.descricaocompleta,
+                    p.pesoliquido
                 FROM produto p
                 INNER JOIN produtocomplemento pc
                     ON pc.id_produto = p.id
@@ -111,6 +112,7 @@ def repo_vr_buscar_produtos(termo, por_id=False, limite=20):
                 SELECT DISTINCT
                     p.id,
                     p.descricaocompleta,
+                    p.pesoliquido,
                     CASE
                         WHEN LOWER(p.descricaocompleta) = %s THEN 1
                         WHEN LOWER(p.descricaocompleta) LIKE %s THEN 2
@@ -143,6 +145,7 @@ def repo_vr_buscar_produtos(termo, por_id=False, limite=20):
             {
                 "id": row[0],
                 "descricaocompleta": row[1],
+                "peso_unitario_kg": row[2],
             }
             for row in rows
         ]

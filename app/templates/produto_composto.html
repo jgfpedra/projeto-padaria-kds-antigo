@@ -240,8 +240,6 @@
 
           $("#modalCompostoLabel").text(`Editar Composto #${data.id}`);
 
-          console.log(data);
-
           // Produto pai
           $("#composto_id_produto").val(data.id);
           $("#composto_produto_id_busca").val(data.id);
@@ -687,12 +685,14 @@
     function ativarBuscaProdutoDupla($row) {
       const $idInput = $row.find(".campo_id_item");
       const $nomeInput = $row.find(".campo_nome_item");
+      const $pesoInput = $row.find(".campo_peso");
       const $sugestoesId = $row.find(".sugestoes_id");
       const $sugestoesNome = $row.find(".sugestoes_nome");
 
       function selecionar(p) {
         $idInput.val(p.id);
         $nomeInput.val(p.descricao);
+        $pesoInput.val(p.peso_unitario_kg ?? "");
 
         $sugestoesId.hide().html("");
         $sugestoesNome.hide().html("");
@@ -712,7 +712,6 @@
               $sugestoes.hide().html("");
               return;
             }
-
             $sugestoes.html(
               data
                 .map(
@@ -722,6 +721,7 @@
                   style="cursor:pointer"
                   data-id="${p.id}"
                   data-descricao="${p.descricaocompleta}"
+                  data-peso="${p.peso_unitario_kg ?? ""}"
                 >
                   ${p.id} — ${p.descricaocompleta}
                 </li>
@@ -737,7 +737,6 @@
           });
       }
 
-      // Busca por ID
       let timerId = null;
 
       $idInput.on("input", function () {
@@ -757,7 +756,6 @@
         }, 250);
       });
 
-      // Busca por descrição
       let timerNome = null;
 
       $nomeInput.on("input", function () {
@@ -777,19 +775,19 @@
         }, 250);
       });
 
-      // Seleciona pelo ID
       $sugestoesId.on("mousedown", "li", function () {
         selecionar({
           id: $(this).data("id"),
           descricao: $(this).data("descricao"),
+          peso_unitario_kg: $(this).data("peso"),
         });
       });
 
-      // Seleciona pela descrição
       $sugestoesNome.on("mousedown", "li", function () {
         selecionar({
           id: $(this).data("id"),
           descricao: $(this).data("descricao"),
+          peso_unitario_kg: $(this).data("peso"),
         });
       });
 
@@ -800,78 +798,6 @@
 
         if (!$(e.target).closest($nomeInput.parent()).length) {
           $sugestoesNome.hide();
-        }
-      });
-    }
-
-    function ativarBuscaProduto($input, $hidden, $sugestoes) {
-      let timer = null;
-
-      $input.on("input", function () {
-        $hidden.val("");
-
-        clearTimeout(timer);
-
-        const termo = $input.val().trim();
-
-        if (termo.length < 1) {
-          $sugestoes.hide().html("");
-          return;
-        }
-
-        timer = setTimeout(() => {
-          $.ajax({
-            url: "/api/produtos/busca_descricao",
-            method: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({
-              termo: termo,
-            }),
-            success: function (produtos) {
-              if (!produtos || produtos.length === 0) {
-                $sugestoes.hide().html("");
-                return;
-              }
-
-              $sugestoes.html(
-                produtos
-                  .map(
-                    (prod) => `
-                  <li
-                    class="list-group-item list-group-item-action"
-                    style="cursor: pointer"
-                    data-id="${prod.id}"
-                    data-descricao="${prod.descricaocompleta}"
-                  >
-                    ${prod.id} — ${prod.descricaocompleta}
-                  </li>
-                `
-                  )
-                  .join("")
-              );
-
-              $sugestoes.show();
-            },
-            error: function () {
-              $sugestoes.hide().html("");
-            },
-          });
-        }, 250);
-      });
-
-      $sugestoes.on("mousedown", "li", function () {
-        const id = $(this).data("id");
-        const descricao = $(this).data("descricao");
-
-        $input.val(id);
-        $hidden.val(id);
-
-        $sugestoes.hide().html("");
-      });
-
-      $(document).on("click", function (e) {
-        if (!$(e.target).closest($input.parent()).length) {
-          $sugestoes.hide();
         }
       });
     }
