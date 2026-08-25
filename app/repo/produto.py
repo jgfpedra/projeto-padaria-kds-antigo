@@ -80,3 +80,73 @@ def repo_vr_get_nome_produto(id_produto):
         return False
     finally:
         conn.close()
+
+
+def repo_vr_buscar_produtos(termo, por_id=False, limite=20):
+    conn = conectar_vr()
+    cursor = conn.cursor()
+
+    try:
+        if por_id:
+            sql = """
+                SELECT DISTINCT
+                    p.id,
+                    p.descricaocompleta
+                FROM produto p
+                INNER JOIN produtocomplemento pc
+                    ON pc.id_produto = p.id
+                WHERE pc.id_situacaocadastro = 1
+                  AND p.id = %s
+                LIMIT %s
+            """
+
+            cursor.execute(sql, (int(termo), limite))
+
+        else:
+            termo = termo.lower()
+            termo_inicio = f"{termo}%"
+            termo_contem = f"%{termo}%"
+
+            sql = """
+                SELECT DISTINCT
+                    p.id,
+                    p.descricaocompleta,
+                    CASE
+                        WHEN LOWER(p.descricaocompleta) = %s THEN 1
+                        WHEN LOWER(p.descricaocompleta) LIKE %s THEN 2
+                        ELSE 3
+                    END AS prioridade
+                FROM produto p
+                INNER JOIN produtocomplemento pc
+                    ON pc.id_produto = p.id
+                WHERE pc.id_situacaocadastro = 1
+                  AND LOWER(p.descricaocompleta) LIKE %s
+                ORDER BY
+                    prioridade,
+                    p.descricaocompleta
+                LIMIT %s
+            """
+
+            cursor.execute(
+                sql,
+                (
+                    termo,
+                    termo_inicio,
+                    termo_contem,
+                    limite,
+                ),
+            )
+
+        rows = cursor.fetchall()
+
+        return [
+            {
+                "id": row[0],
+                "descricaocompleta": row[1],
+            }
+            for row in rows
+        ]
+
+    finally:
+        cursor.close()
+        conn.close()

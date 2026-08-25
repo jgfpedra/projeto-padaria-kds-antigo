@@ -25,6 +25,7 @@ from app.repo.produto_composto import (
 )
 from app.services.produto import (
     adicionar_nomes_produtos,
+    buscar_produtos
 )
 from app.services.produto_composto import (
     calcular_componentes,
@@ -34,7 +35,7 @@ from app.services.produto_composto import (
     svc_remover_produtos_compostos,
     svc_salvar_produtos_compostos,
 )
-from app.services.pedido import (
+from app.repo.pedido import (
     buscar_nome_loja,
     buscar_pedido,
     buscar_itens,
@@ -42,7 +43,10 @@ from app.services.pedido import (
     buscar_cliente,
     buscar_impressora,
     buscar_valor_total,
-    montar_texto_pedido
+        )
+from app.services.pedido import (
+    montar_texto_pedido,
+    consultar_encomendas
 )
 from app.repo.pedido import (
     marcar_pedido_impresso,
@@ -940,198 +944,34 @@ def api_encomendas_consulta():
     conn_vr = conectar_vr()
 
     if not conn_app or not conn_vr:
-        return jsonify({"erro": "Erro ao conectar ao banco de dados"}), 500
+        return jsonify({
+            "erro": "Erro ao conectar ao banco de dados"
+        }), 500
+
+    cursor_app = conn_app.cursor()
+    cursor_vr = conn_vr.cursor()
 
     try:
         filtros = request.get_json() or {}
 
-        # mapeia o seletor do front para o nome da coluna
-        data_tipo = filtros.get("data_tipo", "data_pedido")
-        if data_tipo == "data_pedido":
-            data_tipo = "criado_em"
-        elif data_tipo == "data_entrega":
-            data_tipo = "data_entrega"
+        pedidos = consultar_encomendas(
+            filtros,
+            cursor_app,
+            cursor_vr,
+        )
 
-        data_inicio = filtros.get("data_inicio")
-        data_fim = filtros.get("data_fim")
-        tipo_entrega = filtros.get("tipo_entrega")
-        id_loja = filtros.get("id_loja")
-        id_cliente = filtros.get("id_cliente")
-        id_status = filtros.get("status")
-        impresso = filtros.get("impresso")  # "", "1" ou "0"
-        num_pedido = filtros.get("num_pedido")  # << NOVO
-
-        # saneia num_pedido (aceita string ou int)
-        if isinstance(num_pedido, str):
-            num_pedido = num_pedido.strip() or None
-        if num_pedido is not None:
-            try:
-                num_pedido = int(num_pedido)
-            except ValueError:
-                num_pedido = None  # se vier lixo, ignora
-
-        cursor_app = conn_app.cursor()
-        cursor_vr = conn_vr.cursor()
-
-        where = ["1=1"]
-        params = []
-
-        # filtro impresso
-        if impresso == "1":
-            where.append("p.impresso = TRUE")
-        elif impresso == "0":
-            where.append("p.impresso = FALSE")
-
-        # Nº do pedido — quando enviado, não aplica filtro de datas
-        if num_pedido:
-            where.append("p.id = %s")
-            params.append(num_pedido)
-        else:
-            # filtros de data (somente quando num_pedido NÃO foi enviado)
-            if data_inicio and data_fim:
-                where.append(f"CAST(p.{data_tipo} AS DATE) BETWEEN %s AND %s")
-                params.extend([data_inicio, data_fim])
-            elif data_inicio and not data_fim:
-                where.append(f"CAST(p.{data_tipo} AS DATE) = %s")
-                params.append(data_inicio)
-            elif data_fim and not data_inicio:
-                where.append(f"CAST(p.{data_tipo} AS DATE) = %s")
-                params.append(data_fim)
-
-        if tipo_entrega:
-            where.append("p.tipo_entrega = %s")
-            params.append(tipo_entrega)
-
-        if id_loja:
-            where.append("p.id_loja = %s")
-            params.append(id_loja)
-
-        if id_status:
-            where.append("p.id_status = %s")
-            params.append(id_status)
-        else:
-            where.append("p.id_status NOT IN (5, 7)")
-
-        if id_cliente:
-            where.append("p.id_cliente = %s")
-            params.append(id_cliente)
-
-        sql = f"""
-            SELECT p.id, p.id_cliente, p.id_loja,
-                   p.criado_em, p.data_entrega, p.hora_entrega,
-                   p.tipo_entrega, p.observacoes,
-                   p.id_status, p.impresso, p.data_finalizacao
-            FROM pedidos p
-            WHERE {" AND ".join(where)}
-            ORDER BY p.data_entrega ASC
-        """
-
-        cursor_app.execute(sql, tuple(params))
-        pedidos_rows = cursor_app.fetchall()
-        pedidos = []
-        for row in pedidos_rows:
-            id_pedido = row[0]
-            id_cliente = row[1]
-            id_loja = row[2]
-            impresso_b = row[9]
-
-            # Cliente
-            cursor_vr.execute(
-                """
-                SELECT fc.nome, fct.telefone,
-                       CONCAT(fc.endereco, ', ',
-                       fc.numero, ', ',
-                       fc.bairro, ', ',
-                       m.descricao, ' - ',
-                       e.descricao) AS endereco_completo
-                FROM food.cliente fc
-                INNER JOIN public.municipio m ON m.id = fc.id_municipio
-                INNER JOIN public.estado e ON e.id = m.id_estado
-                LEFT JOIN food.clientetelefone fct ON fct.id_cliente = fc.id
-                WHERE fc.id = %s
-                LIMIT 1
-            """,
-                (id_cliente,),
-            )
-            cliente_row = cursor_vr.fetchone()
-            if cliente_row:
-                nome_cliente = cliente_row[0]
-            else:
-                nome_cliente = "Cliente não encontrado"
-            telefone_cliente = cliente_row[1] if cliente_row else ""
-            endereco_cliente = cliente_row[2] if cliente_row else ""
-            cursor_vr.execute("""SELECT descricao
-                              FROM loja WHERE id = %s""", (id_loja,))
-            loja_row = cursor_vr.fetchone()
-            nome_loja = loja_row[0] if loja_row else ""
-            cursor_app.execute("""SELECT descricao
-                               FROM status WHERE id = %s""", (row[8],))
-            status_row = cursor_app.fetchone()
-            status_descricao = status_row[0] if status_row else ""
-            cursor_app.execute(
-                """
-                SELECT COALESCE(SUM(quantidade * valor_unitario), 0)
-                FROM pedido_itens
-                WHERE id_pedido = %s
-            """,
-                (id_pedido,),
-            )
-            valor_total_row = cursor_app.fetchone()
-            valor_total = to_float(valor_total_row[0])
-
-            # Itens (com produto associado)
-            cursor_app.execute(
-                """
-                SELECT id_produto, quantidade,
-                quantidade_un, observacao, id_produto_associado
-                FROM pedido_itens
-                WHERE id_pedido = %s
-            """,
-                (id_pedido,),
-            )
-            itens_rows = cursor_app.fetchall()
-
-            itens = []
-            for id_produto, _, qtd_un, observacao, id_associado in itens_rows:
-                prod_row = repo_vr_get_nome_produto(id_produto)
-                desc_princ = prod_row[0] if prod_row else ""
-                # associado (se houver)
-                desc_assoc = ""
-                if id_associado:
-                    desc_assoc = repo_vr_get_nome_produto(id_associado)
-                itens.append(
-                    {
-                        "descricao": desc_princ,
-                        "desc_produto_associado": desc_assoc,
-                        "cod_produto_associado": id_associado or "",
-                        "quantidade_un": qtd_un,
-                        "observacao": observacao or "",
-                    }
-                )
-            pedidos.append(
-                {
-                    "id": id_pedido,
-                    "nome_cliente": nome_cliente,
-                    "telefone": telefone_cliente,
-                    "endereco": endereco_cliente,
-                    "tipo_entrega": row[6],
-                    "observacoes": row[7],
-                    "data_pedido": row[3].isoformat() if row[3] else "",
-                    "data_entrega": row[4].isoformat() if row[4] else "",
-                    "hora_entrega": row[5].strftime("%H:%M") if row[5] else "",
-                    "id_status": row[8],
-                    "status_descricao": status_descricao,
-                    "valor_total": valor_total,
-                    "nome_loja": nome_loja,
-                    "itens": itens,
-                    "impresso": impresso_b,
-                    "data_finalizacao": row[10].isoformat() if row[10] else "",
-                }
-            )
         return jsonify(pedidos)
-    except Exception as e:
-        return jsonify({"erro": str(e)}), 500
+
+    except Exception:
+        logger.exception("Erro ao consultar encomendas")
+
+        return jsonify({
+            "erro": "Erro ao consultar encomendas"
+        }), 500
+
     finally:
+        cursor_app.close()
+        cursor_vr.close()
         conn_app.close()
         conn_vr.close()
 
@@ -2608,41 +2448,9 @@ def dashboard_partial():
 @app.route("/api/produtos/busca_descricao", methods=["POST"])
 def buscar_produtos_por_descricao():
     data = request.get_json() or {}
-    termo = (data.get("termo") or "").strip().lower()
-
-    if not termo:
-        return jsonify([])
-
-    tokens = [t for t in termo.split() if t]
-    if not tokens:
-        return jsonify([])
-
-    conn = conectar_vr()
-    cursor = conn.cursor()
-
-    # Se seu MySQL suportar, pode usar a collation acento-insensível:
-    # predicado = "p.descricaocompleta COLLATE utf8mb4_0900_ai_ci LIKE %s"
-    # Caso contrário, mantenha o LOWER(...) mesmo:
-    predicado = "LOWER(p.descricaocompleta) LIKE %s"
-
-    where_clauses = " AND ".join([predicado] * len(tokens))
-
-    sql = f"""
-        SELECT DISTINCT p.id, p.descricaocompleta
-        FROM produto p
-        INNER JOIN produtocomplemento pc ON pc.id_produto = p.id
-        WHERE pc.id_situacaocadastro = 1
-          AND {where_clauses}
-        ORDER BY p.descricaocompleta
-        LIMIT 20
-    """
-
-    params = [f"%{t}%" for t in tokens]
-    cursor.execute(sql, params)
-    resultados = cursor.fetchall()
-
-    produtos = [{"id": row[0],
-                 "descricaocompleta": row[1]} for row in resultados]
+    produtos = buscar_produtos(
+        data.get("termo")
+    )
     return jsonify(produtos)
 
 

@@ -381,13 +381,13 @@
 			<td>
 			<div style="position:relative">
 			<input type="text" class="form-control form-control-sm campo_id_item" value="${it.id_produto || ""}" placeholder="Código..." autocomplete="off">
-			<ul class="list-group sugestoes_id" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
+			<ul class="list-group sugestoes-produto sugestoes_id" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
 			</div>
 			</td>
 			<td>
 			<div style="position:relative">
 			<input type="text" class="form-control form-control-sm campo_nome_item" value="${it.descricao || ""}" placeholder="Nome do produto..." autocomplete="off">
-			<ul class="list-group sugestoes_nome" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
+			<ul class="list-group sugestoes-produto sugestoes_nome" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
 			</div>
 			</td>
 			<td><input type="number" class="form-control form-control-sm campo_quantidade" value="${it.quantidade || ""}"></td>
@@ -523,13 +523,13 @@
 					<td>
 					<div style="position:relative">
 					<input type="text" class="form-control form-control-sm campo_id_item" value="${it.id_produto || ""}" placeholder="Código..." autocomplete="off">
-					<ul class="list-group sugestoes_id" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
+					<ul class="list-group sugestoes-produto sugestoes_id" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
 					</div>
 					</td>
 					<td>
 					<div style="position:relative">
 					<input type="text" class="form-control form-control-sm campo_nome_item" value="${it.descricao || ""}" placeholder="Nome do produto..." autocomplete="off">
-					<ul class="list-group sugestoes_nome" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
+					<ul class="list-group sugestoes-produto sugestoes_nome" style="position:absolute;z-index:999;width:100%;max-height:160px;overflow-y:auto;display:none;"></ul>
 					</div>
 					</td>
 					<td><input type="number" class="form-control form-control-sm campo_quantidade" value="${it.quantidade || ""}"></td>
@@ -554,6 +554,134 @@
       'input[name="modo_calc"]',
       atualizarVisibilidadeCalculo,
     );
+
+    function ativarBuscaProdutoPai() {
+      const $idInput = $("#composto_produto_id_busca");
+      const $descricaoInput = $("#composto_produto_descricao_busca");
+      const $hidden = $("#composto_id_produto");
+
+      const $sugestoesId = $("#composto_produto_id_sugestoes");
+      const $sugestoesDescricao = $("#composto_produto_descricao_sugestoes");
+
+      let timerId = null;
+      let timerDescricao = null;
+
+      function buscar(termo, $sugestoes) {
+        return $.ajax({
+          url: "/api/produtos/busca_descricao",
+          method: "POST",
+          contentType: "application/json",
+          data: JSON.stringify({
+            termo: termo,
+          }),
+        })
+          .done(function (produtos) {
+            if (!produtos || produtos.length === 0) {
+              $sugestoes.hide().html("");
+              return;
+            }
+
+            $sugestoes.html(
+              produtos
+                .map(
+                  (p) => `
+                <li
+                  class="list-group-item list-group-item-action"
+                  style="cursor: pointer"
+                  data-id="${p.id}"
+                  data-descricao="${p.descricaocompleta}"
+                >
+                  ${p.id} — ${p.descricaocompleta}
+                </li>
+              `
+                )
+                .join("")
+            );
+
+            $sugestoes.show();
+          })
+          .fail(function () {
+            $sugestoes.hide().html("");
+          });
+      }
+
+      function selecionar(id, descricao) {
+        $hidden.val(id);
+
+        $idInput.val(id);
+        $descricaoInput.val(descricao);
+
+        $sugestoesId.hide().html("");
+        $sugestoesDescricao.hide().html("");
+      }
+
+      // Busca pelo ID
+      $idInput.on("input", function () {
+        $hidden.val("");
+
+        $sugestoesDescricao.hide().html("");
+
+        clearTimeout(timerId);
+
+        const termo = $idInput.val().trim();
+
+        if (!termo) {
+          $sugestoesId.hide().html("");
+          return;
+        }
+
+        timerId = setTimeout(function () {
+          buscar(termo, $sugestoesId);
+        }, 250);
+      });
+
+      // Busca pela descrição
+      $descricaoInput.on("input", function () {
+        $hidden.val("");
+
+        $sugestoesId.hide().html("");
+
+        clearTimeout(timerDescricao);
+
+        const termo = $descricaoInput.val().trim();
+
+        if (!termo) {
+          $sugestoesDescricao.hide().html("");
+          return;
+        }
+
+        timerDescricao = setTimeout(function () {
+          buscar(termo, $sugestoesDescricao);
+        }, 250);
+      });
+
+      // Seleção pela busca de ID
+      $sugestoesId.on("mousedown", "li", function () {
+        selecionar(
+          $(this).data("id"),
+          $(this).data("descricao")
+        );
+      });
+
+      // Seleção pela busca de descrição
+      $sugestoesDescricao.on("mousedown", "li", function () {
+        selecionar(
+          $(this).data("id"),
+          $(this).data("descricao")
+        );
+      });
+
+      // Fecha sugestões ao clicar fora
+      $(document).on("click", function (e) {
+        if (!$(e.target).closest($idInput.parent()).length) {
+          $sugestoesId.hide();
+        }
+
+        if (!$(e.target).closest($descricaoInput.parent()).length) {
+          $sugestoesDescricao.hide();
+        }
+      });
+    }
 
     // ── autocomplete de produto: campo ID busca por código, campo Nome busca por nome ──
     function ativarBuscaProdutoDupla($row) {
@@ -748,11 +876,7 @@
       });
     }
 
-    ativarBuscaProduto(
-      $("#composto_produto_busca"),
-      $("#composto_id_produto"),
-      $("#composto_produto_sugestoes"),
-    );
+    ativarBuscaProdutoPai();
 
     // ── salvar ────────────────────────────────────────────────────────────────
     function montarCalculoPessoa() {

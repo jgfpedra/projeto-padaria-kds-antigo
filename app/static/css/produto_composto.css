@@ -1,0 +1,47 @@
+#aba_itens,
+#aba_opcionais {
+  overflow: visible !important;
+}
+
+#aba_itens .table,
+#aba_itens .table-responsive,
+#aba_opcionais {
+  overflow: visible !important;
+}
+
+#aba_itens td,
+#aba_opcionais {
+  position: relative;
+  overflow: visible !important;
+}
+
+.sugestoes-produto {
+  position: absolute !important;
+  top: 100%;
+  left: 0;
+  width: 150%;
+  min-width: 300px;
+  max-height: 250px;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  z-index: 99999 !important;
+  background: #fff;
+  border: 1px solid #ced4da;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+#aba_itens table {
+  overflow: visible !important;
+}
+
+#aba_itens tbody {
+  overflow: visible !important;
+}
+
+#aba_itens tr {
+  overflow: visible !important;
+}
+
+#aba_itens td {
+  overflow: visible !important;
+}

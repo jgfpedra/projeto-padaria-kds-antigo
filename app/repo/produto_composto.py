@@ -249,7 +249,9 @@ def salvar_calculo(cur, calc):
             VALUES (%s, %s, %s)
             RETURNING id
         """,
-            (calc.get("bebida_ml"), calc.get("bolo_g"), calc.get("salgados_unid")),
+            (calc.get("bebida_ml"),
+             calc.get("bolo_g"),
+             calc.get("salgados_unid")),
         )
         return cur.fetchone()[0]
     except Exception as e:
