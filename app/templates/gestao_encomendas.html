@@ -688,7 +688,7 @@
             : "";
 
         let mostrarBotoes = pedido.id_status !== 7;
-
+        console.log(pedido);
         let btnFinalizar =
           pedido.impresso && mostrarBotoes
             ? `<button class="btn botao-finalizar" onclick="escolherSistemaFinalizacao(${pedido.id}, ${pedido.impresso})">Finalizar</button>`
