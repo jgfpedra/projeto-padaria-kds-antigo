@@ -342,6 +342,8 @@
 
   async function buscarProdutoPorCodigo(codigo) {
     let lojaSelecionada = $("#loja").val();
+    document.getElementById("div-opcionais-composto").style.display = "none";
+    window._compostoAtual = null;
     if (
       !lojaSelecionada ||
       lojaSelecionada === "" ||
@@ -354,7 +356,6 @@
       alert("Informe o código do produto!");
       return;
     }
-
     const codigoNum = parseInt(codigo);
     const produto = mapaProdutos[codigoNum];
     if (!produto) {

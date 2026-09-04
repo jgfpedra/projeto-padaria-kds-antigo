@@ -43,31 +43,23 @@ def adicionar_filtro_numero(where, params, num_pedido):
 
 
 def adicionar_filtro_data(where, params, filtros):
-    coluna = obter_coluna_data(
-        filtros.get("data_tipo")
-    )
+    coluna = obter_coluna_data(filtros.get("data_tipo"))
 
     data_inicio = filtros.get("data_inicio")
     data_fim = filtros.get("data_fim")
 
     if data_inicio and data_fim:
-        where.append(
-            f"CAST(p.{coluna} AS DATE) BETWEEN %s AND %s"
-        )
+        where.append(f"CAST(p.{coluna} AS DATE) BETWEEN %s AND %s")
         params.extend([data_inicio, data_fim])
         return
 
     if data_inicio:
-        where.append(
-            f"CAST(p.{coluna} AS DATE) = %s"
-        )
+        where.append(f"CAST(p.{coluna} AS DATE) = %s")
         params.append(data_inicio)
         return
 
     if data_fim:
-        where.append(
-            f"CAST(p.{coluna} AS DATE) = %s"
-        )
+        where.append(f"CAST(p.{coluna} AS DATE) = %s")
         params.append(data_fim)
 
 
@@ -98,52 +90,21 @@ def adicionar_filtro_status(where, params, id_status):
 def montar_filtros_pedidos(filtros):
     if not isinstance(filtros, dict):
         filtros = {}
-
     where = []
     params = []
-
-    adicionar_filtro_impresso(
-        where,
-        filtros.get("impresso"),
-    )
-
-    adicionar_filtro_numero(
-        where,
-        params,
-        filtros.get("num_pedido"),
-    )
-
-    adicionar_filtro_data(
-        where,
-        params,
-        filtros,
-    )
-
-    adicionar_filtro_simples(
-        where,
-        params,
-        "p.tipo_entrega",
-        filtros.get("tipo_entrega"),
-    )
-
-    adicionar_filtro_simples(
-        where,
-        params,
-        "p.id_loja",
-        filtros.get("id_loja"),
-    )
-
-    adicionar_filtro_status(
-        where,
-        params,
-        filtros.get("status"),
-    )
-
-    adicionar_filtro_simples(
-        where,
-        params,
-        "p.id_cliente",
-        filtros.get("id_cliente"),
-    )
-
+    num_pedido = normalizar_numero_pedido(filtros.get("num_pedido"))
+    if num_pedido:
+        # busca direta por número: ignora os demais filtros,
+        # exceto "impresso"
+        where.append("p.id = %s")
+        params.append(num_pedido)
+        adicionar_filtro_impresso(where, filtros.get("impresso"))
+        return where, params
+    adicionar_filtro_impresso(where, filtros.get("impresso"))
+    adicionar_filtro_data(where, params, filtros)
+    adicionar_filtro_simples(where, params, "p.tipo_entrega",
+                             filtros.get("tipo_entrega"))
+    adicionar_filtro_simples(where, params, "p.id_loja", filtros.get("id_loja"))
+    adicionar_filtro_status(where, params, filtros.get("status"))
+    adicionar_filtro_simples(where, params, "p.id_cliente", filtros.get("id_cliente"))
     return where, params

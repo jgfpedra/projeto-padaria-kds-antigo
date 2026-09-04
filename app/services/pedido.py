@@ -1,8 +1,4 @@
-from app.utils.date import (
-    normalize_text,
-    br_date,
-    br_time
-)
+from app.utils.date import normalize_text, br_date, br_time
 from app.repo.pedido import (
     buscar_cliente,
     buscar_nome_loja,
@@ -67,42 +63,19 @@ def adicionar_produtos(linhas, itens):
 
 
 def montar_texto_pedido(
-    pedido,
-    cliente,
-    nome_loja,
-    status,
-    valor_total,
-    itens,
-    linhas_extras=3
+    pedido, cliente, nome_loja, status, valor_total, itens, linhas_extras=3
 ):
     linhas = []
 
-    adicionar_cabecalho(
-        linhas,
-        pedido,
-        cliente,
-        nome_loja,
-        status
-    )
+    adicionar_cabecalho(linhas, pedido, cliente, nome_loja, status)
 
-    adicionar_entrega(
-        linhas,
-        pedido
-    )
+    adicionar_entrega(linhas, pedido)
 
-    adicionar_observacoes(
-        linhas,
-        pedido["observacoes"]
-    )
+    adicionar_observacoes(linhas, pedido["observacoes"])
 
-    adicionar_produtos(
-        linhas,
-        itens
-    )
+    adicionar_produtos(linhas, itens)
 
-    linhas.append(
-        f"Valor Total: {formatar_valor(valor_total)}"
-    )
+    linhas.append(f"Valor Total: {formatar_valor(valor_total)}")
 
     for _ in range(max(0, linhas_extras)):
         linhas.append("")
@@ -156,14 +129,10 @@ def consultar_encomendas(filtros, cursor_app, cursor_vr):
                 "tipo_entrega": pedido["tipo_entrega"],
                 "observacoes": pedido["observacoes"],
                 "data_pedido": (
-                    pedido["criado_em"].isoformat()
-                    if pedido["criado_em"]
-                    else ""
+                    pedido["criado_em"].isoformat() if pedido["criado_em"] else ""
                 ),
                 "data_entrega": (
-                    pedido["data_entrega"].isoformat()
-                    if pedido["data_entrega"]
-                    else ""
+                    pedido["data_entrega"].isoformat() if pedido["data_entrega"] else ""
                 ),
                 "hora_entrega": (
                     pedido["hora_entrega"].strftime("%H:%M")

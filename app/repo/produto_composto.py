@@ -33,8 +33,7 @@ def repo_get_composto_estrutura(id_produto):
             "tipo": row[0],
             "pedido_min_pessoas": row[2],
             "calculo_pessoa": (
-                {"bebida_ml": row[3], "bolo_g": row[4],
-                    "salgados_unid": row[5]}
+                {"bebida_ml": row[3], "bolo_g": row[4], "salgados_unid": row[5]}
                 if row[1]
                 else None
             ),
@@ -95,8 +94,7 @@ def repo_get_grupos_opcionais(id_produto):
         grupos = {}
         for r in rows:
             grupos.setdefault(r[0], {"quantidade_total": r[1], "itens": []})
-            grupos[r[0]]["itens"].append(
-                {"id_produto": r[2], "quantidade": r[3]})
+            grupos[r[0]]["itens"].append({"id_produto": r[2], "quantidade": r[3]})
         return grupos
     except Exception as e:
         logger.error(e)
@@ -188,6 +186,35 @@ def repo_get_produto_detalhe(id_produto, id_loja):
         conn_vr.close()
 
 
+def repo_get_peso_unitario_item(id_produto_comp, id_produto):
+    conn = None
+    cur = None
+    try:
+        conn = conectar_app()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT peso_unitario_kg
+            FROM produto_composto_item
+            WHERE id_produto = %s
+              AND id_produto_comp = %s
+            """,
+            (id_produto, id_produto_comp),
+        )
+        resultado = cur.fetchone()
+        if resultado is None:
+            return None
+        return resultado[0]
+    except Exception as e:
+        logger.error(f"[PESO_UNITARIO_ITEM] {e}")
+        return False
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+
 def repo_buscar_produtos(termo: str, id_loja, limit: int = 10):
     try:
         conn_vr = conectar_vr()
@@ -225,10 +252,7 @@ def repo_get_calculos_pessoa():
             """)
         rows = cur.fetchall()
         return [
-            {"id": r[0],
-             "bebida_ml": r[1],
-             "bolo_g": r[2],
-             "salgados_unid": r[3]}
+            {"id": r[0], "bebida_ml": r[1], "bolo_g": r[2], "salgados_unid": r[3]}
             for r in rows
         ]
     except Exception as e:
@@ -249,9 +273,7 @@ def salvar_calculo(cur, calc):
             VALUES (%s, %s, %s)
             RETURNING id
         """,
-            (calc.get("bebida_ml"),
-             calc.get("bolo_g"),
-             calc.get("salgados_unid")),
+            (calc.get("bebida_ml"), calc.get("bolo_g"), calc.get("salgados_unid")),
         )
         return cur.fetchone()[0]
     except Exception as e:
@@ -381,45 +403,61 @@ def repo_salvar_produto_composto(dados: dict):
 
 
 def repo_remover_produto_composto(id_produto: int):
+    conn_app = None
     try:
-
         conn_app = conectar_app()
         cur = conn_app.cursor()
+
+        # remove itens do produto composto
         cur.execute(
             """
-                SELECT id_calculo_pessoa FROM produto_composto
+                DELETE FROM produto_composto_item
+                WHERE id_produto_comp = %s
+            """,
+            (id_produto,),
+        )
+
+        # remove itens dos grupos opcionais (se não houver ON DELETE CASCADE na FK)
+        cur.execute(
+            """
+                DELETE FROM produto_composto_opcional_item
+                WHERE id_grupo IN (
+                    SELECT id FROM produto_composto_opcional_grupo
+                    WHERE id_produto_comp = %s
+                )
+            """,
+            (id_produto,),
+        )
+
+        # remove os grupos opcionais
+        cur.execute(
+            """
+                DELETE FROM produto_composto_opcional_grupo
+                WHERE id_produto_comp = %s
+            """,
+            (id_produto,),
+        )
+
+        # remove o produto composto (calculo_pessoa é mantido de propósito)
+        cur.execute(
+            """
+                DELETE FROM produto_composto
                 WHERE id_produto = %s
             """,
             (id_produto,),
         )
-        row = cur.fetchone()
-        cur.execute(
-            """
-                DELETE FROM produto_composto WHERE id_produto = %s
-            """,
-            (id_produto,),
-        )
-        if row and row[0]:
-            cur.execute(
-                """
-                    SELECT COUNT(*) FROM produto_composto
-                    WHERE id_calculo_pessoa = %s
-                """,
-                (row[0],),
-            )
-            still_used = cur.fetchone()[0]
-            if not still_used:
-                cur.execute(
-                    """
-                        DELETE FROM produto_composto_calculo_pessoa
-                        WHERE id = %s
-                    """,
-                    (row[0],),
-                )
+
+        conn_app.commit()
+        cur.close()
         return True
     except Exception as e:
-        logger.error(e)
+        if conn_app:
+            conn_app.rollback()
+        logger.error(f"[REMOVER_PRODUTO_COMPOSTO] {e}")
         return False
+    finally:
+        if conn_app:
+            conn_app.close()
 
 
 def repo_get_produtos_compostos():

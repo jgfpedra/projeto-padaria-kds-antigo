@@ -143,13 +143,9 @@ def buscar_cliente(cursor, id_cliente):
     row = cursor.fetchone()
 
     if not row:
-        return {"nome": "Cliente não encontrado",
-                "telefone": "",
-                "endereco": ""}
+        return {"nome": "Cliente não encontrado", "telefone": "", "endereco": ""}
 
-    return {"nome": row[0] or "",
-            "telefone": row[1] or "",
-            "endereco": row[2] or ""}
+    return {"nome": row[0] or "", "telefone": row[1] or "", "endereco": row[2] or ""}
 
 
 def buscar_nome_loja(cursor, id_loja):
@@ -167,8 +163,7 @@ def buscar_status(cursor, id_status):
 
 
 def buscar_impresso(cursor, id_pedido):
-    cursor.execute(
-        "SELECT impresso FROM pedidos p WHERE p.id = %s", (id_pedido,))
+    cursor.execute("SELECT impresso FROM pedidos p WHERE p.id = %s", (id_pedido,))
     row = cursor.fetchone()
     return row[0] if row else ""
 

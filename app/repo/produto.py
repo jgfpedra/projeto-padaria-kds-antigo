@@ -19,8 +19,7 @@ def _coletar_ids_produtos(compostos: list[dict]) -> set[int]:
     return ids_set
 
 
-def _preencher_descricoes(compostos: list[dict],
-                          nomes: dict[int, str]) -> None:
+def _preencher_descricoes(compostos: list[dict], nomes: dict[int, str]) -> None:
     for c in compostos:
         c["nome_produto"] = nomes.get(c["id"], "—")
 

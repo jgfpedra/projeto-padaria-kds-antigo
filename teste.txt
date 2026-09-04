@@ -1,0 +1,79 @@
+Produto_composto
+  - Itens*
+    - 241
+      - OK
+    - 242
+      - OK
+    - 243
+      - OK
+----------
+    - 553
+    - 554
+    - 555
+----------
+    - 1273
+    - 1274
+----------
+    - 1526
+    - 1527
+    - 1528
+----------
+    - 5886
+    - 5906
+    - 5907
+----------
+    - 6079
+    - 6089
+----------
+    - 7106
+    - 7107
+    - 7108
+----------
+    - 34106
+    - 34108
+    - 34109
+    - 37152
+----------
+  - Pagina
+  - Pedidos
+    - Novo_Pedido
+      - Um pedido para cada item
+        - 241*
+          - Correto
+        - 242
+        - 243
+        - 553
+        - 554
+        - 555
+        - 1273
+        - 1274
+        - 1526
+        - 1527
+        - 1528
+        - 5886
+        - 5906
+        - 5907
+        - 6079
+        - 6089
+        - 7106
+        - 7107
+        - 7108
+        - 34106
+        - 34108
+        - 34109
+        - 37152
+    - Editar_Pedido
+      - verificar se insercao esta ocorrendo normalmente
+        - 241
+          - Correto
+    - Gerenciador
+      - Verificar se todos os itens estao com quantidades corretos
+        - 241
+          - Correto
+    - KDS
+      - Verificar se todos os itens estao com quantidades corretos
+        - 241
+          - Correto
+      - Verificar se todos os itens estao nos setores corretos
+        - 241
+          - Correto

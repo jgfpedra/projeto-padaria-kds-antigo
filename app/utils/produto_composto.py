@@ -4,8 +4,7 @@ import math
 def salgados(itens, pessoas, salgados_unid):
     por_item = float(salgados_unid) * pessoas / len(itens)
     return [
-        {"id_produto": i["id_produto"],
-         "quantidade": round(por_item, 2)} for i in itens
+        {"id_produto": i["id_produto"], "quantidade": round(por_item, 2)} for i in itens
     ]
 
 

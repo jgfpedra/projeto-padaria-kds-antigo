@@ -9,6 +9,7 @@ from app.repo.produto_composto import (
     repo_get_quantidade_total_grupo,
     repo_remover_produto_composto,
     repo_salvar_produto_composto,
+    repo_get_peso_unitario_item
 )
 from app.utils.produto_composto import bebidas, bolos, salgados
 from app.utils.conversions import to_float
@@ -88,8 +89,13 @@ def calcular_componentes(id_produto, fator, estrutura, escolhas_opcionais):
 
 def montar_itens(produto_pai, fator, componentes, id_loja):
     itens = []
+    print(produto_pai)
     for comp in componentes:
         detalhe = repo_get_produto_detalhe(comp["id_produto"], id_loja)
+        peso_unitario = repo_get_peso_unitario_item(produto_pai["id"],
+                                                    comp["id_produto"])
+        if peso_unitario is None:
+            peso_unitario = detalhe["peso_liquido"]
         if not detalhe:
             logger.warning(f"""Produto {comp['id_produto']} não
                 encontrado na loja {id_loja}""")
@@ -99,11 +105,12 @@ def montar_itens(produto_pai, fator, componentes, id_loja):
                 "cod_produto": detalhe["id"],
                 "descricao": detalhe["descricao"],
                 "tipo_embalagem": detalhe["tipo_embalagem"],
-                "peso_liquido": detalhe["peso_liquido"],
+                "peso_liquido": peso_unitario,
                 "setor": detalhe["setor"],
                 "id_setor": detalhe["id_setor"],
-                "quantidade": (to_float(comp["quantidade"]) *
-                               to_float(detalhe["peso_liquido"])),
+                "quantidade": (
+                    to_float(comp["quantidade"]) * to_float(peso_unitario)
+                ),
                 "quantidade_un": comp["quantidade"],
                 "preco_venda": 0,
                 "total": 0,
