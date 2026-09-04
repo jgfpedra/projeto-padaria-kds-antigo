@@ -87,9 +87,8 @@ def calcular_componentes(id_produto, fator, estrutura, escolhas_opcionais):
     return resultado
 
 
-def montar_itens(produto_pai, fator, componentes, id_loja):
+def montar_itens(produto_pai, fator, componentes, tipo, id_loja):
     itens = []
-    print(produto_pai)
     for comp in componentes:
         detalhe = repo_get_produto_detalhe(comp["id_produto"], id_loja)
         peso_unitario = repo_get_peso_unitario_item(produto_pai["id"],
@@ -100,6 +99,9 @@ def montar_itens(produto_pai, fator, componentes, id_loja):
             logger.warning(f"""Produto {comp['id_produto']} não
                 encontrado na loja {id_loja}""")
             continue
+        observacao = ""
+        if tipo != "paoDeMetro":
+            observacao = f"Composto: {produto_pai['descricao']}"
         itens.append(
             {
                 "cod_produto": detalhe["id"],
@@ -114,7 +116,7 @@ def montar_itens(produto_pai, fator, componentes, id_loja):
                 "quantidade_un": comp["quantidade"],
                 "preco_venda": 0,
                 "total": 0,
-                "observacao": f"Composto: {produto_pai["descricao"]}",
+                "observacao": observacao,
             }
         )
     return itens

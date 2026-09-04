@@ -1972,7 +1972,9 @@ def api_explodir_composto(id_produto):
     if componentes is False:
         return jsonify({"erro": "Erro ao calcular componentes."}), 500
     return jsonify(
-        {"itens": montar_itens(produto_pai, fator, componentes, int(id_loja))}
+        {"itens": montar_itens(produto_pai, fator,
+                               componentes, estrutura['tipo'],
+                               int(id_loja))}
     )
 
 
