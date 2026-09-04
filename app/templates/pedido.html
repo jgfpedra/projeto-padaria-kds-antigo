@@ -243,9 +243,18 @@
         />
       </div>
     </div>
-    <!-- Botão Adicionar Item -->
+    <div id="div-opcionais-composto" style="display:none;">
+      <div id="grupos-opcionais-container"></div>
+    </div>
     <div class="row mb-3">
-      <div class="col-md-12 text-end">
+      <div class="col-md-12 d-flex justify-content-between">
+        <button
+          type="button"
+          class="btn btn-outline-danger"
+          onclick="limparItens()"
+        >
+          Limpar Itens
+        </button>
         <button type="button" class="btn btn-primary" onclick="adicionarItem()">
           Adicionar Produto
         </button>
@@ -402,8 +411,12 @@
     document.getElementById("total").value = total.toFixed(2);
   }
 
+  function limparItens() {
+    document.querySelector("#tabela_itens tbody").innerHTML = "";
+    atualizarTotalPedido();
+  }
+
   async function preencherProduto(produto) {
-    console.log(produto);
     document.getElementById("cod_produto").value = produto.id_produto;
     document.getElementById("desc_produto").value = produto.descricaocompleta;
     document.getElementById("tipo_embalagem").value = produto.tipoembalagem;
@@ -415,14 +428,10 @@
 
     let idSetor = "";
 
-    console.log("-> ID SETOR inicial do produto:", produto.id_setor ?? "");
-
     if (idProduto && idLoja) {
       try {
         const response = await fetch(`/api/preco/${idProduto}/${idLoja}`);
         const data = await response.json();
-
-        console.log("-> Dados retornados da rota /api/preco:", data);
 
         idSetor = data.id_setor ?? "";
         document.getElementById("setor").value = data.descricao_setor ?? "";
@@ -433,7 +442,6 @@
         if (mapaProdutos[produto.id_produto]) {
           mapaProdutos[produto.id_produto].id_setor = idSetor;
         }
-        console.log("-> ID SETOR final atribuído:", idSetor);
       } catch (error) {
         console.error("Erro ao buscar dados do produto:", error);
         document.getElementById("preco_venda").value = 0;
@@ -447,10 +455,6 @@
     // Delay para garantir que id_setor foi atribuído
     setTimeout(() => {
       const idSetorVerifica = document.getElementById("id_setor_hidden").value;
-      console.log(
-        "-> ID SETOR final atribuído (forçado com timeout):",
-        idSetorVerifica,
-      );
     }, 100);
   }
 
@@ -467,12 +471,9 @@
       }
 
       const codigoNum = parseInt(codigo);
-      console.log("Código digitado:", codigoNum);
-      console.log("Produtos disponíveis:", Object.keys(mapaProdutos));
 
       const produto = mapaProdutos[codigoNum];
       if (produto) {
-        console.log("Produto encontrado:", produto);
         preencherProduto(produto);
       } else {
         console.warn("Produto não encontrado!");
@@ -594,11 +595,6 @@
 
     row.dataset.idSetor = idSetorFinal;
     row.dataset.codProdutoAssociado = item.cod_produto_associado;
-
-    console.log(
-      "✅ ID SETOR definido na linha (adicionarLinhaItemPedido):",
-      idSetorFinal,
-    );
 
     [
       item.cod_produto,
@@ -748,11 +744,6 @@
       itens,
     };
 
-    console.log(
-      "📤 Enviando para o backend:",
-      JSON.stringify(payload, null, 2),
-    );
-
     try {
       const response = await fetch("/api/pedido/salvar", {
         method: "POST",
@@ -797,7 +788,6 @@
 
     let carregouClientes = false;
     let carregouLojas = false;
-    console.log("A");
 
     // Carregar dados iniciais
     $.getJSON("/api/clientes", function (data) {
@@ -808,7 +798,6 @@
           .normalize("NFD")
           .replace(/[^\w\s]/gi, ""),
       }));
-      console.log(clientesCache);
       carregouClientes = true;
       tentarCarregarPedido();
     });
@@ -843,7 +832,6 @@
           data.forEach((prod) => {
             mapaProdutos[prod.id_produto] = prod;
           });
-          console.log(mapaProdutos[5952]);
           carregouProdutos = true;
 
           if (callback) {
@@ -896,11 +884,9 @@
         .getElementById("tabela_itens")
         .getElementsByTagName("tbody")[0];
       tabela.innerHTML = "";
-      console.log("📤 Exibindo preços cadastrados nas linhas (debug):");
       const linhas = document.querySelectorAll("#tabela_itens tbody tr");
       linhas.forEach((row) => {
         const preco = row.dataset.precoVenda;
-        console.log(`🔍 Produto: ${row.cells[0].textContent}, Preço: ${preco}`);
       });
       itens.forEach((item) => {
         const row = tabela.insertRow();
@@ -956,17 +942,6 @@
 
           const achouNome = c.nome_normalizado.includes(busca);
           const achouTelefone = telefoneLimpo.includes(buscaNumerica);
-
-          if (c.nome.includes("pedro")) {
-            console.log({
-              nomeOriginal: c.nome,
-              nomeNormalizado: c.nome_normalizado,
-              busca: busca,
-              achouNome: achouNome,
-              buscaNumerica: buscaNumerica,
-              achouTelefone: achouTelefone,
-            });
-          }
 
           return (busca && achouNome) || (buscaNumerica && achouTelefone);
         })
@@ -1025,107 +1000,234 @@
     }
   });
 
-  window.adicionarItem = async function () {
-    let idSetorInput = document.getElementById("id_setor_hidden");
-    let tentativas = 0;
-    let idSetor = idSetorInput ? idSetorInput.value.trim() : "";
-
-    // Tenta aguardar carregamento do setor por até 5 tentativas
-    while ((!idSetor || isNaN(parseInt(idSetor))) && tentativas < 5) {
-      await new Promise((resolve) => setTimeout(resolve, 200)); // espera 200ms
-      idSetor = idSetorInput.value.trim();
-      tentativas++;
-    }
-
-    console.log(
-      "⚠ ID SETOR lido no momento de adicionar item (com retry):",
-      idSetor,
-    );
-
-    if (!idSetor || isNaN(parseInt(idSetor))) {
-      alert(
-        "Erro: Setor não carregado. Verifique o produto e a loja selecionados.",
-      );
-      return;
-    }
-
-    // ... resto do código que já está funcionando
-    const cod_produto = document.getElementById("cod_produto").value.trim();
-    const desc_produto = document.getElementById("desc_produto").value.trim();
-    const tipo_embalagem = document
-      .getElementById("tipo_embalagem")
-      .value.trim();
-    const peso_bruto = document.getElementById("peso_bruto").value.trim();
-    const setor = document.getElementById("setor").value.trim();
-    const quantidade = document.getElementById("quantidade").value.trim();
-    const quantidade_un = document.getElementById("quantidade_un").value.trim();
-    const preco_venda = document.getElementById("preco_venda").value.trim();
-    const total = document.getElementById("total").value.trim();
-    const observacao = document.getElementById("obs_item").value.trim();
-
-    const produtoOpcao = document.getElementById("item-associado");
-    const cod_produto_associado = produtoOpcao ? produtoOpcao.value : "";
-    const desc_produto_associado =
-      produtoOpcao && produtoOpcao.selectedOptions.length > 0
-        ? produtoOpcao.selectedOptions[0].text
-        : "";
-
-    const tabela = document
-      .getElementById("tabela_itens")
-      .getElementsByTagName("tbody")[0];
-    const row = tabela.insertRow();
-
-    row.dataset.idSetor = idSetor;
-    row.dataset.codProdutoAssociado = cod_produto_associado;
-    row.dataset.precoVenda = preco_venda;
-    row.setAttribute("data-preco-venda", preco_venda);
-
-    [
-      cod_produto,
-      desc_produto,
-      desc_produto_associado,
-      tipo_embalagem,
-      peso_bruto,
-      setor,
-      quantidade,
-      quantidade_un,
-      preco_venda,
-      total,
-      observacao,
-    ].forEach((valor) => {
-      const cell = row.insertCell();
-      cell.textContent = valor;
+  async function explodirComposto(composto, item, id_loja, quantidade_un, escolhas_opcionais) {
+    const res = await fetch(`/api/produtos_compostos/explodir/${item.cod_produto}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id_loja: parseInt(id_loja),
+        pessoas: composto.calculo_pessoa ? quantidade_un : undefined,
+        quantidade: composto.calculo_pessoa ? undefined : quantidade_un,
+        escolhas_opcionais,
+      }),
     });
-
-    const actionsCell = row.insertCell();
-    actionsCell.innerHTML = `
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.erro || "Erro ao processar composto.");
+      return false;
+    }
+    const data = await res.json();
+    const tabela = document.getElementById("tabela_itens");
+    adicionarLinhaItemPedido(item);
+    data.itens.forEach((filho) => {
+      const row = tabela.insertRow();
+      row.dataset.idSetor = filho.id_setor || "";
+      row.dataset.codProdutoAssociado = filho.cod_produto_associado || "";
+      [
+        filho.cod_produto,
+        filho.descricao,
+        filho.desc_produto_associado,
+        filho.tipo_embalagem,
+        filho.peso_liquido,
+        filho.setor,
+        filho.quantidade,
+        filho.quantidade_un,
+        filho.preco_venda,
+        filho.total,
+        filho.observacao,
+      ].forEach((valor) => {
+        const cell = row.insertCell();
+        cell.textContent = valor ?? "";
+      });
+      const actionsCell = row.insertCell();
+      actionsCell.innerHTML = `
         <button type="button" class="btn btn-warning btn-sm me-1" onclick="editarItem(this)">Editar</button>
         <button type="button" class="btn btn-danger btn-sm" onclick="excluirItem(this)">Excluir</button>
-    `;
+      `;
+    });
+    atualizarValorTotalPedido();
+    return true;
+  }
 
-    [
-      "cod_produto",
-      "desc_produto",
-      "tipo_embalagem",
-      "peso_bruto",
-      "setor",
-      "quantidade",
-      "quantidade_un",
-      "preco_venda",
-      "total",
-      "obs_item",
-    ].forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) el.value = "";
+  function renderizarOpcionais(grupos) {
+    const container = document.getElementById("grupos-opcionais-container");
+    container.innerHTML = "";
+    const TIPOS_MULTIPLOS = ["SABOR", "MASSA"]; // ajuste conforme seu backend
+
+    grupos.forEach((grupo) => {
+      const multiplo = TIPOS_MULTIPLOS.includes(grupo.chave);
+      const tipo_input = multiplo ? "checkbox" : "radio";
+      const nome_grupo = `opcional_${grupo.chave}`;
+      const qtd_total = grupo.quantidade_total;
+
+      let html = `<div class="mb-2">
+        <strong>${grupo.chave}</strong>
+        <span class="text-muted ms-2">
+          ${multiplo ? `Escolha até 2 sabores (total: ${qtd_total} un)` : `Escolha 1 opção (${qtd_total} un)`}
+        </span><br>`;
+
+      grupo.itens.forEach((item) => {
+        html += `
+          <div class="form-check">
+            <input class="form-check-input" type="${tipo_input}"
+              name="${nome_grupo}"
+              value="${item.id_produto}"
+              data-qtd-total="${qtd_total}"
+              ${multiplo ? `onchange="atualizarCheckboxes('${nome_grupo}')"` : ""}>
+            <label class="form-check-label">
+              ${item.descricao}
+              <span class="text-muted" id="qtd_${nome_grupo}_${item.id_produto}"></span>
+            </label>
+          </div>`;
+      });
+      html += `</div>`;
+      container.innerHTML += html;
     });
 
-    document.getElementById("id_setor_hidden").value = "";
-    if (produtoOpcao) produtoOpcao.selectedIndex = 0;
+    document.getElementById("div-opcionais-composto").style.display = "block";
+  }
 
-    document.getElementById("cod_produto").focus();
-    atualizarValorTotalPedido();
-    console.log("✅ Preço venda adicionado na linha (dataset):", preco_venda);
+  function atualizarCheckboxes(nome_grupo) {
+    const inputs = document.querySelectorAll(`input[name="${nome_grupo}"]:checked`);
+    const todos = document.querySelectorAll(`input[name="${nome_grupo}"]`);
+    const qtd_total = parseInt(todos[0]?.dataset.qtdTotal || 0);
+    const escolhidos = inputs.length;
+    const qtd_por_item = escolhidos > 0 ? Math.floor(qtd_total / escolhidos) : 0;
+
+    todos.forEach((input) => {
+      const span = document.getElementById(`qtd_${nome_grupo}_${input.value}`);
+      if (span) span.textContent = input.checked ? ` — ${qtd_por_item} un` : "";
+      if (!input.checked) input.disabled = escolhidos >= 2;
+    });
+  }
+
+  function coletarEscolhasOpcionais() {
+    const escolhas = {};
+    document.querySelectorAll("#grupos-opcionais-container input:checked").forEach((input) => {
+      const chave = input.name.replace("opcional_", "");
+      escolhas[chave] = escolhas[chave] || [];
+      escolhas[chave].push(parseInt(input.value));
+    });
+    return escolhas;
+  }
+
+    window.adicionarItem = async function () {
+      const id_loja = document.getElementById("loja").value;
+      if (!id_loja || id_loja === "Selecione...") {
+        alert("Selecione uma loja antes de adicionar produtos!");
+        return;
+      }
+
+      const item = {
+        cod_produto: document.getElementById("cod_produto").value.trim(),
+        descricao: document.getElementById("desc_produto").value.trim(),
+        cod_produto_associado: document.getElementById("item-associado").value || "",
+        desc_produto_associado:
+          document.getElementById("item-associado").selectedOptions.length > 0
+            ? document.getElementById("item-associado").selectedOptions[0].text
+            : "",
+        tipo_embalagem: document.getElementById("tipo_embalagem").value.trim(),
+        peso_bruto: document.getElementById("peso_bruto").value.trim(),
+        id_setor: document.getElementById("id_setor_hidden").value.trim(),
+        quantidade: document.getElementById("quantidade").value.trim(),
+        quantidade_un: document.getElementById("quantidade_un").value.trim(),
+        preco_venda: document.getElementById("preco_venda").value.trim(),
+        total: document.getElementById("total").value.trim(),
+        observacao: document.getElementById("obs_item").value.trim(),
+      };
+
+      if (!item.cod_produto) {
+        alert("Informe o código do produto antes de adicionar!");
+        return;
+      }
+      if (!item.quantidade || parseFloat(item.quantidade) <= 0) {
+        alert("Informe uma quantidade válida antes de adicionar!");
+        return;
+      }
+      if (
+        document.getElementById("div-item-associado").style.display === "block" &&
+        !item.cod_produto_associado
+      ) {
+        alert("Selecione o item associado!");
+        return;
+      }
+
+      // ✅ Verifica se é composto
+      const resComposto = await fetch(`/api/produtos_compostos/${item.cod_produto}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      if (resComposto.ok) {
+        const composto = await resComposto.json();
+        const qtd_un = parseInt(item.quantidade_un) || 0;
+        const min = composto.min_pessoas;
+
+        if (min && qtd_un < min) {
+          alert(`Produto composto requer mínimo de ${min} pessoas.`);
+          return;
+        }
+
+        if (composto.grupos_opcionais.length > 0) {
+          if (document.getElementById("div-opcionais-composto").style.display === "none") {
+            window._compostoAtual = { composto, item, id_loja, qtd_un };
+            renderizarOpcionais(composto.grupos_opcionais);
+            return;
+          }
+          const escolhas = coletarEscolhasOpcionais();
+          const { composto: c, item: i, id_loja: l, qtd_un: q } = window._compostoAtual;
+          document.getElementById("div-opcionais-composto").style.display = "none";
+          window._compostoAtual = null;
+          await explodirComposto(c, i, l, q, escolhas);
+          return;
+        }
+
+        await explodirComposto(composto, item, id_loja, qtd_un, {});
+        return;
+      }
+
+      // Produto simples — fluxo original com validação de setor
+      let idSetorInput = document.getElementById("id_setor_hidden");
+      let tentativas = 0;
+      let idSetor = idSetorInput ? idSetorInput.value.trim() : "";
+
+      while ((!idSetor || isNaN(parseInt(idSetor))) && tentativas < 5) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        idSetor = idSetorInput.value.trim();
+        tentativas++;
+      }
+
+      if (!idSetor || isNaN(parseInt(idSetor))) {
+        alert("Erro: Setor não carregado. Verifique o produto e a loja selecionados.");
+        return;
+      }
+
+      adicionarLinhaItemPedido(item);
+      [
+        "cod_produto",
+        "desc_produto",
+        "tipo_embalagem",
+        "peso_bruto",
+        "setor",
+        "quantidade",
+        "quantidade_un",
+        "preco_venda",
+        "total",
+        "obs_item",
+      ].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+
+      document.getElementById("id_setor_hidden").value = "";
+      const produtoOpcao = document.getElementById("item-associado");
+      if (produtoOpcao) produtoOpcao.selectedIndex = 0;
+      document.getElementById("div-item-associado").style.display = "none";
+      document.getElementById("cod_produto").focus();
   };
+
+
   $("#desc_produto").on("keydown", function (e) {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -1206,8 +1308,6 @@
       alert("Produto não encontrado!");
       return;
     }
-    console.log("carregarProdutoDoCampo");
-    console.log(produto);
     await preencherProduto(produto); // <- tem fetch interno e já é async
   }
 
