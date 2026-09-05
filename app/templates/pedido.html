@@ -243,7 +243,7 @@
         />
       </div>
     </div>
-    <div id="div-opcionais-composto" style="display:none;">
+    <div id="div-opcionais-composto" style="display: none">
       <div id="grupos-opcionais-container"></div>
     </div>
     <div class="row mb-3">
@@ -1000,17 +1000,26 @@
     }
   });
 
-  async function explodirComposto(composto, item, id_loja, quantidade_un, escolhas_opcionais) {
-    const res = await fetch(`/api/produtos_compostos/explodir/${item.cod_produto}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id_loja: parseInt(id_loja),
-        pessoas: composto.calculo_pessoa ? quantidade_un : undefined,
-        quantidade: composto.calculo_pessoa ? undefined : quantidade_un,
-        escolhas_opcionais,
-      }),
-    });
+  async function explodirComposto(
+    composto,
+    item,
+    id_loja,
+    quantidade_un,
+    escolhas_opcionais,
+  ) {
+    const res = await fetch(
+      `/api/produtos_compostos/explodir/${item.cod_produto}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id_loja: parseInt(id_loja),
+          pessoas: composto.calculo_pessoa ? quantidade_un : undefined,
+          quantidade: composto.calculo_pessoa ? undefined : quantidade_un,
+          escolhas_opcionais,
+        }),
+      },
+    );
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       alert(err.erro || "Erro ao processar composto.");
@@ -1088,11 +1097,14 @@
   }
 
   function atualizarCheckboxes(nome_grupo) {
-    const inputs = document.querySelectorAll(`input[name="${nome_grupo}"]:checked`);
+    const inputs = document.querySelectorAll(
+      `input[name="${nome_grupo}"]:checked`,
+    );
     const todos = document.querySelectorAll(`input[name="${nome_grupo}"]`);
     const qtd_total = parseInt(todos[0]?.dataset.qtdTotal || 0);
     const escolhidos = inputs.length;
-    const qtd_por_item = escolhidos > 0 ? Math.floor(qtd_total / escolhidos) : 0;
+    const qtd_por_item =
+      escolhidos > 0 ? Math.floor(qtd_total / escolhidos) : 0;
 
     todos.forEach((input) => {
       const span = document.getElementById(`qtd_${nome_grupo}_${input.value}`);
@@ -1103,130 +1115,146 @@
 
   function coletarEscolhasOpcionais() {
     const escolhas = {};
-    document.querySelectorAll("#grupos-opcionais-container input:checked").forEach((input) => {
-      const chave = input.name.replace("opcional_", "");
-      escolhas[chave] = escolhas[chave] || [];
-      escolhas[chave].push(parseInt(input.value));
-    });
+    document
+      .querySelectorAll("#grupos-opcionais-container input:checked")
+      .forEach((input) => {
+        const chave = input.name.replace("opcional_", "");
+        escolhas[chave] = escolhas[chave] || [];
+        escolhas[chave].push(parseInt(input.value));
+      });
     return escolhas;
   }
 
-    window.adicionarItem = async function () {
-      const id_loja = document.getElementById("loja").value;
-      if (!id_loja || id_loja === "Selecione...") {
-        alert("Selecione uma loja antes de adicionar produtos!");
-        return;
-      }
+  window.adicionarItem = async function () {
+    const id_loja = document.getElementById("loja").value;
+    if (!id_loja || id_loja === "Selecione...") {
+      alert("Selecione uma loja antes de adicionar produtos!");
+      return;
+    }
 
-      const item = {
-        cod_produto: document.getElementById("cod_produto").value.trim(),
-        descricao: document.getElementById("desc_produto").value.trim(),
-        cod_produto_associado: document.getElementById("item-associado").value || "",
-        desc_produto_associado:
-          document.getElementById("item-associado").selectedOptions.length > 0
-            ? document.getElementById("item-associado").selectedOptions[0].text
-            : "",
-        tipo_embalagem: document.getElementById("tipo_embalagem").value.trim(),
-        peso_bruto: document.getElementById("peso_bruto").value.trim(),
-        id_setor: document.getElementById("id_setor_hidden").value.trim(),
-        quantidade: document.getElementById("quantidade").value.trim(),
-        quantidade_un: document.getElementById("quantidade_un").value.trim(),
-        preco_venda: document.getElementById("preco_venda").value.trim(),
-        total: document.getElementById("total").value.trim(),
-        observacao: document.getElementById("obs_item").value.trim(),
-      };
+    const item = {
+      cod_produto: document.getElementById("cod_produto").value.trim(),
+      descricao: document.getElementById("desc_produto").value.trim(),
+      cod_produto_associado:
+        document.getElementById("item-associado").value || "",
+      desc_produto_associado:
+        document.getElementById("item-associado").selectedOptions.length > 0
+          ? document.getElementById("item-associado").selectedOptions[0].text
+          : "",
+      tipo_embalagem: document.getElementById("tipo_embalagem").value.trim(),
+      peso_bruto: document.getElementById("peso_bruto").value.trim(),
+      id_setor: document.getElementById("id_setor_hidden").value.trim(),
+      quantidade: document.getElementById("quantidade").value.trim(),
+      quantidade_un: document.getElementById("quantidade_un").value.trim(),
+      preco_venda: document.getElementById("preco_venda").value.trim(),
+      total: document.getElementById("total").value.trim(),
+      observacao: document.getElementById("obs_item").value.trim(),
+    };
 
-      if (!item.cod_produto) {
-        alert("Informe o código do produto antes de adicionar!");
-        return;
-      }
-      if (!item.quantidade || parseFloat(item.quantidade) <= 0) {
-        alert("Informe uma quantidade válida antes de adicionar!");
-        return;
-      }
-      if (
-        document.getElementById("div-item-associado").style.display === "block" &&
-        !item.cod_produto_associado
-      ) {
-        alert("Selecione o item associado!");
-        return;
-      }
+    if (!item.cod_produto) {
+      alert("Informe o código do produto antes de adicionar!");
+      return;
+    }
+    if (!item.quantidade || parseFloat(item.quantidade) <= 0) {
+      alert("Informe uma quantidade válida antes de adicionar!");
+      return;
+    }
+    if (
+      document.getElementById("div-item-associado").style.display === "block" &&
+      !item.cod_produto_associado
+    ) {
+      alert("Selecione o item associado!");
+      return;
+    }
 
-      // ✅ Verifica se é composto
-      const resComposto = await fetch(`/api/produtos_compostos/${item.cod_produto}`, {
+    // ✅ Verifica se é composto
+    const resComposto = await fetch(
+      `/api/produtos_compostos/${item.cod_produto}`,
+      {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
-      });
+      },
+    );
 
-      if (resComposto.ok) {
-        const composto = await resComposto.json();
-        const qtd_un = parseInt(item.quantidade_un) || 0;
-        const min = composto.min_pessoas;
+    if (resComposto.ok) {
+      const composto = await resComposto.json();
+      const qtd_un = parseInt(item.quantidade_un) || 0;
+      const min = composto.min_pessoas;
 
-        if (min && qtd_un < min) {
-          alert(`Produto composto requer mínimo de ${min} pessoas.`);
-          return;
-        }
-
-        if (composto.grupos_opcionais.length > 0) {
-          if (document.getElementById("div-opcionais-composto").style.display === "none") {
-            window._compostoAtual = { composto, item, id_loja, qtd_un };
-            renderizarOpcionais(composto.grupos_opcionais);
-            return;
-          }
-          const escolhas = coletarEscolhasOpcionais();
-          const { composto: c, item: i, id_loja: l, qtd_un: q } = window._compostoAtual;
-          document.getElementById("div-opcionais-composto").style.display = "none";
-          window._compostoAtual = null;
-          await explodirComposto(c, i, l, q, escolhas);
-          return;
-        }
-
-        await explodirComposto(composto, item, id_loja, qtd_un, {});
+      if (min && qtd_un < min) {
+        alert(`Produto composto requer mínimo de ${min} pessoas.`);
         return;
       }
 
-      // Produto simples — fluxo original com validação de setor
-      let idSetorInput = document.getElementById("id_setor_hidden");
-      let tentativas = 0;
-      let idSetor = idSetorInput ? idSetorInput.value.trim() : "";
-
-      while ((!idSetor || isNaN(parseInt(idSetor))) && tentativas < 5) {
-        await new Promise((resolve) => setTimeout(resolve, 200));
-        idSetor = idSetorInput.value.trim();
-        tentativas++;
-      }
-
-      if (!idSetor || isNaN(parseInt(idSetor))) {
-        alert("Erro: Setor não carregado. Verifique o produto e a loja selecionados.");
+      if (composto.grupos_opcionais.length > 0) {
+        if (
+          document.getElementById("div-opcionais-composto").style.display ===
+          "none"
+        ) {
+          window._compostoAtual = { composto, item, id_loja, qtd_un };
+          renderizarOpcionais(composto.grupos_opcionais);
+          return;
+        }
+        const escolhas = coletarEscolhasOpcionais();
+        const {
+          composto: c,
+          item: i,
+          id_loja: l,
+          qtd_un: q,
+        } = window._compostoAtual;
+        document.getElementById("div-opcionais-composto").style.display =
+          "none";
+        window._compostoAtual = null;
+        await explodirComposto(c, i, l, q, escolhas);
         return;
       }
 
-      adicionarLinhaItemPedido(item);
-      [
-        "cod_produto",
-        "desc_produto",
-        "tipo_embalagem",
-        "peso_bruto",
-        "setor",
-        "quantidade",
-        "quantidade_un",
-        "preco_venda",
-        "total",
-        "obs_item",
-      ].forEach((id) => {
-        const el = document.getElementById(id);
-        if (el) el.value = "";
-      });
+      await explodirComposto(composto, item, id_loja, qtd_un, {});
+      return;
+    }
 
-      document.getElementById("id_setor_hidden").value = "";
-      const produtoOpcao = document.getElementById("item-associado");
-      if (produtoOpcao) produtoOpcao.selectedIndex = 0;
-      document.getElementById("div-item-associado").style.display = "none";
-      document.getElementById("cod_produto").focus();
+    // Produto simples — fluxo original com validação de setor
+    let idSetorInput = document.getElementById("id_setor_hidden");
+    let tentativas = 0;
+    let idSetor = idSetorInput ? idSetorInput.value.trim() : "";
+
+    while ((!idSetor || isNaN(parseInt(idSetor))) && tentativas < 5) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      idSetor = idSetorInput.value.trim();
+      tentativas++;
+    }
+
+    if (!idSetor || isNaN(parseInt(idSetor))) {
+      alert(
+        "Erro: Setor não carregado. Verifique o produto e a loja selecionados.",
+      );
+      return;
+    }
+
+    adicionarLinhaItemPedido(item);
+    [
+      "cod_produto",
+      "desc_produto",
+      "tipo_embalagem",
+      "peso_bruto",
+      "setor",
+      "quantidade",
+      "quantidade_un",
+      "preco_venda",
+      "total",
+      "obs_item",
+    ].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+
+    document.getElementById("id_setor_hidden").value = "";
+    const produtoOpcao = document.getElementById("item-associado");
+    if (produtoOpcao) produtoOpcao.selectedIndex = 0;
+    document.getElementById("div-item-associado").style.display = "none";
+    document.getElementById("cod_produto").focus();
   };
-
 
   $("#desc_produto").on("keydown", function (e) {
     if (e.key === "Enter") {

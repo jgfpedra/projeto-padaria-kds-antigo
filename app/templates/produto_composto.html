@@ -1,9 +1,20 @@
-<div class="modal fade" id="modalComposto" tabindex="-1" aria-labelledby="modalCompostoLabel" aria-hidden="true">
+<div
+  class="modal fade"
+  id="modalComposto"
+  tabindex="-1"
+  aria-labelledby="modalCompostoLabel"
+  aria-hidden="true"
+>
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="modalCompostoLabel">Novo Composto</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+        ></button>
       </div>
 
       <div class="modal-body">
@@ -16,19 +27,28 @@
             </label>
 
             <div style="position: relative">
-              <input type="text" class="form-control" id="composto_produto_id_busca" placeholder="ID..."
-                autocomplete="off" />
+              <input
+                type="text"
+                class="form-control"
+                id="composto_produto_id_busca"
+                placeholder="ID..."
+                autocomplete="off"
+              />
 
               <input type="hidden" id="composto_id_produto" />
 
-              <ul id="composto_produto_id_sugestoes" class="list-group" style="
-                position: absolute;
-                z-index: 999;
-                width: 100%;
-                max-height: 180px;
-                overflow-y: auto;
-                display: none;
-              "></ul>
+              <ul
+                id="composto_produto_id_sugestoes"
+                class="list-group"
+                style="
+                  position: absolute;
+                  z-index: 999;
+                  width: 100%;
+                  max-height: 180px;
+                  overflow-y: auto;
+                  display: none;
+                "
+              ></ul>
 
               <small id="composto_produto_hint" class="text-muted"></small>
             </div>
@@ -40,17 +60,26 @@
             </label>
 
             <div style="position: relative">
-              <input type="text" class="form-control" id="composto_produto_descricao_busca" placeholder="Descrição..."
-                autocomplete="off" />
+              <input
+                type="text"
+                class="form-control"
+                id="composto_produto_descricao_busca"
+                placeholder="Descrição..."
+                autocomplete="off"
+              />
 
-              <ul id="composto_produto_descricao_sugestoes" class="list-group" style="
-          position: absolute;
-          z-index: 999;
-          width: 100%;
-          max-height: 180px;
-          overflow-y: auto;
-          display: none;
-        "></ul>
+              <ul
+                id="composto_produto_descricao_sugestoes"
+                class="list-group"
+                style="
+                  position: absolute;
+                  z-index: 999;
+                  width: 100%;
+                  max-height: 180px;
+                  overflow-y: auto;
+                  display: none;
+                "
+              ></ul>
             </div>
           </div>
 
@@ -73,23 +102,44 @@
           <div class="col-md-4">
             <label class="form-label">Mín. Pessoas</label>
 
-            <input type="number" min="1" class="form-control" id="composto_min_pessoas" placeholder="ex: 10" />
+            <input
+              type="number"
+              min="1"
+              class="form-control"
+              id="composto_min_pessoas"
+              placeholder="ex: 10"
+            />
           </div>
         </div>
 
         <ul class="nav nav-tabs mb-3">
           <li class="nav-item">
-            <button type="button" class="nav-link active" data-aba="itens" onclick="trocarAbaComposto('itens')">
+            <button
+              type="button"
+              class="nav-link active"
+              data-aba="itens"
+              onclick="trocarAbaComposto('itens')"
+            >
               Itens Fixos (<span id="contador_itens">0</span>)
             </button>
           </li>
           <li class="nav-item">
-            <button type="button" class="nav-link" data-aba="opcionais" onclick="trocarAbaComposto('opcionais')">
+            <button
+              type="button"
+              class="nav-link"
+              data-aba="opcionais"
+              onclick="trocarAbaComposto('opcionais')"
+            >
               Grupos Opcionais (<span id="contador_grupos">0</span>)
             </button>
           </li>
           <li class="nav-item">
-            <button type="button" class="nav-link" data-aba="calculo" onclick="trocarAbaComposto('calculo')">
+            <button
+              type="button"
+              class="nav-link"
+              data-aba="calculo"
+              onclick="trocarAbaComposto('calculo')"
+            >
               Cálculo / Pessoa
             </button>
           </li>
@@ -98,7 +148,11 @@
         <!-- Aba: Itens fixos -->
         <div id="aba_itens">
           <div class="d-flex justify-content-end mb-2">
-            <button type="button" class="btn btn-outline-success btn-sm" onclick="adicionarItemFixo()">
+            <button
+              type="button"
+              class="btn btn-outline-success btn-sm"
+              onclick="adicionarItemFixo()"
+            >
               <i class="bi bi-plus"></i>
               Adicionar item
             </button>
@@ -128,7 +182,11 @@
         <!-- Aba: Grupos opcionais -->
         <div id="aba_opcionais" style="display: none">
           <div class="d-flex justify-content-end mb-2">
-            <button type="button" class="btn btn-outline-success btn-sm" onclick="adicionarGrupoOpcional()">
+            <button
+              type="button"
+              class="btn btn-outline-success btn-sm"
+              onclick="adicionarGrupoOpcional()"
+            >
               <i class="bi bi-plus"></i>
               Adicionar grupo
             </button>
@@ -144,18 +202,41 @@
         <div id="aba_calculo" style="display: none">
           <div class="d-flex gap-3 mb-3">
             <div class="form-check">
-              <input class="form-check-input" type="radio" name="modo_calc" id="modo_calc_nenhum" value="nenhum"
-                checked />
-              <label class="form-check-label" for="modo_calc_nenhum">Nenhum</label>
+              <input
+                class="form-check-input"
+                type="radio"
+                name="modo_calc"
+                id="modo_calc_nenhum"
+                value="nenhum"
+                checked
+              />
+              <label class="form-check-label" for="modo_calc_nenhum"
+                >Nenhum</label
+              >
             </div>
             <div class="form-check">
-              <input class="form-check-input" type="radio" name="modo_calc" id="modo_calc_existente"
-                value="existente" />
-              <label class="form-check-label" for="modo_calc_existente">Usar existente</label>
+              <input
+                class="form-check-input"
+                type="radio"
+                name="modo_calc"
+                id="modo_calc_existente"
+                value="existente"
+              />
+              <label class="form-check-label" for="modo_calc_existente"
+                >Usar existente</label
+              >
             </div>
             <div class="form-check">
-              <input class="form-check-input" type="radio" name="modo_calc" id="modo_calc_novo" value="novo" />
-              <label class="form-check-label" for="modo_calc_novo">Criar novo</label>
+              <input
+                class="form-check-input"
+                type="radio"
+                name="modo_calc"
+                id="modo_calc_novo"
+                value="novo"
+              />
+              <label class="form-check-label" for="modo_calc_novo"
+                >Criar novo</label
+              >
             </div>
           </div>
 
@@ -169,15 +250,30 @@
           <div id="calc_novo_box" class="row" style="display: none">
             <div class="col-md-4">
               <label class="form-label">Bebida (ml / pessoa)</label>
-              <input type="number" class="form-control" id="calc_bebida_ml" placeholder="ex: 500" />
+              <input
+                type="number"
+                class="form-control"
+                id="calc_bebida_ml"
+                placeholder="ex: 500"
+              />
             </div>
             <div class="col-md-4">
               <label class="form-label">Bolo (g / pessoa)</label>
-              <input type="number" class="form-control" id="calc_bolo_g" placeholder="ex: 100" />
+              <input
+                type="number"
+                class="form-control"
+                id="calc_bolo_g"
+                placeholder="ex: 100"
+              />
             </div>
             <div class="col-md-4">
               <label class="form-label">Salgados (un / pessoa)</label>
-              <input type="number" class="form-control" id="calc_salgados_unid" placeholder="ex: 8" />
+              <input
+                type="number"
+                class="form-control"
+                id="calc_salgados_unid"
+                placeholder="ex: 8"
+              />
             </div>
           </div>
 
@@ -202,12 +298,12 @@
 <script>
   (function () {
     const TIPOS_ITEM = [
-      {value: "salgado", label: "Salgado"},
-      {value: "bolo", label: "Bolo"},
-      {value: "paoMetro", label: "Pão Metro"},
-      {value: "bebida", label: "Bebida"},
-      {value: "salgadosFritos", label: "Salgados Fritos"},
-      {value: "salgadosAssados", label: "Salgados Assados"},
+      { value: "salgado", label: "Salgado" },
+      { value: "bolo", label: "Bolo" },
+      { value: "paoMetro", label: "Pão Metro" },
+      { value: "bebida", label: "Bebida" },
+      { value: "salgadosFritos", label: "Salgados Fritos" },
+      { value: "salgadosAssados", label: "Salgados Assados" },
     ];
 
     let itensFixos = []; // { key, id_produto, descricao, quantidade, peso_unitario_kg, tipo_item, capacidade_ml }
@@ -232,7 +328,7 @@
     function carregarCompostoEdicao(id) {
       fetch(`/api/produtos_compostos/${id}`, {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       })
         .then((res) => res.json())
@@ -250,7 +346,7 @@
             .prop("disabled", true);
 
           $("#composto_produto_hint").text(
-            "ID não pode ser alterado após criação."
+            "ID não pode ser alterado após criação.",
           );
 
           // Tipo
@@ -285,14 +381,10 @@
                 $("#calc_existente_id").val(data.calculo_pessoa.id);
               } else {
                 $("#modo_calc_novo").prop("checked", true);
-                $("#calc_bebida_ml").val(
-                  data.calculo_pessoa.bebida_ml ?? ""
-                );
-                $("#calc_bolo_g").val(
-                  data.calculo_pessoa.bolo_g ?? ""
-                );
+                $("#calc_bebida_ml").val(data.calculo_pessoa.bebida_ml ?? "");
+                $("#calc_bolo_g").val(data.calculo_pessoa.bolo_g ?? "");
                 $("#calc_salgados_unid").val(
-                  data.calculo_pessoa.salgados_unid ?? ""
+                  data.calculo_pessoa.salgados_unid ?? "",
                 );
               }
             }
@@ -442,7 +534,12 @@
     window.adicionarItemGrupo = function (gKey) {
       lerGruposDoDom();
       const grupo = gruposOpcionais.find((g) => g.key === gKey);
-      grupo.itens.push({key: proximoKey++, id_produto: "", descricao: "", quantidade: ""});
+      grupo.itens.push({
+        key: proximoKey++,
+        id_produto: "",
+        descricao: "",
+        quantidade: "",
+      });
       renderGruposOpcionais();
     };
 
@@ -469,7 +566,7 @@
             quantidade: $row.find(".campo_quantidade").val(),
           };
         });
-        return {key: g.key, chave, quantidade_total, itens};
+        return { key: g.key, chave, quantidade_total, itens };
       });
     }
 
@@ -592,9 +689,9 @@
                 >
                   ${p.id} — ${p.descricaocompleta}
                 </li>
-              `
+              `,
                 )
-                .join("")
+                .join(""),
             );
 
             $sugestoes.show();
@@ -656,18 +753,12 @@
 
       // Seleção pela busca de ID
       $sugestoesId.on("mousedown", "li", function () {
-        selecionar(
-          $(this).data("id"),
-          $(this).data("descricao")
-        );
+        selecionar($(this).data("id"), $(this).data("descricao"));
       });
 
       // Seleção pela busca de descrição
       $sugestoesDescricao.on("mousedown", "li", function () {
-        selecionar(
-          $(this).data("id"),
-          $(this).data("descricao")
-        );
+        selecionar($(this).data("id"), $(this).data("descricao"));
       });
 
       // Fecha sugestões ao clicar fora
@@ -726,9 +817,9 @@
                 >
                   ${p.id} — ${p.descricaocompleta}
                 </li>
-              `
+              `,
                 )
-                .join("")
+                .join(""),
             );
 
             $sugestoes.show();
@@ -810,7 +901,7 @@
       const modo = $('input[name="modo_calc"]:checked').val();
       if (modo === "existente") {
         const id = $("#calc_existente_id").val();
-        return id ? {id: Number(id)} : null;
+        return id ? { id: Number(id) } : null;
       }
       if (modo === "novo") {
         return {
@@ -860,7 +951,7 @@
 
       fetch("/api/produtos_compostos/salvar", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       })
         .then(async (res) => {

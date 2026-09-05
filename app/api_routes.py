@@ -1,6 +1,7 @@
 # app/api_routes.py
 
 import logging
+import os
 
 from flask import (
     jsonify,
@@ -62,7 +63,11 @@ logger = logging.getLogger("api.api_routes")
 
 @app.route("/favicon.ico")
 def favicon():
-    return send_from_directory("assets", "favicon.svg", mimetype="image/svg+xml")
+    return send_from_directory(
+        os.path.join(app.root_path, "static"),
+        "favicon.svg",
+        mimetype="image/svg+xml",
+    )
 
 
 @app.route("/api/clientes")
