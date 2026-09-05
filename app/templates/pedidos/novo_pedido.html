@@ -396,7 +396,6 @@
         divAssoc.style.display = "none";
       }
     } catch (error) {
-      console.error("Erro ao buscar preço/setor do produto:", error);
       alert("Erro ao buscar preço e setor!");
     }
   }
@@ -932,7 +931,6 @@
         alert("Erro ao salvar pedido! " + (erro.erro || ""));
       }
     } catch (error) {
-      console.error("Erro:", error);
       alert("Erro ao salvar pedido!");
     }
   }
@@ -976,7 +974,6 @@
         document.getElementById("id_setor_hidden").value = data.id_setor ?? "";
         calcularTotal(); // Só calcula depois que preencheu o preço
       } catch (error) {
-        console.error("Erro ao buscar preço e setor:", error);
         document.getElementById("preco_venda").value = 0;
         document.getElementById("setor").value = "";
         calcularTotal();
