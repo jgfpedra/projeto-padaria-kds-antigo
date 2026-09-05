@@ -1,6 +1,7 @@
 # database.py
-import psycopg2
 import os
+
+import psycopg2
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,7 +14,7 @@ def conectar():
             port=os.getenv("DB_PORT"),
             dbname=os.getenv("DB_NAME"),
             user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASS")
+            password=os.getenv("DB_PASS"),
         )
         return conn
     except Exception as e:

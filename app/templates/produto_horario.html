@@ -1,16 +1,21 @@
-{% extends "layout_base.html" %}
-{% block conteudo_central %}
+{% extends "layout_base.html" %} {% block conteudo_central %}
 
-<button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAdicionar">Adicionar Produto</button>
-<br><br>
+<button
+  class="btn btn-primary"
+  data-bs-toggle="modal"
+  data-bs-target="#modalAdicionar"
+>
+  Adicionar Produto
+</button>
+<br /><br />
 <table class="table table-bordered" id="tabelaProdutos">
-<thead>
-  <tr>
-    <th>ID Produto</th>
-    <th>Nome</th>
-    <th>Ações</th>
-  </tr>
-</thead>
+  <thead>
+    <tr>
+      <th>ID Produto</th>
+      <th>Nome</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
   <tbody></tbody>
 </table>
 
@@ -20,73 +25,85 @@
     <div class="modal-content">
       <div class="modal-header"><h5>Adicionar Produto</h5></div>
       <div class="modal-body">
-        <input type="number" id="inputIdProduto" placeholder="ID do Produto" class="form-control">
-        <br>
+        <input
+          type="number"
+          id="inputIdProduto"
+          placeholder="ID do Produto"
+          class="form-control"
+        />
+        <br />
         <div id="nomeProduto" class="form-text text-muted"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button class="btn btn-success" onclick="salvarProduto()">Salvar</button>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button class="btn btn-success" onclick="salvarProduto()">
+          Salvar
+        </button>
       </div>
     </div>
   </div>
 </div>
 <script>
-let produtos = {};
+  let produtos = {};
 
-async function carregarProdutos() {
+  async function carregarProdutos() {
     const res = await fetch("/api/produtos_kds_horario");
     const lista = await res.json();
     const tbody = document.querySelector("#tabelaProdutos tbody");
     tbody.innerHTML = "";
-    lista.forEach(p => {
-    tbody.innerHTML += `
+    lista.forEach((p) => {
+      tbody.innerHTML += `
       <tr>
         <td>${p.id_produto}</td>
         <td>${p.nome}</td>
         <td><button class="btn btn-sm btn-danger" onclick="excluirProduto(${p.id_produto})">Excluir</button></td>
       </tr>`;
-});
-}
+    });
+  }
 
-async function salvarProduto() {
+  async function salvarProduto() {
     const id = document.getElementById("inputIdProduto").value;
     if (!id) return alert("Informe um ID de produto");
 
     await fetch("/api/produtos_kds_horario", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id_produto: parseInt(id) })
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id_produto: parseInt(id) }),
     });
     document.getElementById("inputIdProduto").value = "";
     document.getElementById("nomeProduto").innerText = "";
-	document.querySelector('[data-bs-dismiss="modal"]').click();
+    document.querySelector('[data-bs-dismiss="modal"]').click();
     carregarProdutos();
-}
+  }
 
-document.getElementById("inputIdProduto").addEventListener("change", async () => {
-    const id = document.getElementById("inputIdProduto").value;
-    if (!id) return;
+  document
+    .getElementById("inputIdProduto")
+    .addEventListener("change", async () => {
+      const id = document.getElementById("inputIdProduto").value;
+      if (!id) return;
 
-    const res = await fetch("/api/produtos");
-    const produtosTodos = await res.json();
-    const prod = produtosTodos.find(p => p.id_produto == id);
-    document.getElementById("nomeProduto").innerText = prod ? prod.descricaocompleta : "Produto não encontrado";
-});
+      const res = await fetch("/api/produtos");
+      const produtosTodos = await res.json();
+      const prod = produtosTodos.find((p) => p.id_produto == id);
+      document.getElementById("nomeProduto").innerText = prod
+        ? prod.descricaocompleta
+        : "Produto não encontrado";
+    });
 
-carregarProdutos();
+  carregarProdutos();
 
-async function excluirProduto(id_produto) {
+  async function excluirProduto(id_produto) {
     if (!confirm("Deseja realmente excluir este produto da lista?")) return;
 
     await fetch("/api/produtos_kds_horario", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id_produto })
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id_produto }),
     });
 
     carregarProdutos();
-}
-
+  }
 </script>
 {% endblock %}

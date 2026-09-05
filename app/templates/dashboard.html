@@ -1,15 +1,16 @@
-{% extends "layout_base.html" %}
-
-{% block title %}Dashboard - Padaria System{% endblock %}
-
-{% block conteudo_central %}
+{% extends "layout_base.html" %} {% block title %}Dashboard - Padaria System{%
+endblock %} {% block conteudo_central %}
 <div class="container mt-4">
   <h1 class="text-center mb-4">Painel de Controle</h1>
 
   <!-- Filtro Loja -->
   <div class="row mb-4">
     <div class="col-md-4 offset-md-4">
-      <select id="filtroLoja" class="form-select" onchange="carregarIndicadores()">
+      <select
+        id="filtroLoja"
+        class="form-select"
+        onchange="carregarIndicadores()"
+      >
         <option value="">Todas as Lojas</option>
       </select>
     </div>
@@ -64,43 +65,71 @@
   <div class="container mt-4">
     <div class="row text-center g-3">
       <div class="col-6 col-md-2">
-        <a href="/usuarios/cadastro" class="btn btn-primary d-flex flex-column align-items-center justify-content-center py-3" style="height: 120px;">
+        <a
+          href="/usuarios/cadastro"
+          class="btn btn-primary d-flex flex-column align-items-center justify-content-center py-3"
+          style="height: 120px"
+        >
           <i class="fas fa-user fa-2x mb-2"></i>
           Cadastro de Usuários
         </a>
       </div>
       <div class="col-6 col-md-2">
-        <a href="/pedidos/consulta" class="btn btn-info d-flex flex-column align-items-center justify-content-center py-3" style="height: 120px;">
+        <a
+          href="/pedidos/consulta"
+          class="btn btn-info d-flex flex-column align-items-center justify-content-center py-3"
+          style="height: 120px"
+        >
           <i class="fas fa-search fa-2x mb-2"></i>
           Consulta de Pedidos
         </a>
       </div>
       <div class="col-6 col-md-2">
-        <a href="/gestao_encomendas" class="btn btn-secondary d-flex flex-column align-items-center justify-content-center py-3" style="height: 120px;">
+        <a
+          href="/gestao_encomendas"
+          class="btn btn-secondary d-flex flex-column align-items-center justify-content-center py-3"
+          style="height: 120px"
+        >
           <i class="fas fa-tasks fa-2x mb-2"></i>
           Gerenciar Pedidos
         </a>
       </div>
       <div class="col-6 col-md-2">
-        <a href="/pedidos/novo" class="btn btn-success d-flex flex-column align-items-center justify-content-center py-3" style="height: 120px;">
+        <a
+          href="/pedidos/novo"
+          class="btn btn-success d-flex flex-column align-items-center justify-content-center py-3"
+          style="height: 120px"
+        >
           <i class="fas fa-plus fa-2x mb-2"></i>
           Cadastro de Pedidos
         </a>
       </div>
       <div class="col-6 col-md-2">
-        <a href="/setor/kds" class="btn btn-warning d-flex flex-column align-items-center justify-content-center py-3" style="height: 120px;">
+        <a
+          href="/setor/kds"
+          class="btn btn-warning d-flex flex-column align-items-center justify-content-center py-3"
+          style="height: 120px"
+        >
           <i class="fas fa-tv fa-2x mb-2"></i>
           Tela de KDS
         </a>
       </div>
       <div class="col-6 col-md-2">
-        <a href="/consulta_associado" class="btn btn-info d-flex flex-column align-items-center justify-content-center py-3" style="height: 120px;">
+        <a
+          href="/consulta_associado"
+          class="btn btn-info d-flex flex-column align-items-center justify-content-center py-3"
+          style="height: 120px"
+        >
           <i class="fas fa-user-friends fa-2x mb-2"></i>
           Consulta de Vínculos
         </a>
       </div>
       <div class="col-6 col-md-2">
-        <a href="/logout" class="btn btn-danger d-flex flex-column align-items-center justify-content-center py-3" style="height: 120px;">
+        <a
+          href="/logout"
+          class="btn btn-danger d-flex flex-column align-items-center justify-content-center py-3"
+          style="height: 120px"
+        >
           <i class="fas fa-sign-out-alt fa-2x mb-2"></i>
           Sair
         </a>
@@ -112,44 +141,49 @@
 <!-- Scripts do dashboard -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
 <script>
-async function carregarLojas() {
-  try {
-    const response = await fetch('/api/lojas');
-    const lojas = await response.json();
-    const select = document.getElementById('filtroLoja');
+  async function carregarLojas() {
+    try {
+      const response = await fetch("/api/lojas");
+      const lojas = await response.json();
+      const select = document.getElementById("filtroLoja");
 
-    lojas.forEach(loja => {
-      const option = document.createElement('option');
-      option.value = loja.id;
-      option.textContent = loja.descricao;
-      select.appendChild(option);
-    });
-  } catch (error) {
-    console.error('Erro ao carregar lojas:', error);
+      lojas.forEach((loja) => {
+        const option = document.createElement("option");
+        option.value = loja.id;
+        option.textContent = loja.descricao;
+        select.appendChild(option);
+      });
+    } catch (error) {
+      console.error("Erro ao carregar lojas:", error);
+    }
   }
-}
 
-async function carregarIndicadores() {
-  const id_loja = document.getElementById('filtroLoja').value;
+  async function carregarIndicadores() {
+    const id_loja = document.getElementById("filtroLoja").value;
 
-  try {
-    const url = id_loja ? `/api/dashboard/indicadores?id_loja=${id_loja}` : '/api/dashboard/indicadores';
-    const response = await fetch(url);
-    const data = await response.json();
+    try {
+      const url = id_loja
+        ? `/api/dashboard/indicadores?id_loja=${id_loja}`
+        : "/api/dashboard/indicadores";
+      const response = await fetch(url);
+      const data = await response.json();
 
-    document.getElementById('total_pedidos').innerText = data.total_pedidos;
-    document.getElementById('pedidos_producao').innerText = data.pedidos_producao;
-    document.getElementById('pedidos_setor').innerText = data.pedidos_setor;
-    document.getElementById('pedidos_entrega').innerText = data.pedidos_entrega;
-    document.getElementById('pedidos_retirada').innerText = data.pedidos_retirada;
-  } catch (error) {
-    console.error('Erro ao carregar indicadores:', error);
+      document.getElementById("total_pedidos").innerText = data.total_pedidos;
+      document.getElementById("pedidos_producao").innerText =
+        data.pedidos_producao;
+      document.getElementById("pedidos_setor").innerText = data.pedidos_setor;
+      document.getElementById("pedidos_entrega").innerText =
+        data.pedidos_entrega;
+      document.getElementById("pedidos_retirada").innerText =
+        data.pedidos_retirada;
+    } catch (error) {
+      console.error("Erro ao carregar indicadores:", error);
+    }
   }
-}
 
-function dashboardInit() {
-  carregarLojas().then(carregarIndicadores);
-}
-dashboardInit(); // Executa ao carregar a tela dinamicamente!
+  function dashboardInit() {
+    carregarLojas().then(carregarIndicadores);
+  }
+  dashboardInit(); // Executa ao carregar a tela dinamicamente!
 </script>
 {% endblock %}

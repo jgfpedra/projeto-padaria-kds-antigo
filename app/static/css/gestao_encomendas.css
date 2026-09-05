@@ -1,101 +1,100 @@
-
 body {
-    background-color: #f8f9fa;
+  background-color: #f8f9fa;
 }
 
 .card-pedido {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 12px;
-    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.08);
-    padding: 16px;
-    margin-bottom: 20px;
-    position: relative;
-    min-height: 300px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 16px;
+  margin-bottom: 20px;
+  position: relative;
+  min-height: 300px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .card-pedido h5 {
-    font-weight: bold;
-    font-size: 18px;
+  font-weight: bold;
+  font-size: 18px;
 }
 
 .card-pedido p {
-    margin-bottom: 5px;
-    font-size: 14px;
+  margin-bottom: 5px;
+  font-size: 14px;
 }
 
 .card-pedido ul {
-    padding-left: 18px;
-    margin-top: 10px;
+  padding-left: 18px;
+  margin-top: 10px;
 }
 
 .card-pedido ul li {
-    margin-bottom: 5px;
-    font-size: 14px;
+  margin-bottom: 5px;
+  font-size: 14px;
 }
 
 .card-pedido .botoes {
-    margin-top: 12px;
-    display: flex;
-    gap: 8px;
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
 }
 
 .card-pedido .botoes button {
-    flex: 1;
-    font-size: 14px;
-    font-weight: bold;
+  flex: 1;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 .botao-status {
-    background-color: #ffc107 !important;
-    border: none !important;
-    color: black !important;
+  background-color: #ffc107 !important;
+  border: none !important;
+  color: black !important;
 }
 .botao-editar {
-    background-color: #0dcaf0;
-    border: none;
-    color: white;
+  background-color: #0dcaf0;
+  border: none;
+  color: white;
 }
 
 .botao-finalizar {
-    background-color: #198754 !important;
-    border: none !important;
-    color: white !important;
+  background-color: #198754 !important;
+  border: none !important;
+  color: white !important;
 }
 
 .badge-hoje {
-    background-color: #28a745;
-    font-size: 12px;
-    padding: 4px 8px;
-    border-radius: 12px;
-    color: white;
-    font-weight: bold;
-    display: inline-block;
-    margin-left: 8px;
+  background-color: #28a745;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  color: white;
+  font-weight: bold;
+  display: inline-block;
+  margin-left: 8px;
 }
 
 .badge-atrasado {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background-color: #dc3545;
-    font-size: 12px;
-    padding: 6px 12px;
-    border-radius: 20px;
-    color: white;
-    font-weight: bold;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #dc3545;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  color: white;
+  font-weight: bold;
 }
 
 .bi {
-    margin-right: 4px;
+  margin-right: 4px;
 }
 #sugestoes-clientes {
-    position: absolute;
-    z-index: 9999;
-    width: 100%;
-    top: 100%;
+  position: absolute;
+  z-index: 9999;
+  width: 100%;
+  top: 100%;
 }
