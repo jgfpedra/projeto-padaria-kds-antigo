@@ -25,10 +25,5 @@ def gerar_dados_impressao(texto, cortar=True, tipo_corte="full"):
 
 
 def enviar_para_impressora(caminho_impressora, dados, id_pedido):
-    nome_arquivo = f"pedido_{id_pedido}.bin"
-
-    with open(nome_arquivo, "wb") as arquivo:
-        arquivo.write(dados)
-
-    comando = f'copy /b "{nome_arquivo}" ' f'"{caminho_impressora}"'
-    os.system(comando)
+    with open(caminho_impressora, "wb") as destino:
+        destino.write(dados)

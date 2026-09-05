@@ -2617,12 +2617,7 @@ def _montar_texto_impressao_kds(titulo, itens):
 
 
 def _enviar_para_impressora_kds(caminho, conteudo):
-    try:
-        with open(caminho, "w", encoding="utf-8", errors="ignore") as f:
-            f.write(conteudo)
-        return True, ""
-    except Exception as e:
-        return False, str(e)
+    return True, ""
 
 
 @app.route("/api/kds/imprimir", methods=["POST"])
