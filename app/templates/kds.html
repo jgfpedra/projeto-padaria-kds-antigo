@@ -523,56 +523,71 @@
             const mostrarHorario = deveExibirHorarioParaProduto(idProduto);
             let blocos = "";
             if (mostrarHorario) {
-              blocos = `
-	<div style="display:flex; gap:16px;">
-	<div style="flex:1; border:1px solid #222; border-radius:6px; min-height:70px; padding:7px; background:#f5fff5;">
-	${hojeLabel ? `<div style="font-weight:500; margin-bottom:3px; color:#333;">${hojeLabel}</div>` : ""}
-	${horariosHoje || "<div style='color:#bbb;'>-</div>"}
-	</div>
-	<div style="flex:1; border:1px solid #222; border-radius:6px; min-height:70px; padding:7px; background:#f5fff5;">
-	${amanhaLabel ? `<div style="font-weight:500; margin-bottom:3px; color:#333;">${amanhaLabel}</div>` : ""}
-	${horariosAmanha || "<div style='color:#bbb;'>-</div>"}
-	</div>
-	</div>`;
-            }
+              const btnHoje = pedidosHoje.length
+                ? (status == 0
+                    ? `<button class="btn btn-sm btn-primary mt-2 w-100" onclick="produzirPedidosDia('${chaveSafe}','hoje')"><i class="fa-solid fa-play"></i> Produzir</button>`
+                    : status == 1
+                    ? `<button class="btn btn-sm btn-success mt-2 w-100" onclick="finalizarPedidosDia('${chaveSafe}','hoje')"><i class="fa-solid fa-check"></i> Finalizar</button>`
+                    : "")
+                : "";
+              const btnAmanha = pedidosAmanha.length
+                ? (status == 0
+                    ? `<button class="btn btn-sm btn-primary mt-2 w-100" onclick="produzirPedidosDia('${chaveSafe}','amanha')"><i class="fa-solid fa-play"></i> Produzir</button>`
+                    : status == 1
+                    ? `<button class="btn btn-sm btn-success mt-2 w-100" onclick="finalizarPedidosDia('${chaveSafe}','amanha')"><i class="fa-solid fa-check"></i> Finalizar</button>`
+                    : "")
+                : "";
 
+              blocos = `
+            <div style="display:flex; gap:16px;">
+            <div style="flex:1; border:1px solid #222; border-radius:6px; min-height:70px; padding:7px; background:#f5fff5;">
+            ${hojeLabel ? `<div style="font-weight:500; margin-bottom:3px; color:#333;">${hojeLabel}</div>` : ""}
+            ${horariosHoje || "<div style='color:#bbb;'>-</div>"}
+            ${btnHoje}
+            </div>
+            <div style="flex:1; border:1px solid #222; border-radius:6px; min-height:70px; padding:7px; background:#f5fff5;">
+            ${amanhaLabel ? `<div style="font-weight:500; margin-bottom:3px; color:#333;">${amanhaLabel}</div>` : ""}
+            ${horariosAmanha || "<div style='color:#bbb;'>-</div>"}
+            ${btnAmanha}
+            </div>
+            </div>`;
+            }
             let cardClass = "kds-card novo";
             if (status == 1) cardClass = "kds-card emproducao";
             if (status == 2) cardClass = "kds-card finalizado";
             if (observacao) cardClass += " card-observacao";
-
             // Botões por card (usando chaveSafe):
             let botoesCard = "";
             if (status == 0) {
               botoesCard = `
-	<div class="kds-card-actions">
-	<button class="btn btn-primary"
-	title="Produzir todos os itens deste produto/observação"
-	onclick="produzirPedidos('${chaveSafe}')">
-	<i class="fa-solid fa-play"></i> Produzir
-	</button>
-	</div>`;
+                <div class="kds-card-actions">
+                  <button class="btn btn-primary"
+                  title="Produzir todos os itens deste produto/observação"
+                  onclick="produzirPedidos('${chaveSafe}')">
+                  <i class="fa-solid fa-play"></i> Produzir Todos
+                  </button>
+                </div>`;
             } else if (status == 1) {
               botoesCard = `
-	<div class="kds-card-actions">
-	<button class="btn btn-success"
-	title="Finalizar todos os itens deste produto/observação"
-	onclick="finalizarPedidos('${chaveSafe}')">
-	<i class="fa-solid fa-check"></i> Finalizar
-	</button>
-	</div>`;
+                <div class="kds-card-actions">
+                <button class="btn btn-success"
+                title="Finalizar todos os itens deste produto/observação"
+                onclick="finalizarPedidos('${chaveSafe}')">
+                <i class="fa-solid fa-check"></i> Finalizar Todos
+                </button>
+                </div>`;
             }
 
             const card = `
-<div class="${cardClass}">
-<div class="quantidade-total">
-${produto}
-<span class="badge bg-success ms-2">TOTAL: ${totalFormatado} UN</span>
-</div>
-${observacao ? `<div class="mt-1"><span class="badge bg-warning text-dark" style="font-size:0.93em; font-weight:400; padding:3px 10px;">${observacao}</span></div>` : ""}
-${blocos}
-${botoesCard}
-</div>`;
+                <div class="${cardClass}">
+                <div class="quantidade-total">
+                ${produto}
+                <span class="badge bg-success ms-2">TOTAL: ${totalFormatado} UN</span>
+                </div>
+                ${observacao ? `<div class="mt-1"><span class="badge bg-warning text-dark" style="font-size:0.93em; font-weight:400; padding:3px 10px;">${observacao}</span></div>` : ""}
+                ${blocos}
+                ${botoesCard}
+                </div>`;
 
             if (status == 0) {
               document.getElementById("col-aguardando").innerHTML += card;
@@ -804,6 +819,43 @@ ${botoesCard}
           alertaCarregado = true;
         }
       };
+        async function produzirPedidosDia(chave, dia) {
+          const filtroDia = dia === "hoje" ? isHoje : isAmanha;
+          const lista = pedidos
+            .filter((p) => {
+              const k = (p.descricao || p.produto || p.id_produto) + "|" + (p.observacao || "");
+              return k === chave && (p.id_status == null || p.id_status == 0) && filtroDia(p.data);
+            })
+            .map((p) => p.id_item);
+          if (!lista.length) return;
+          const res = await fetch("/api/kds/item/produzir", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: lista }),
+          });
+          const ret = await res.json();
+          if (ret.success) await atualizarPedidos();
+          else alert("Falha ao atualizar itens!");
+        }
+
+        async function finalizarPedidosDia(chave, dia) {
+          const filtroDia = dia === "hoje" ? isHoje : isAmanha;
+          const lista = pedidos
+            .filter((p) => {
+              const k = (p.descricao || p.produto || p.id_produto) + "|" + (p.observacao || "");
+              return k === chave && p.id_status == 1 && filtroDia(p.data);
+            })
+            .map((p) => p.id_item);
+          if (!lista.length) return;
+          const res = await fetch("/api/kds/item/finalizar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: lista }),
+          });
+          const ret = await res.json();
+          if (ret.success) await atualizarPedidos();
+          else alert("Falha ao finalizar itens!");
+        }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   </body>

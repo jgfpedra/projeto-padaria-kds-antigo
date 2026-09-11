@@ -230,5 +230,4 @@ def buscar_itens(cursor_app, cursor_vr, id_pedido):
         )
 
     itens.sort(key=lambda item: item["descricao"].casefold())
-    print(itens)
     return itens
