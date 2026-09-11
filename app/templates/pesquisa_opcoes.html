@@ -1,68 +1,97 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pesquisa de Cadastros de Opções</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.5.2/css/bootstrap.min.css">
-</head>
-<body>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+  </head>
+  <body>
     <div class="container mt-4">
-        <h2>Pesquisa de Cadastros de Opções de Produtos</h2>
+      <h2>Pesquisa de Cadastros de Opções de Produtos</h2>
 
-        <!-- Filtros de pesquisa -->
-        <form method="GET" action="{{ url_for('pesquisar_opcoes') }}" class="form-inline mb-3">
-            <div class="form-group mr-2">
-                <label for="codigo_produto" class="mr-2">Código do Produto:</label>
-                <input type="text" id="codigo_produto" name="codigo_produto" class="form-control">
-            </div>
-            <div class="form-group mr-2">
-                <label for="descricao_produto" class="mr-2">Descrição do Produto:</label>
-                <input type="text" id="descricao_produto" name="descricao_produto" class="form-control">
-            </div>
-            <button type="submit" class="btn btn-primary">Buscar</button>
-        </form>
+      <!-- Filtros de pesquisa -->
+      <form
+        method="GET"
+        action="{{ url_for('pesquisar_opcoes') }}"
+        class="form-inline mb-3"
+      >
+        <div class="form-group mr-2">
+          <label for="codigo_produto" class="mr-2">Código do Produto:</label>
+          <input
+            type="text"
+            id="codigo_produto"
+            name="codigo_produto"
+            class="form-control"
+          />
+        </div>
+        <div class="form-group mr-2">
+          <label for="descricao_produto" class="mr-2"
+            >Descrição do Produto:</label
+          >
+          <input
+            type="text"
+            id="descricao_produto"
+            name="descricao_produto"
+            class="form-control"
+          />
+        </div>
+        <button type="submit" class="btn btn-primary">Buscar</button>
+      </form>
 
-        <!-- Botão para incluir novo cadastro -->
-        <a href="{{ url_for('incluir_opcao') }}" class="btn btn-success mb-3">+ Incluir</a>
+      <!-- Botão para incluir novo cadastro -->
+      <a href="{{ url_for('incluir_opcao') }}" class="btn btn-success mb-3"
+        >+ Incluir</a
+      >
 
-        <!-- Tabela de resultados -->
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Código Produto Principal</th>
-                    <th>Descrição Produto Principal</th>
-                    <th>Descrição Setor</th>
-                    <th>Quantidade de Opções</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for produto in produtos %}
-                    <tr>
-                        <td>{{ produto.codigo_produto_principal }}</td>
-                        <td>{{ produto.descricao_produto_principal }}</td>
-                        <td>{{ produto.descricao_setor }}</td>
-                        <td>{{ produto.qtd_opcoes }}</td>
-                        <td>
-                            <a href="{{ url_for('editar_opcao', id=produto.id) }}" class="btn btn-warning btn-sm">Editar</a>
-                            <a href="{{ url_for('excluir_opcao', id=produto.id) }}" class="btn btn-danger btn-sm">Excluir</a>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+      <!-- Tabela de resultados -->
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Código Produto Principal</th>
+            <th>Descrição Produto Principal</th>
+            <th>Descrição Setor</th>
+            <th>Quantidade de Opções</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for produto in produtos %}
+          <tr>
+            <td>{{ produto.codigo_produto_principal }}</td>
+            <td>{{ produto.descricao_produto_principal }}</td>
+            <td>{{ produto.descricao_setor }}</td>
+            <td>{{ produto.qtd_opcoes }}</td>
+            <td>
+              <a
+                href="{{ url_for('editar_opcao', id=produto.id) }}"
+                class="btn btn-warning btn-sm"
+                >Editar</a
+              >
+              <a
+                href="{{ url_for('excluir_opcao', id=produto.id) }}"
+                class="btn btn-danger btn-sm"
+                >Excluir</a
+              >
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
 
-        {% if produtos|length == 0 %}
-            <div class="alert alert-warning" role="alert">
-                Nenhum produto encontrado.
-            </div>
-        {% endif %}
+      {% if produtos|length == 0 %}
+      <div class="alert alert-warning" role="alert">
+        Nenhum produto encontrado.
+      </div>
+      {% endif %}
     </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-</body>
+  </body>
 </html>

@@ -1,0 +1,197 @@
+{% extends "layout_base.html" %} {% block title %}Produtos Compostos{% endblock
+%} {% block conteudo_central %}
+<head>
+  <link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/produto_composto.css') }}"
+  />
+</head>
+<div class="container mt-4">
+  <div class="row mb-3">
+    <div class="col-md-12 text-start">
+      <div class="d-inline-flex" style="gap: 10px">
+        <a href="/dashboard_partial" class="btn btn-secondary">Voltar</a>
+      </div>
+    </div>
+  </div>
+
+  <h3>Produtos Compostos</h3>
+
+  <div id="notify_area"></div>
+
+  <div class="row mb-3">
+    <div class="col-md-4">
+      <label class="form-label">Buscar por ID ou tipo</label>
+      <input
+        type="text"
+        id="filtro_busca"
+        class="form-control"
+        placeholder="Buscar por ID ou tipo..."
+      />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Filtrar por tipo</label>
+      <select id="filtro_tipo" class="form-select">
+        <option value="">Todos os tipos</option>
+      </select>
+    </div>
+    <div class="col-md-4 d-flex align-items-end" style="gap: 10px">
+      <button class="btn btn-success flex-fill" onclick="abrirModalComposto()">
+        <i class="bi bi-plus-circle"></i> Novo
+      </button>
+    </div>
+  </div>
+
+  <table class="table table-hover table-bordered table-sm">
+    <thead>
+      <tr>
+        <th>ID Produto</th>
+        <th>Produto</th>
+        <th>Tipo</th>
+        <th>Mín. Pessoas</th>
+        <th>Cálculo / Pessoa</th>
+        <th>Itens fixos</th>
+        <th>Grupos opcionais</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="tabela_compostos"></tbody>
+  </table>
+</div>
+
+<!-- Modal container (partial carregado via fetch) -->
+<div id="modalCompostoContainer"></div>
+
+<script>
+  // mesma tabela de labels usada no modal, pra exibição na listagem
+  const TIPOS_COMPOSTO_LABEL = {
+    combo: "Combo",
+    cestaPaes: "Cesta de Pães",
+    cestaCafeManha: "Cesta Café da Manhã",
+    kitHibrido: "Kit Híbrido",
+    coffeeBreak: "Coffee Break",
+  };
+
+  let compostosCache = [];
+
+  function notify(msg, tipo = "success") {
+    $("#notify_area").html(`
+    <div class="alert alert-${tipo} alert-dismissible">
+      ${msg}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  `);
+  }
+
+  function carregarTiposFiltro() {
+    const $sel = $("#filtro_tipo");
+    Object.entries(TIPOS_COMPOSTO_LABEL).forEach(([value, label]) => {
+      $sel.append(`<option value="${value}">${label}</option>`);
+    });
+  }
+
+  function buscarCompostos() {
+    fetch("/api/produtos_compostos", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        compostosCache = Array.isArray(data) ? data : [];
+        renderTabelaCompostos();
+      })
+      .catch(() => notify("Erro ao carregar produtos compostos.", "danger"));
+  }
+
+  function renderTabelaCompostos() {
+    const busca = $("#filtro_busca").val().trim().toLowerCase();
+    const tipoFiltro = $("#filtro_tipo").val();
+
+    const filtrados = compostosCache.filter((c) => {
+      const label = (TIPOS_COMPOSTO_LABEL[c.tipo] || "").toLowerCase();
+      const matchBusca =
+        !busca || String(c.id).includes(busca) || label.includes(busca);
+      const matchTipo = !tipoFiltro || c.tipo === tipoFiltro;
+      return matchBusca && matchTipo;
+    });
+
+    $("#tabela_compostos").html("");
+
+    if (filtrados.length === 0) {
+      $("#tabela_compostos").append(`
+      <tr><td colspan="8" class="text-center text-muted py-3">Nenhum composto encontrado</td></tr>
+    `);
+      return;
+    }
+
+    filtrados.forEach((c) => {
+      const tipoLabel = TIPOS_COMPOSTO_LABEL[c.tipo] || c.tipo || "—";
+      const calc = c.calculo_pessoa
+        ? `${c.calculo_pessoa.bebida_ml} ml / ${c.calculo_pessoa.salgados_unid} salg / ${c.calculo_pessoa.bolo_g}g bolo`
+        : '<span class="text-muted">—</span>';
+      const nItens = (c.itens || []).length;
+      const nGrupos = (c.grupos_opcionais || []).length;
+
+      $("#tabela_compostos").append(`
+      <tr style="cursor:pointer" onclick="abrirModalComposto(${c.id})">
+        <td>${c.id}</td>
+        <td>${c.nome_produto || "—"}</td>
+        <td><span class="badge bg-info text-dark">${tipoLabel}</span></td>
+        <td>${c.pedido_min_pessoas ?? "—"}</td>
+        <td>${calc}</td>
+        <td><span class="badge bg-secondary">${nItens} item(s)</span></td>
+        <td><span class="badge bg-secondary">${nGrupos} grupo(s)</span></td>
+        <td>
+          <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); excluirComposto(${c.id})">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `);
+    });
+  }
+
+  function excluirComposto(id) {
+    if (!confirm(`Remover composto #${id}?`)) return;
+    fetch(`/api/produtos_compostos/remover/${id}`, { method: "DELETE" })
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        notify("Composto removido.");
+        buscarCompostos();
+      })
+      .catch(() => notify("Erro ao remover composto.", "danger"));
+  }
+
+  // ABRE MODAL DE CADASTRO/EDIÇÃO — mesmo padrão do produto_associado
+  function abrirModalComposto(id = null) {
+    $("#modalCompostoContainer").empty();
+    fetch(
+      id ? `/produto_composto?id=${id}&modal=1` : "/produto_composto?modal=1",
+    )
+      .then((r) => r.text())
+      .then((html) => {
+        $("#modalCompostoContainer").html(html);
+        let tentativas = 0;
+        function tentaInicializar() {
+          tentativas++;
+          if (id && typeof carregarCompostoEdicao === "function") {
+            carregarCompostoEdicao(id);
+            $("#modalComposto").modal("show");
+          } else if (!id && typeof inicializarModalComposto === "function") {
+            inicializarModalComposto();
+            $("#modalComposto").modal("show");
+          } else if (tentativas < 20) {
+            setTimeout(tentaInicializar, 30);
+          }
+        }
+        tentaInicializar();
+      });
+  }
+
+  $("#filtro_busca").on("input", renderTabelaCompostos);
+  $("#filtro_tipo").on("change", renderTabelaCompostos);
+
+  function consultaCompostosInit() {
+    carregarTiposFiltro();
+    buscarCompostos();
+  }
+  consultaCompostosInit();
+</script>
+{% endblock %}

@@ -1,33 +1,101 @@
-{% extends "layout_base.html" %}
-{% block conteudo_central %}
+{% extends "layout_base.html" %} {% block conteudo_central %}
 
 <h4 class="mb-4">Configurações de Banco de Dados</h4>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ category }}">{{ message }}</div>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
+{% with messages = get_flashed_messages(with_categories=true) %} {% if messages
+%} {% for category, message in messages %}
+<div class="alert alert-{{ category }}">{{ message }}</div>
+{% endfor %} {% endif %} {% endwith %}
 
 <form method="POST" action="/configuracoes/salvar">
   <h5>Conexão VR</h5>
   <div class="row">
-    <div class="col"><input name="vr_host" class="form-control" placeholder="IP" value="{{ vr_host }}"></div>
-    <div class="col"><input name="vr_port" class="form-control" placeholder="Porta" value="{{ vr_port }}"></div>
-    <div class="col"><input name="vr_name" class="form-control" placeholder="Banco" value="{{ vr_name }}"></div>
-    <div class="col"><input name="vr_user" class="form-control" placeholder="Usuário" value="{{ vr_user }}"></div>
-    <div class="col"><input name="vr_pass" class="form-control" placeholder="Senha" type="password" value="{{ vr_pass }}"></div>
+    <div class="col">
+      <input
+        name="vr_host"
+        class="form-control"
+        placeholder="IP"
+        value="{{ vr_host }}"
+      />
+    </div>
+    <div class="col">
+      <input
+        name="vr_port"
+        class="form-control"
+        placeholder="Porta"
+        value="{{ vr_port }}"
+      />
+    </div>
+    <div class="col">
+      <input
+        name="vr_name"
+        class="form-control"
+        placeholder="Banco"
+        value="{{ vr_name }}"
+      />
+    </div>
+    <div class="col">
+      <input
+        name="vr_user"
+        class="form-control"
+        placeholder="Usuário"
+        value="{{ vr_user }}"
+      />
+    </div>
+    <div class="col">
+      <input
+        name="vr_pass"
+        class="form-control"
+        placeholder="Senha"
+        type="password"
+        value="{{ vr_pass }}"
+      />
+    </div>
   </div>
 
   <h5 class="mt-4">Conexão APP</h5>
   <div class="row">
-    <div class="col"><input name="app_host" class="form-control" placeholder="IP" value="{{ app_host }}"></div>
-    <div class="col"><input name="app_port" class="form-control" placeholder="Porta" value="{{ app_port }}"></div>
-    <div class="col"><input name="app_name" class="form-control" placeholder="Banco" value="{{ app_name }}"></div>
-    <div class="col"><input name="app_user" class="form-control" placeholder="Usuário" value="{{ app_user }}"></div>
-    <div class="col"><input name="app_pass" class="form-control" placeholder="Senha" type="password" value="{{ app_pass }}"></div>
+    <div class="col">
+      <input
+        name="app_host"
+        class="form-control"
+        placeholder="IP"
+        value="{{ app_host }}"
+      />
+    </div>
+    <div class="col">
+      <input
+        name="app_port"
+        class="form-control"
+        placeholder="Porta"
+        value="{{ app_port }}"
+      />
+    </div>
+    <div class="col">
+      <input
+        name="app_name"
+        class="form-control"
+        placeholder="Banco"
+        value="{{ app_name }}"
+      />
+    </div>
+    <div class="col">
+      <input
+        name="app_user"
+        class="form-control"
+        placeholder="Usuário"
+        value="{{ app_user }}"
+      />
+    </div>
+    <div class="col">
+      <input
+        name="app_pass"
+        class="form-control"
+        placeholder="Senha"
+        type="password"
+        value="{{ app_pass }}"
+      />
+    </div>
   </div>
 
   <button class="btn btn-primary mt-4">Salvar Configurações</button>

@@ -40,7 +40,7 @@ select {
   background-color: white;
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   text-align: center;
 }
 
@@ -63,17 +63,17 @@ select {
   color: #888;
 }
 .faixa-verde {
-    background-color: #4CAF50;
-    color: white;
-    font-weight: bold;
-    padding: 5px;
-    text-align: center;
+  background-color: #4caf50;
+  color: white;
+  font-weight: bold;
+  padding: 5px;
+  text-align: center;
 }
 
 .faixa-roxa {
-    background-color: #9C27B0;
-    color: white;
-    font-weight: bold;
-    padding: 5px;
-    text-align: center;
+  background-color: #9c27b0;
+  color: white;
+  font-weight: bold;
+  padding: 5px;
+  text-align: center;
 }
