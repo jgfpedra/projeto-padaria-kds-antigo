@@ -333,9 +333,10 @@
       .map(
         (item) => `
         <li class="text-break">
-            ${item.quantidade_un > 0
-              ? `${formatarQuantidade(item.quantidade_un)} UN`
-              : `${item.quantidade} KG`
+            ${
+              item.quantidade_un > 0
+                ? `${formatarQuantidade(item.quantidade_un)} UN`
+                : `${item.quantidade} KG`
             } - ${item.descricao}
             ${item.desc_produto_associado ? " - " + item.desc_produto_associado : ""}
             ${item.observacao ? " (<em>" + item.observacao + "</em>)" : ""}

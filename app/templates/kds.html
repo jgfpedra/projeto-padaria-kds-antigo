@@ -485,12 +485,15 @@
                     ? '<span class="badge bg-purple text-white ms-2">BALCÃO</span>'
                     : "";
 
-                  const q = Math.trunc(Number(item.quantidade)).toLocaleString("pt-BR");
-                  const qp = Number(item.peso).toLocaleString("pt-BR", {
+                const q = Math.trunc(Number(item.quantidade)).toLocaleString(
+                  "pt-BR",
+                );
+                const qp = Number(item.peso).toLocaleString("pt-BR", {
                   minimumFractionDigits: 3,
                   maximumFractionDigits: 3,
                 });
-                const quantidade = Number(item.quantidade) !== 0 ? `${q} UN - ` : "";
+                const quantidade =
+                  Number(item.quantidade) !== 0 ? `${q} UN - ` : "";
                 return `<div style="font-size:1.05em;"><b>${formatarHora(item.hora)}</b> - ${quantidade}${qp} Kg ${etiquetaBalcao}</div>`;
               })
               .join("");
@@ -502,14 +505,16 @@
                   item.tipo_entrega?.toLowerCase() === "balcao"
                     ? '<span class="badge bg-purple text-white ms-2">BALCÃO</span>'
                     : "";
-                const q = Math.trunc(Number(item.quantidade)).toLocaleString("pt-BR");
+                const q = Math.trunc(Number(item.quantidade)).toLocaleString(
+                  "pt-BR",
+                );
                 const qp = Number(item.peso).toLocaleString("pt-BR", {
                   minimumFractionDigits: 3,
                   maximumFractionDigits: 3,
                 });
-                const quantidade = Number(item.quantidade) !== 0 ? `${q} UN - ` : "";
+                const quantidade =
+                  Number(item.quantidade) !== 0 ? `${q} UN - ` : "";
                 return `<div style="font-size:1.05em;"><b>${formatarHora(item.hora)}</b> - ${quantidade}${qp} Kg ${etiquetaBalcao}</div>`;
-
               })
               .join("");
 
@@ -524,18 +529,18 @@
             let blocos = "";
             if (mostrarHorario) {
               const btnHoje = pedidosHoje.length
-                ? (status == 0
-                    ? `<button class="btn btn-sm btn-primary mt-2 w-100" onclick="produzirPedidosDia('${chaveSafe}','hoje')"><i class="fa-solid fa-play"></i> Produzir</button>`
-                    : status == 1
+                ? status == 0
+                  ? `<button class="btn btn-sm btn-primary mt-2 w-100" onclick="produzirPedidosDia('${chaveSafe}','hoje')"><i class="fa-solid fa-play"></i> Produzir</button>`
+                  : status == 1
                     ? `<button class="btn btn-sm btn-success mt-2 w-100" onclick="finalizarPedidosDia('${chaveSafe}','hoje')"><i class="fa-solid fa-check"></i> Finalizar</button>`
-                    : "")
+                    : ""
                 : "";
               const btnAmanha = pedidosAmanha.length
-                ? (status == 0
-                    ? `<button class="btn btn-sm btn-primary mt-2 w-100" onclick="produzirPedidosDia('${chaveSafe}','amanha')"><i class="fa-solid fa-play"></i> Produzir</button>`
-                    : status == 1
+                ? status == 0
+                  ? `<button class="btn btn-sm btn-primary mt-2 w-100" onclick="produzirPedidosDia('${chaveSafe}','amanha')"><i class="fa-solid fa-play"></i> Produzir</button>`
+                  : status == 1
                     ? `<button class="btn btn-sm btn-success mt-2 w-100" onclick="finalizarPedidosDia('${chaveSafe}','amanha')"><i class="fa-solid fa-check"></i> Finalizar</button>`
-                    : "")
+                    : ""
                 : "";
 
               blocos = `
@@ -819,43 +824,53 @@
           alertaCarregado = true;
         }
       };
-        async function produzirPedidosDia(chave, dia) {
-          const filtroDia = dia === "hoje" ? isHoje : isAmanha;
-          const lista = pedidos
-            .filter((p) => {
-              const k = (p.descricao || p.produto || p.id_produto) + "|" + (p.observacao || "");
-              return k === chave && (p.id_status == null || p.id_status == 0) && filtroDia(p.data);
-            })
-            .map((p) => p.id_item);
-          if (!lista.length) return;
-          const res = await fetch("/api/kds/item/produzir", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ids: lista }),
-          });
-          const ret = await res.json();
-          if (ret.success) await atualizarPedidos();
-          else alert("Falha ao atualizar itens!");
-        }
+      async function produzirPedidosDia(chave, dia) {
+        const filtroDia = dia === "hoje" ? isHoje : isAmanha;
+        const lista = pedidos
+          .filter((p) => {
+            const k =
+              (p.descricao || p.produto || p.id_produto) +
+              "|" +
+              (p.observacao || "");
+            return (
+              k === chave &&
+              (p.id_status == null || p.id_status == 0) &&
+              filtroDia(p.data)
+            );
+          })
+          .map((p) => p.id_item);
+        if (!lista.length) return;
+        const res = await fetch("/api/kds/item/produzir", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: lista }),
+        });
+        const ret = await res.json();
+        if (ret.success) await atualizarPedidos();
+        else alert("Falha ao atualizar itens!");
+      }
 
-        async function finalizarPedidosDia(chave, dia) {
-          const filtroDia = dia === "hoje" ? isHoje : isAmanha;
-          const lista = pedidos
-            .filter((p) => {
-              const k = (p.descricao || p.produto || p.id_produto) + "|" + (p.observacao || "");
-              return k === chave && p.id_status == 1 && filtroDia(p.data);
-            })
-            .map((p) => p.id_item);
-          if (!lista.length) return;
-          const res = await fetch("/api/kds/item/finalizar", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ids: lista }),
-          });
-          const ret = await res.json();
-          if (ret.success) await atualizarPedidos();
-          else alert("Falha ao finalizar itens!");
-        }
+      async function finalizarPedidosDia(chave, dia) {
+        const filtroDia = dia === "hoje" ? isHoje : isAmanha;
+        const lista = pedidos
+          .filter((p) => {
+            const k =
+              (p.descricao || p.produto || p.id_produto) +
+              "|" +
+              (p.observacao || "");
+            return k === chave && p.id_status == 1 && filtroDia(p.data);
+          })
+          .map((p) => p.id_item);
+        if (!lista.length) return;
+        const res = await fetch("/api/kds/item/finalizar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: lista }),
+        });
+        const ret = await res.json();
+        if (ret.success) await atualizarPedidos();
+        else alert("Falha ao finalizar itens!");
+      }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   </body>
