@@ -200,7 +200,7 @@
       return n.toString();
     }
     // Se tem casas decimais, mostra com vírgula e duas casas
-    return n.toFixed(2).replace(".", ",");
+    return n.toFixed(3).replace(".", ",");
   }
 
   let clientesCache = [];
@@ -329,12 +329,14 @@
         currency: "BRL",
       },
     );
-
     const itensHtml = (pedido.itens || [])
       .map(
         (item) => `
         <li class="text-break">
-            📋 ${formatarQuantidade(item.quantidade_un)} UN - ${item.descricao}
+            ${item.quantidade_un > 0
+              ? `${formatarQuantidade(item.quantidade_un)} UN`
+              : `${item.quantidade} KG`
+            } - ${item.descricao}
             ${item.desc_produto_associado ? " - " + item.desc_produto_associado : ""}
             ${item.observacao ? " (<em>" + item.observacao + "</em>)" : ""}
         </li>
@@ -676,8 +678,7 @@
         const itensHtml = pedido.itens
           .map(
             (item) => `
-      <li class="text-break">📋 ${formatarQuantidade(item.quantidade_un)} UN - ${item.descricao} ${item.desc_produto_associado ? " - " + item.desc_produto_associado : ""} ${item.observacao ? " (<em>" + item.observacao + "</em>)" : ""}</li>
-  `,
+                <li class="text-break">📋 ${item.quantidade_un > 0 ? formatarQuantidade(item.quantidade_un) + " UN" : formatarQuantidade(item.quantidade) + " KG"} - ${item.descricao} ${item.desc_produto_associado ? " - " + item.desc_produto_associado : ""} ${item.observacao ? " (<em>" + item.observacao + "</em>)" : ""}</li>`,
           )
           .join("");
 

@@ -1489,10 +1489,6 @@ def usuarios_cadastro():
     return render_template("usuarios.html", titulo_tela="Cadastro de Usuários")
 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
-
-
 @app.route("/api/produto_associado/salvar", methods=["POST"])
 def salvar_produto_associado():
     conn = conectar_app()
@@ -2678,3 +2674,7 @@ def api_kds_imprimir_coluna():
     if not ok:
         return jsonify({"erro": f"Falha ao imprimir: {msg}"}), 500
     return jsonify({"ok": True})
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)

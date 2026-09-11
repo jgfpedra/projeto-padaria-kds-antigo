@@ -484,14 +484,14 @@
                   item.tipo_entrega?.toLowerCase() === "balcao"
                     ? '<span class="badge bg-purple text-white ms-2">BALCÃO</span>'
                     : "";
-                const q = Math.trunc(Number(item.quantidade)).toLocaleString(
-                  "pt-BR",
-                );
-                const qp = Number(item.peso).toLocaleString("pt-BR", {
+
+                  const q = Math.trunc(Number(item.quantidade)).toLocaleString("pt-BR");
+                  const qp = Number(item.peso).toLocaleString("pt-BR", {
                   minimumFractionDigits: 3,
                   maximumFractionDigits: 3,
                 });
-                return `<div style="font-size:1.05em;"><b>${formatarHora(item.hora)}</b> - ${q} UN - ${qp} Kg ${etiquetaBalcao}</div>`;
+                const quantidade = Number(item.quantidade) !== 0 ? `${q} UN - ` : "";
+                return `<div style="font-size:1.05em;"><b>${formatarHora(item.hora)}</b> - ${quantidade}${qp} Kg ${etiquetaBalcao}</div>`;
               })
               .join("");
 
@@ -502,14 +502,14 @@
                   item.tipo_entrega?.toLowerCase() === "balcao"
                     ? '<span class="badge bg-purple text-white ms-2">BALCÃO</span>'
                     : "";
-                const q = Math.trunc(Number(item.quantidade)).toLocaleString(
-                  "pt-BR",
-                );
+                const q = Math.trunc(Number(item.quantidade)).toLocaleString("pt-BR");
                 const qp = Number(item.peso).toLocaleString("pt-BR", {
                   minimumFractionDigits: 3,
                   maximumFractionDigits: 3,
                 });
-                return `<div style="font-size:1.05em;"><b>${formatarHora(item.hora)}</b> - ${q} UN - ${qp} Kg ${etiquetaBalcao}</div>`;
+                const quantidade = Number(item.quantidade) !== 0 ? `${q} UN - ` : "";
+                return `<div style="font-size:1.05em;"><b>${formatarHora(item.hora)}</b> - ${quantidade}${qp} Kg ${etiquetaBalcao}</div>`;
+
               })
               .join("");
 

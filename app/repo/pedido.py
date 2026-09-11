@@ -223,11 +223,12 @@ def buscar_itens(cursor_app, cursor_vr, id_pedido):
         itens.append(
             {
                 "descricao": descricao or "",
-                "quantidade_un": row[2],
+                "quantidade_un": row[2] or 0,
                 "observacao": row[3] or "",
+                "quantidade": row[1] or 0,
             }
         )
 
     itens.sort(key=lambda item: item["descricao"].casefold())
-
+    print(itens)
     return itens
