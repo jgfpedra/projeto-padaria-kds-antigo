@@ -1,6 +1,3 @@
-import os
-
-
 def gerar_dados_impressao(texto, cortar=True, tipo_corte="full"):
     ESC = b"\x1b"
     GS = b"\x1d"
