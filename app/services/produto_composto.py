@@ -102,6 +102,8 @@ def montar_itens(produto_pai, fator, componentes, tipo, id_loja):
         observacao = ""
         if tipo != "paoDeMetro":
             observacao = f"Composto: {produto_pai['descricao']}"
+        else:
+            observacao = f"Composto: {produto_pai['id']}"
         itens.append(
             {
                 "cod_produto": detalhe["id"],

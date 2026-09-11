@@ -103,13 +103,13 @@
     <h5>Itens do Pedido</h5>
     <div class="row mb-3">
       <div class="col-md-2">
-        <label for="cod_produto" class="form-label">Cód Produto</label>
+        <label for="cod_produto" class="form-label">ID Produto</label>
         <input
           type="text"
           class="form-control"
           id="cod_produto"
           name="cod_produto"
-          placeholder="Código..."
+          placeholder="1"
         />
       </div>
       <div class="col-md-4">
@@ -119,7 +119,7 @@
           class="form-control"
           id="desc_produto"
           name="desc_produto"
-          placeholder="Descrição..."
+          placeholder="PÃO FRANCÊS"
         />
         <div id="sugestoes-produtos" class="list-group"></div>
       </div>
@@ -138,18 +138,18 @@
           class="form-control"
           id="tipo_embalagem"
           name="tipo_embalagem"
-          placeholder="Tipo Embalagem..."
+          placeholder="KG"
           readonly
         />
       </div>
       <div class="col-md-2">
-        <label for="peso_bruto" class="form-label">Peso Un</label>
+        <label for="peso_bruto" class="form-label">Peso Unitário</label>
         <input
           type="text"
           class="form-control"
           id="peso_bruto"
           name="peso_bruto"
-          placeholder="Peso..."
+          placeholder="0,000"
         />
       </div>
       <input type="hidden" id="id_setor_hidden" />
@@ -160,7 +160,7 @@
           class="form-control"
           id="setor"
           name="setor"
-          placeholder="Setor..."
+          placeholder="GERAL"
           readonly
         />
       </div>
@@ -168,24 +168,24 @@
 
     <div class="row mb-3">
       <div class="col-md-2">
-        <label for="quantidade" class="form-label">Qtd</label>
+        <label for="quantidade" class="form-label">Peso Total</label>
         <input
           type="number"
           class="form-control"
           id="quantidade"
           name="quantidade"
-          placeholder="Qtd"
+          placeholder="0,000"
           oninput="calcularTotal()"
         />
       </div>
       <div class="col-md-2">
-        <label for="quantidade_un" class="form-label">Qtd Unidades</label>
+        <label for="quantidade_un" class="form-label">Unidades</label>
         <input
           type="number"
           class="form-control"
           id="quantidade_un"
           name="quantidade_un"
-          placeholder="Qtd Un"
+          placeholder="0"
           oninput="sincronizarCampos(event)"
           step="any"
         />
@@ -197,7 +197,7 @@
           class="form-control"
           id="preco_venda"
           name="preco_venda"
-          placeholder="Preço"
+          placeholder="0,00"
           readonly
         />
       </div>
@@ -208,7 +208,7 @@
           class="form-control"
           id="total"
           name="total"
-          placeholder="Total"
+          placeholder="0,00"
           readonly
         />
       </div>
@@ -261,10 +261,10 @@
           <th>Descrição</th>
           <th>Item Produção</th>
           <th>Embalagem</th>
-          <th>Peso</th>
+          <th>Peso Unitário</th>
           <th>Setor</th>
-          <th>Qtd</th>
-          <th>Qtd Un</th>
+          <th>Peso Total</th>
+          <th>Unidades</th>
           <th>Preço</th>
           <th>Total</th>
           <th>Obs</th>
@@ -768,17 +768,16 @@
   function editarItem(botao) {
     const row = botao.parentElement.parentElement;
     const cells = row.querySelectorAll("td");
-
     document.getElementById("cod_produto").value = cells[0].textContent;
     document.getElementById("desc_produto").value = cells[1].textContent;
-    document.getElementById("tipo_embalagem").value = cells[2].textContent;
-    document.getElementById("peso_bruto").value = cells[3].textContent;
-    document.getElementById("setor").value = cells[4].textContent;
-    document.getElementById("quantidade").value = cells[5].textContent;
-    document.getElementById("quantidade_un").value = cells[6].textContent;
-    document.getElementById("preco_venda").value = cells[7].textContent;
-    document.getElementById("total").value = cells[8].textContent;
-    document.getElementById("obs_item").value = cells[9].textContent;
+    document.getElementById("tipo_embalagem").value = cells[3].textContent;
+    document.getElementById("peso_bruto").value = cells[4].textContent;
+    document.getElementById("setor").value = cells[5].textContent;
+    document.getElementById("quantidade").value = cells[6].textContent;
+    document.getElementById("quantidade_un").value = cells[7].textContent;
+    document.getElementById("preco_venda").value = cells[8].textContent;
+    document.getElementById("total").value = cells[9].textContent;
+    document.getElementById("obs_item").value = cells[10].textContent;
 
     row.remove();
   }

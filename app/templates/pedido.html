@@ -121,13 +121,13 @@
     <h5>Itens do Pedido</h5>
     <div class="row mb-3">
       <div class="col-md-2">
-        <label for="cod_produto" class="form-label">Cód Produto</label>
+        <label for="cod_produto" class="form-label">ID Produto</label>
         <input
           type="text"
           class="form-control"
           id="cod_produto"
           name="cod_produto"
-          placeholder="Código..."
+          placeholder="1"
         />
       </div>
       <div class="col-md-4">
@@ -137,7 +137,7 @@
           class="form-control"
           id="desc_produto"
           name="desc_produto"
-          placeholder="Descrição..."
+          placeholder="PÃO FRANCÊS"
         />
         <div id="sugestoes-produtos" class="list-group"></div>
       </div>
@@ -149,7 +149,6 @@
         <label for="item-associado">Item Produção</label>
         <select id="item-associado" class="form-control"></select>
       </div>
-      <div id="campo-opcoes"></div>
       <div class="col-md-2">
         <label for="tipo_embalagem" class="form-label">Tipo Embalagem</label>
         <input
@@ -157,20 +156,21 @@
           class="form-control"
           id="tipo_embalagem"
           name="tipo_embalagem"
-          placeholder="Tipo Embalagem..."
+          placeholder="KG"
           readonly
         />
       </div>
       <div class="col-md-2">
-        <label for="peso_bruto" class="form-label">Peso Un</label>
+        <label for="peso_bruto" class="form-label">Peso Unitário</label>
         <input
           type="text"
           class="form-control"
           id="peso_bruto"
           name="peso_bruto"
-          placeholder="Peso..."
+          placeholder="0,000"
         />
       </div>
+      <input type="hidden" id="id_setor_hidden" />
       <div class="col-md-2">
         <label for="setor" class="form-label">Setor</label>
         <input
@@ -178,33 +178,34 @@
           class="form-control"
           id="setor"
           name="setor"
-          placeholder="Setor..."
+          placeholder="GERAL"
           readonly
         />
       </div>
-      <input type="hidden" id="id_setor_hidden" />
     </div>
+
     <div class="row mb-3">
       <div class="col-md-2">
-        <label for="quantidade" class="form-label">Qtd</label>
+        <label for="quantidade" class="form-label">Peso Total</label>
         <input
           type="number"
           class="form-control"
           id="quantidade"
           name="quantidade"
-          placeholder="Qtd"
+          placeholder="0,000"
           oninput="calcularTotal()"
         />
       </div>
       <div class="col-md-2">
-        <label for="quantidade_un" class="form-label">Qtd Unidades</label>
+        <label for="quantidade_un" class="form-label">Unidades</label>
         <input
           type="number"
           class="form-control"
           id="quantidade_un"
           name="quantidade_un"
-          placeholder="Qtd Un"
+          placeholder="0"
           oninput="sincronizarCampos(event)"
+          step="any"
         />
       </div>
       <div class="col-md-2">
@@ -214,7 +215,7 @@
           class="form-control"
           id="preco_venda"
           name="preco_venda"
-          placeholder="Preço"
+          placeholder="0,00"
           readonly
         />
       </div>
@@ -225,7 +226,7 @@
           class="form-control"
           id="total"
           name="total"
-          placeholder="Total"
+          placeholder="0,00"
           readonly
         />
       </div>
@@ -268,10 +269,10 @@
           <th>Descrição</th>
           <th>Item Produção</th>
           <th>Embalagem</th>
-          <th>Peso</th>
+          <th>Peso Unitário</th>
           <th>Setor</th>
-          <th>Qtd</th>
-          <th>Qtd Un</th>
+          <th>Peso Total</th>
+          <th>Unidades</th>
           <th>Preço</th>
           <th>Total</th>
           <th>Obs</th>
