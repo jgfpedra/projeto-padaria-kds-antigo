@@ -1,9 +1,11 @@
 # app/conexao_vr.py
-import psycopg2
 import os
+
+import psycopg2
 from dotenv import load_dotenv
 
 load_dotenv()
+
 
 def conectar_vr():
     try:
@@ -12,24 +14,26 @@ def conectar_vr():
             port=os.getenv("VR_DB_PORT"),
             dbname=os.getenv("VR_DB_NAME"),
             user=os.getenv("VR_DB_USER"),
-            password=os.getenv("VR_DB_PASS")
+            password=os.getenv("VR_DB_PASS"),
         )
         return conn
     except Exception as e:
         print(f"Erro na conexão com VR: {e}")
         return None
-        
+
+
 def buscar_clientes():
     conn = conectar_vr()
     if not conn:
         return []
-    
+
     try:
         cursor = conn.cursor()
         query = """
-            SELECT 
+            SELECT
                 fc.id, fc.nome, fct.telefone, fc.endereco, fc.numero,
-                fc.bairro, fc.observacao, m.descricao AS cidade, e.descricao AS estado
+                fc.bairro, fc.observacao,
+                m.descricao AS cidade, e.descricao AS estado
             FROM food.cliente AS fc
             INNER JOIN municipio AS m ON m.id = fc.id_municipio
             INNER JOIN estado AS e ON e.id = m.id_estado
@@ -46,15 +50,16 @@ def buscar_clientes():
     finally:
         conn.close()
 
+
 def buscar_produtos():
     conn = conectar_vr()
     if not conn:
         return []
-    
+
     try:
         cursor = conn.cursor()
         query = """
-            SELECT 
+            SELECT
                 fsp.id_produto, p.descricaocompleta, p.pesobruto,
                 tp.descricao AS tipoembalagem, fs.descricao AS setor
             FROM ficha.setorproduto AS fsp
@@ -70,3 +75,11 @@ def buscar_produtos():
         return []
     finally:
         conn.close()
+
+
+def fechar_conexao(cursor, conn):
+    try:
+        cursor.close()
+        conn.close()
+    except Exception:
+        pass

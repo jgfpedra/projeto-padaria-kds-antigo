@@ -1,239 +1,249 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>Visualizar Produção</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/setor_visualizacao.css') }}">
-</head>
-<body>
-
-<div class="container">
-  <div class="header">
-  <div class="row mb-3">
-    <div class="col-md-12 text-start">
-        <div class="d-inline-flex" style="gap: 10px;">
-            <a href="/dashboard" class="btn btn-secondary">Voltar</a>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Visualizar Produção</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/setor_visualizacao.css') }}"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="row mb-3">
+          <div class="col-md-12 text-start">
+            <div class="d-inline-flex" style="gap: 10px">
+              <a href="/dashboard" class="btn btn-secondary">Voltar</a>
+            </div>
+          </div>
         </div>
+        <h1 class="titulo">Painel de Produção</h1>
+
+        <div class="filtros">
+          <select id="lojaSelect" onchange="buscarSetores()">
+            <option value="">Selecione a Loja</option>
+            {% for loja in lojas %}
+            <option value="{{ loja.id }}">{{ loja.descricao }}</option>
+            {% endfor %}
+          </select>
+
+          <select id="setorSelect" onchange="carregarPedidos()">
+            <option value="">Selecione o Setor</option>
+            <!-- Preenchido dinamicamente -->
+          </select>
+        </div>
+      </div>
+
+      <div id="pedidosContainer" class="grid-container">
+        <!-- Cards de pedidos serão inseridos aqui -->
+      </div>
     </div>
-</div>
-    <h1 class="titulo">Painel de Produção</h1>
 
-    <div class="filtros">
-      <select id="lojaSelect" onchange="buscarSetores()">
-        <option value="">Selecione a Loja</option>
-        {% for loja in lojas %}
-        <option value="{{ loja.id }}">{{ loja.descricao }}</option>
-        {% endfor %}
-      </select>
+    <script>
+      async function buscarSetores() {
+        const loja = document.getElementById("lojaSelect").value;
+        const setorSelect = document.getElementById("setorSelect");
+        setorSelect.innerHTML = '<option value="">Selecione o Setor</option>';
 
-      <select id="setorSelect" onchange="carregarPedidos()">
-        <option value="">Selecione o Setor</option>
-        <!-- Preenchido dinamicamente -->
-      </select>
-    </div>
-  </div>
+        if (!loja) return;
 
-  <div id="pedidosContainer" class="grid-container">
-    <!-- Cards de pedidos serão inseridos aqui -->
-  </div>
-</div>
+        const response = await fetch(`/api/loja/${loja}/setores`);
+        const setores = await response.json();
 
-<script>
-async function buscarSetores() {
-  const loja = document.getElementById('lojaSelect').value;
-  const setorSelect = document.getElementById('setorSelect');
-  setorSelect.innerHTML = '<option value="">Selecione o Setor</option>';
+        setores.forEach((setor) => {
+          const option = document.createElement("option");
+          option.value = setor.id;
+          option.text = setor.descricao;
+          setorSelect.appendChild(option);
+        });
 
-  if (!loja) return;
+        // FORÇA carregar pedidos logo após preencher os setores (se já tiver setor)
+        if (setorSelect.options.length > 1) {
+          setorSelect.selectedIndex = 1; // Seleciona o primeiro setor
+          carregarPedidos();
+        }
+      }
+      let estadoPedidos = {}; // Guarda as quantidades anteriores
+      let produtosNotificados = {}; // Guarda quais produtos já tocaram som
+      let produtosComFaixaVerde = {}; // idProduto -> timestamp (quando adicionou faixa)
 
-  const response = await fetch(`/api/loja/${loja}/setores`);
-  const setores = await response.json();
+      async function carregarPedidos() {
+        const loja = document.getElementById("lojaSelect").value;
+        const setor = document.getElementById("setorSelect").value;
+        const container = document.getElementById("pedidosContainer");
+        container.innerHTML = "";
 
-  setores.forEach(setor => {
-    const option = document.createElement('option');
-    option.value = setor.id;
-    option.text = setor.descricao;
-    setorSelect.appendChild(option);
-  });
+        if (!setor || !loja) return;
 
-  // FORÇA carregar pedidos logo após preencher os setores (se já tiver setor)
-  if (setorSelect.options.length > 1) {
-    setorSelect.selectedIndex = 1; // Seleciona o primeiro setor
-    carregarPedidos();
-  }
-}
-let estadoPedidos = {};        // Guarda as quantidades anteriores
-let produtosNotificados = {};  // Guarda quais produtos já tocaram som
-let produtosComFaixaVerde = {};  // idProduto -> timestamp (quando adicionou faixa)
+        const response = await fetch(
+          `/api/setor/pedidos?setor=${encodeURIComponent(setor)}&loja=${encodeURIComponent(loja)}`,
+        );
+        const pedidos = await response.json();
 
-async function carregarPedidos() {
-    const loja = document.getElementById('lojaSelect').value;
-    const setor = document.getElementById('setorSelect').value;
-    const container = document.getElementById('pedidosContainer');
-    container.innerHTML = '';
+        const agora = Date.now();
 
-    if (!setor || !loja) return;
+        pedidos.forEach((pedido) => {
+          const idProduto = pedido.id_produto;
+          const quantidadeNova = pedido.quantidade_un;
+          const observacao = pedido.observacao;
+          const idStatus = pedido.id_status;
 
-    const response = await fetch(`/api/setor/pedidos?setor=${encodeURIComponent(setor)}&loja=${encodeURIComponent(loja)}`);
-    const pedidos = await response.json();
+          const chaveProduto = idProduto + "|" + (observacao || "");
 
-    const agora = Date.now();
+          let diferenca = 0;
 
-    pedidos.forEach(pedido => {
-        const idProduto = pedido.id_produto;
-        const quantidadeNova = pedido.quantidade_un;
-        const observacao = pedido.observacao;
-        const idStatus = pedido.id_status;
-
-        const chaveProduto = idProduto + '|' + (observacao || '');
-
-        let diferenca = 0;
-
-        if (estadoPedidos[chaveProduto] !== undefined) {
+          if (estadoPedidos[chaveProduto] !== undefined) {
             diferenca = quantidadeNova - estadoPedidos[chaveProduto];
-        }
+          }
 
-        const card = document.createElement('div');
-        card.className = 'card';
+          const card = document.createElement("div");
+          card.className = "card";
 
-        let faixaExtra = '';
+          let faixaExtra = "";
 
-        // 🚨 Caso 1: Produto novo
-        if (estadoPedidos[chaveProduto] === undefined) {
+          // 🚨 Caso 1: Produto novo
+          if (estadoPedidos[chaveProduto] === undefined) {
             tocarSom();
-        }
-        // 🚨 Caso 2: Produto já existia, aumentou quantidade
-        else if (diferenca > 0) {
+          }
+          // 🚨 Caso 2: Produto já existia, aumentou quantidade
+          else if (diferenca > 0) {
             produtosComFaixaVerde[chaveProduto] = {
-                timestamp: agora,
-                diferenca: diferenca
+              timestamp: agora,
+              diferenca: diferenca,
             };
             tocarSom(); // Toca som sempre que aumenta
-        }
+          }
 
-        // Faixa verde se aumentou e ainda dentro de 1 hora
-        if (produtosComFaixaVerde[chaveProduto] && (agora - produtosComFaixaVerde[chaveProduto].timestamp) < (60 * 60 * 1000)) {
-            const diferencaSalva = produtosComFaixaVerde[chaveProduto].diferenca || 0;
+          // Faixa verde se aumentou e ainda dentro de 1 hora
+          if (
+            produtosComFaixaVerde[chaveProduto] &&
+            agora - produtosComFaixaVerde[chaveProduto].timestamp <
+              60 * 60 * 1000
+          ) {
+            const diferencaSalva =
+              produtosComFaixaVerde[chaveProduto].diferenca || 0;
             faixaExtra = `<div class="faixa-verde">+${diferencaSalva} unidades recebidas</div>`;
-        }
+          }
 
-        // Faixa roxa se pedido de balcão
-        if (idStatus == 6) {
+          // Faixa roxa se pedido de balcão
+          if (idStatus == 6) {
             faixaExtra = `<div class="faixa-roxa">Pedido de Balcão</div>`;
-        }
+          }
 
-        card.innerHTML = `
+          card.innerHTML = `
             ${faixaExtra}
             <h2 class="descricao">${pedido.descricao}</h2>
             <p class="quantidade">${quantidadeNova} un</p>
-            ${observacao ? `<p class="observacao">Obs: ${observacao}</p>` : '' }
+            ${observacao ? `<p class="observacao">Obs: ${observacao}</p>` : ""}
         `;
 
-        container.appendChild(card);
+          container.appendChild(card);
 
-        estadoPedidos[chaveProduto] = quantidadeNova;
-    });
+          estadoPedidos[chaveProduto] = quantidadeNova;
+        });
 
-    // Limpar faixas verdes vencidas
-    Object.keys(produtosComFaixaVerde).forEach(chave => {
-        if ((agora - produtosComFaixaVerde[chave].timestamp) > (60 * 60 * 1000)) {
+        // Limpar faixas verdes vencidas
+        Object.keys(produtosComFaixaVerde).forEach((chave) => {
+          if (agora - produtosComFaixaVerde[chave].timestamp > 60 * 60 * 1000) {
             delete produtosComFaixaVerde[chave];
+          }
+        });
+      }
+
+      function tocarSom() {
+        const audio = new Audio("/static/som_alerta.mp3");
+        audio.play().catch(function (error) {
+          console.error("Erro ao tentar tocar o som:", error);
+        });
+      }
+
+      // Atualizar pedidos a cada 60 segundos
+      setInterval(() => {
+        const loja = document.getElementById("lojaSelect").value;
+        const setor = document.getElementById("setorSelect").value;
+        if (loja && setor) {
+          carregarPedidos();
         }
-    });
-}
+      }, 60000);
 
+      // Carregar logo que abrir a página
+      window.onload = () => {
+        buscarSetores(); // OK, carrega setores, mas NÃO carrega pedidos ainda
+      };
+      let primeiraCarga = true;
 
+      async function carregarPedidos() {
+        const loja = document.getElementById("lojaSelect").value;
+        const setor = document.getElementById("setorSelect").value;
+        const container = document.getElementById("pedidosContainer");
+        container.innerHTML = "";
 
-function tocarSom() {
-    const audio = new Audio('/static/som_alerta.mp3');
-    audio.play().catch(function(error) {
-        console.error('Erro ao tentar tocar o som:', error);
-    });
-}
+        if (!setor || !loja) return;
 
+        const response = await fetch(
+          `/api/setor/pedidos?setor=${encodeURIComponent(setor)}&loja=${encodeURIComponent(loja)}`,
+        );
+        const pedidos = await response.json();
 
+        const agora = Date.now();
 
-// Atualizar pedidos a cada 60 segundos
-setInterval(() => {
-  const loja = document.getElementById('lojaSelect').value;
-  const setor = document.getElementById('setorSelect').value;
-  if (loja && setor) {
-    carregarPedidos();
-  }
-}, 60000);
+        pedidos.forEach((pedido) => {
+          const idProduto = pedido.id_produto;
+          const quantidadeNova = pedido.quantidade_un;
+          const observacao = pedido.observacao;
+          const idStatus = pedido.id_status;
 
-// Carregar logo que abrir a página
-window.onload = () => {
-  buscarSetores(); // OK, carrega setores, mas NÃO carrega pedidos ainda
-}
-let primeiraCarga = true;
+          const chaveProduto = idProduto + "|" + (observacao || "");
 
-async function carregarPedidos() {
-    const loja = document.getElementById('lojaSelect').value;
-    const setor = document.getElementById('setorSelect').value;
-    const container = document.getElementById('pedidosContainer');
-    container.innerHTML = '';
+          let diferenca = 0;
 
-    if (!setor || !loja) return;
-
-    const response = await fetch(`/api/setor/pedidos?setor=${encodeURIComponent(setor)}&loja=${encodeURIComponent(loja)}`);
-    const pedidos = await response.json();
-
-    const agora = Date.now();
-
-    pedidos.forEach(pedido => {
-        const idProduto = pedido.id_produto;
-        const quantidadeNova = pedido.quantidade_un;
-        const observacao = pedido.observacao;
-        const idStatus = pedido.id_status;
-
-        const chaveProduto = idProduto + '|' + (observacao || '');
-
-        let diferenca = 0;
-
-        if (estadoPedidos[chaveProduto] !== undefined) {
+          if (estadoPedidos[chaveProduto] !== undefined) {
             diferenca = quantidadeNova - estadoPedidos[chaveProduto];
-        }
+          }
 
-        const card = document.createElement('div');
-        card.className = 'card';
+          const card = document.createElement("div");
+          card.className = "card";
 
-        let faixaExtra = '';
+          let faixaExtra = "";
 
-        // 🚨 Agora controlamos melhor
-        if (!primeiraCarga) {
+          // 🚨 Agora controlamos melhor
+          if (!primeiraCarga) {
             if (estadoPedidos[chaveProduto] === undefined) {
-                tocarSom(); // Novo produto depois da primeira carga
+              tocarSom(); // Novo produto depois da primeira carga
             } else if (diferenca > 0) {
-                tocarSom(); // Aumento de quantidade depois da primeira carga
+              tocarSom(); // Aumento de quantidade depois da primeira carga
             }
-        }
+          }
 
-        if (produtosComFaixaVerde[chaveProduto] && (agora - produtosComFaixaVerde[chaveProduto].timestamp) < (60 * 60 * 1000)) {
-            const diferencaSalva = produtosComFaixaVerde[chaveProduto].diferenca || 0;
+          if (
+            produtosComFaixaVerde[chaveProduto] &&
+            agora - produtosComFaixaVerde[chaveProduto].timestamp <
+              60 * 60 * 1000
+          ) {
+            const diferencaSalva =
+              produtosComFaixaVerde[chaveProduto].diferenca || 0;
             faixaExtra = `<div class="faixa-verde">+${diferencaSalva} unidades recebidas</div>`;
-        }
+          }
 
-        if (idStatus == 6) {
+          if (idStatus == 6) {
             faixaExtra = `<div class="faixa-roxa">Pedido de Balcão</div>`;
-        }
+          }
 
-        card.innerHTML = `
+          card.innerHTML = `
             ${faixaExtra}
             <h2 class="descricao">${pedido.descricao}</h2>
             <p class="quantidade">${quantidadeNova} un</p>
-            ${observacao ? `<p class="observacao">Obs: ${observacao}</p>` : '' }
+            ${observacao ? `<p class="observacao">Obs: ${observacao}</p>` : ""}
         `;
 
-        container.appendChild(card);
+          container.appendChild(card);
 
-        estadoPedidos[chaveProduto] = quantidadeNova;
-    });
+          estadoPedidos[chaveProduto] = quantidadeNova;
+        });
 
-    primeiraCarga = false; // ✅ A partir daqui já pode tocar som
-}
-
-</script>
-
-</body>
+        primeiraCarga = false; // ✅ A partir daqui já pode tocar som
+      }
+    </script>
+  </body>
 </html>
