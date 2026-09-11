@@ -22,6 +22,7 @@ def svc_get_produtos_compostos():
 
 
 def svc_salvar_produtos_compostos(dados):
+    print(dados)
     return repo_salvar_produto_composto(dados)
 
 
@@ -81,6 +82,7 @@ def calcular_componentes(id_produto, fator, estrutura, escolhas_opcionais):
             {
                 "id_produto": op["id_produto"],
                 "quantidade": qtd_por_item * fator,
+                "considera_valor": op["considera_valor"],
             }
             for op in opcionais
         )
@@ -93,6 +95,13 @@ def montar_itens(produto_pai, fator, componentes, tipo, id_loja):
         detalhe = repo_get_produto_detalhe(comp["id_produto"], id_loja)
         peso_unitario = repo_get_peso_unitario_item(produto_pai["id"],
                                                     comp["id_produto"])
+
+        considera_valor = comp.get("considera_valor", False)
+        print(detalhe)
+        preco_venda = detalhe["preco_venda"] if considera_valor else 0
+        total = 0
+        if considera_valor:
+            total = to_float(preco_venda) * to_float(comp["quantidade"])
         if peso_unitario is None:
             peso_unitario = detalhe["peso_liquido"]
         if not detalhe:
@@ -103,7 +112,7 @@ def montar_itens(produto_pai, fator, componentes, tipo, id_loja):
         if tipo != "paoDeMetro":
             observacao = f"Composto: {produto_pai['descricao']}"
         else:
-            observacao = f"Composto: {produto_pai['id']}"
+            observacao = f"({produto_pai['id']})"
         itens.append(
             {
                 "cod_produto": detalhe["id"],
@@ -116,9 +125,10 @@ def montar_itens(produto_pai, fator, componentes, tipo, id_loja):
                     to_float(comp["quantidade"]) * to_float(peso_unitario)
                 ),
                 "quantidade_un": comp["quantidade"],
-                "preco_venda": 0,
-                "total": 0,
+                "preco_venda": preco_venda,
+                "total": total,
                 "observacao": observacao,
+                "considera_valor": comp.get("considera_valor", False),
             }
         )
     return itens
