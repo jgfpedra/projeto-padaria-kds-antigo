@@ -318,28 +318,34 @@
     let faixa = "";
     if (!pedido.data_finalizacao) {
       if (pedido.data_entrega === hojeStr) {
-        faixa = '<span class="badge bg-success"><i class="bi bi-clock"></i> HOJE</span>';
+        faixa =
+          '<span class="badge bg-success"><i class="bi bi-clock"></i> HOJE</span>';
       } else if (dataEntrega < hoje) {
-        faixa = '<span class="badge bg-danger"><i class="bi bi-exclamation-triangle"></i> ATRASADO</span>';
+        faixa =
+          '<span class="badge bg-danger"><i class="bi bi-exclamation-triangle"></i> ATRASADO</span>';
       }
     }
 
     const itensHtml = (pedido.itens || [])
-      .map(item => `
+      .map(
+        (item) => `
         <li class="text-break">
           <span class="item-qtd">${item.quantidade_un > 0 ? `${formatarQuantidade(item.quantidade_un)} UN` : `${item.quantidade} KG`}</span>
           <span class="item-desc">${item.descricao}${item.desc_produto_associado ? " · " + item.desc_produto_associado : ""}</span>
           ${item.observacao ? `<div class="item-obs"><em>${item.observacao}</em></div>` : ""}
         </li>
-      `).join("");
+      `,
+      )
+      .join("");
 
     const mostrarBotoes = pedido.id_status !== 7;
 
-    const btnFinalizar = pedido.impresso && mostrarBotoes
-      ? `<button class="btn btn-sm botao-finalizar" onclick="escolherSistemaFinalizacao(${pedido.id}, ${pedido.impresso})">
+    const btnFinalizar =
+      pedido.impresso && mostrarBotoes
+        ? `<button class="btn btn-sm botao-finalizar" onclick="escolherSistemaFinalizacao(${pedido.id}, ${pedido.impresso})">
            <i class="bi bi-check-lg"></i> Finalizar
          </button>`
-      : "";
+        : "";
 
     const btnStatus = mostrarBotoes
       ? `<button class="btn btn-sm botao-status" onclick="abrirModalStatus(${pedido.id})">
@@ -363,9 +369,11 @@
               <span class="badge bg-primary">#${pedido.id}</span>
               ${faixa}
             </div>
-            ${pedido.impresso
-              ? `<span class="badge bg-success"><i class="bi bi-printer"></i> Impresso</span>`
-              : `<span class="badge bg-secondary"><i class="bi bi-printer"></i> Não impresso</span>`}
+            ${
+              pedido.impresso
+                ? `<span class="badge bg-success"><i class="bi bi-printer"></i> Impresso</span>`
+                : `<span class="badge bg-secondary"><i class="bi bi-printer"></i> Não impresso</span>`
+            }
           </div>
 
           <!-- Entrega -->
@@ -378,9 +386,11 @@
               <i class="bi bi-truck"></i>
               <span>${(pedido.tipo_entrega || "").toUpperCase()}</span>
             </div>
-            ${pedido.tipo_entrega === "entrega"
-              ? `<div class="linha-info"><i class="bi bi-geo-alt"></i><span>${pedido.endereco || ""}</span></div>`
-              : ""}
+            ${
+              pedido.tipo_entrega === "entrega"
+                ? `<div class="linha-info"><i class="bi bi-geo-alt"></i><span>${pedido.endereco || ""}</span></div>`
+                : ""
+            }
           </div>
 
           <hr class="my-2">
