@@ -82,19 +82,27 @@ def repo_get_grupos_opcionais(id_produto):
         cur = conn.cursor()
         cur.execute(
             """
-            SELECT g.chave, g.quantidade_total, oi.id_produto, oi.quantidade
+            SELECT g.chave, g.quantidade_total,
+            oi.id_produto, oi.quantidade, oi.considera_valor, g.id_grupo_ref
             FROM produto_composto_opcional_grupo g
-            JOIN produto_composto_opcional_item oi ON oi.id_grupo = g.id
+            JOIN produto_composto_opcional_item oi
+                ON oi.id_grupo = COALESCE(g.id_grupo_ref, g.id)
             WHERE g.id_produto_comp = %s
             ORDER BY g.chave
-        """,
+            """,
             (id_produto,),
         )
         rows = cur.fetchall()
         grupos = {}
         for r in rows:
-            grupos.setdefault(r[0], {"quantidade_total": r[1], "itens": []})
-            grupos[r[0]]["itens"].append({"id_produto": r[2], "quantidade": r[3]})
+            grupos.setdefault(r[0], {"quantidade_total": r[1],
+                                     "id_grupo_ref": r[5],
+                                     "itens": []})
+            grupos[r[0]]["itens"].append({
+                "id_produto": r[2],
+                "quantidade": r[3],
+                "considera_valor": r[4],
+            })
         return grupos
     except Exception as e:
         logger.error(e)
@@ -129,16 +137,22 @@ def repo_get_opcionais_escolhidos(id_produto, chave, ids):
         cur = conn.cursor()
         cur.execute(
             """
-            SELECT oi.id_produto, oi.quantidade
+            SELECT oi.id_produto, oi.quantidade, oi.considera_valor
             FROM produto_composto_opcional_item oi
             JOIN produto_composto_opcional_grupo g ON g.id = oi.id_grupo
-            WHERE g.id_produto_comp = %s AND
-            g.chave = %s AND oi.id_produto = ANY(%s)
-        """,
-            (id_produto, chave, ids),
+            WHERE g.id_produto_comp = %s AND g.chave = %s AND oi.id_produto = ANY(%s)
+            UNION
+            SELECT oi.id_produto, oi.quantidade, oi.considera_valor
+            FROM produto_composto_opcional_item oi
+            JOIN produto_composto_opcional_grupo g ON g.id_grupo_ref = oi.id_grupo
+            WHERE g.id_produto_comp = %s AND g.chave = %s AND oi.id_produto = ANY(%s)
+            """,
+            (id_produto, chave, ids, id_produto, chave, ids),
         )
         rows = cur.fetchall()
-        return [{"id_produto": r[0], "quantidade": r[1]} for r in rows]
+        return [{"id_produto": r[0],
+                 "quantidade": r[1],
+                 "considera_valor": r[2]} for r in rows]
     except Exception as e:
         logger.error(e)
         return False
@@ -350,37 +364,39 @@ def salvar_itens(cur, id_produto, itens):
 def salvar_grupos(cur, id_produto, grupos):
     try:
         cur.execute(
-            """
-            DELETE FROM produto_composto_opcional_grupo
-            WHERE id_produto_comp = %s
-        """,
+            "DELETE FROM produto_composto_opcional_grupo WHERE id_produto_comp = %s",
             (id_produto,),
         )
         for grupo in grupos:
+            id_grupo_ref = grupo.get("id_grupo_ref") or None
             cur.execute(
                 """
-                    INSERT INTO produto_composto_opcional_grupo
-                        (id_produto_comp, chave, quantidade_total)
-                    VALUES (%s, %s, %s)
-                    RETURNING id
+                INSERT INTO produto_composto_opcional_grupo
+                    (id_produto_comp, chave, quantidade_total, id_grupo_ref)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id
                 """,
-                (id_produto, grupo["chave"], grupo.get("quantidade_total")),
+                (id_produto, grupo["chave"], grupo.get(
+                    "quantidade_total"), id_grupo_ref),
             )
-
             id_grupo = cur.fetchone()[0]
-            itens = grupo.get("itens")
-            if itens:
-                cur.executemany(
-                    """
-                    INSERT INTO produto_composto_opcional_item
-                        (id_grupo, id_produto, quantidade)
-                    VALUES (%s, %s, %s)
-                """,
-                    [
-                        (id_grupo, it["id_produto"], it.get("quantidade"))
-                        for it in itens
-                    ],
-                )
+
+            # só salva itens se não for referenciado
+            if not id_grupo_ref:
+                itens = grupo.get("itens", [])
+                if itens:
+                    cur.executemany(
+                        """
+                        INSERT INTO produto_composto_opcional_item
+                            (id_grupo, id_produto, quantidade, considera_valor)
+                        VALUES (%s, %s, %s, %s)
+                        """,
+                        [
+                            (id_grupo, it["id_produto"], it.get(
+                                "quantidade"), it.get("considera_valor", False))
+                            for it in itens
+                        ],
+                    )
     except Exception as e:
         logger.error(f"[GRUPOS_OPCIONAIS] {e}")
         raise
@@ -501,7 +517,8 @@ def repo_get_produtos_compostos():
                                     (
                                         SELECT json_agg(json_build_object(
                                             'id_produto', poi.id_produto,
-                                            'quantidade', poi.quantidade
+                                            'quantidade', poi.quantidade,
+                                            'considera_valor', poi.considera_valor
                                         ))
                                         FROM produto_composto_opcional_item poi
                                         WHERE poi.id_grupo = pog.id

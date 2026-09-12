@@ -268,12 +268,9 @@
             </div>
             <div class="col-md-4">
               <label class="form-label">Salgados (un / pessoa)</label>
-              <input
-                type="number"
-                class="form-control"
-                id="calc_salgados_unid"
-                placeholder="ex: 8"
-              />
+
+              type="number" class="form-control" id="calc_salgados_unid"
+              placeholder="ex: 8" />
             </div>
           </div>
 
@@ -538,6 +535,7 @@
         key: proximoKey++,
         id_produto: "",
         descricao: "",
+        considera_valor: "",
         quantidade: "",
       });
       renderGruposOpcionais();
@@ -563,11 +561,64 @@
             key: it.key,
             id_produto: $row.find(".campo_id_item").val() || "",
             descricao: $row.find(".campo_nome_item").val() || "",
+            considera_valor:
+              $row.find(".campo_considera_valor").val() === "true",
             quantidade: $row.find(".campo_quantidade").val(),
           };
         });
         return { key: g.key, chave, quantidade_total, itens };
       });
+    }
+
+    async function abrirModalGrupoExistente() {
+      lerGruposDoDom();
+      const idAtual =
+        (compostoIdEdicao ?? Number($("#composto_id_produto").val())) || null;
+      const url = idAtual
+        ? `/api/grupos_opcionais?excluir_produto=${idAtual}`
+        : "/api/grupos_opcionais";
+      const res = await fetch(url);
+      const grupos = await res.json();
+
+      const opcoes = grupos
+        .map(
+          (g) =>
+            `<option value="${g.id}" data-chave="${g.chave}" data-qtd="${g.quantidade_total}">
+      Produto ${g.id_produto_comp} — ${g.chave} (${g.total_itens} itens)
+    </option>`,
+        )
+        .join("");
+
+      const html = `
+    <div class="input-group mb-2" id="seletor_grupo_ref">
+      <select class="form-select form-select-sm" id="select_grupo_ref">
+        <option value="">Selecione um grupo...</option>
+        ${opcoes}
+      </select>
+      <button class="btn btn-sm btn-success" onclick="confirmarGrupoRef()">Adicionar</button>
+      <button class="btn btn-sm btn-outline-secondary" onclick="$('#seletor_grupo_ref').remove()">Cancelar</button>
+    </div>
+  `;
+
+      $("#grupos_opcionais_container").prepend(html);
+    }
+
+    function confirmarGrupoRef() {
+      const $select = $("#select_grupo_ref");
+      const id_grupo_ref = Number($select.val());
+      if (!id_grupo_ref) return;
+
+      const $opt = $select.find(":selected");
+      gruposOpcionais.push({
+        key: Date.now(),
+        chave: $opt.data("chave"),
+        quantidade_total: $opt.data("qtd"),
+        id_grupo_ref,
+        itens: [],
+      });
+
+      $("#seletor_grupo_ref").remove();
+      renderGruposOpcionais();
     }
 
     function renderGruposOpcionais() {
@@ -585,6 +636,7 @@
         $container.append(`
 			<div class="card mb-3" id="grupo_${g.key}">
 			<div class="card-header d-flex align-items-center gap-2">
+      ${g.id_grupo_ref ? '<span class="badge bg-secondary ms-2">Vinculado</span>' : ""}
 			<label class="mb-0 me-1 text-nowrap">Chave do grupo:</label>
 			<select class="form-select form-select-sm campo_chave_grupo" style="max-width:200px">
 			<option value="">Selecione...</option>
@@ -592,6 +644,9 @@
 			</select>
 			<label class="mb-0 ms-3 me-1 text-nowrap">Qtd total:</label>
 			<input type="number" class="form-control form-control-sm campo_qtd_total" style="max-width:100px" value="${g.quantidade_total || ""}" placeholder="ex: 40">
+      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="abrirModalGrupoExistente()">
+        <i class="bi bi-link"></i> Adicionar existente
+      </button>
 			<button type="button" class="btn btn-outline-success btn-sm ms-auto" onclick="adicionarItemGrupo(${g.key})"><i class="bi bi-plus"></i> Item</button>
 			<button type="button" class="btn btn-outline-danger btn-sm" onclick="removerGrupoOpcional(${g.key})"><i class="bi bi-trash"></i> Remover grupo</button>
 			</div>
@@ -600,13 +655,14 @@
 			<thead class="table-light">
           <tr>
             <th style="width:130px">ID Produto</th>
-            <th>Descrição</th>
+            <th style="width:250px">Descrição</th>
             <th style="width:110px">Quantidade</th>
-            <th style="width:42px"></th>
+            <th style="width:50px">Valor</th>
+            <th style="width:42px">Ações</th>
           </tr>
       </thead>
 			<tbody id="grupo_${g.key}_itens">
-			${g.itens.length === 0 ? '<tr><td colspan="4" class="text-center text-muted">Nenhum item neste grupo</td></tr>' : ""}
+			${g.itens.length === 0 ? '<tr><td colspan="5" class="text-center text-muted">Nenhum item neste grupo</td></tr>' : ""}
 			</tbody>
 			</table>
 			</div>
@@ -629,6 +685,12 @@
 					</div>
 					</td>
 					<td><input type="number" class="form-control form-control-sm campo_quantidade" value="${it.quantidade || ""}"></td>
+          <td class="text-center">
+            <select class="form-select form-select-sm campo_considera_valor">
+              <option value="false" ${!it.considera_valor ? "selected" : ""}>Não</option>
+              <option value="true"  ${it.considera_valor ? "selected" : ""}>Sim</option>
+            </select>
+          </td>
 					<td class="text-center"><button type="button" class="btn btn-sm btn-danger" onclick="removerItemGrupo(${g.key}, ${it.key})"><i class="bi bi-trash"></i></button></td>
 					</tr>
 					`);
@@ -940,10 +1002,14 @@
           chave: g.chave || null,
           quantidade_total:
             g.quantidade_total !== "" ? Number(g.quantidade_total) : null,
-          itens: g.itens.map((it) => ({
-            id_produto: it.id_produto || null,
-            quantidade: it.quantidade !== "" ? Number(it.quantidade) : null,
-          })),
+          id_grupo_ref: g.id_grupo_ref || null,
+          itens: g.id_grupo_ref
+            ? []
+            : g.itens.map((it) => ({
+                id_produto: it.id_produto || null,
+                quantidade: it.quantidade !== "" ? Number(it.quantidade) : null,
+                considera_valor: it.considera_valor ?? false,
+              })),
         })),
       };
 
@@ -976,5 +1042,7 @@
     // expõe pro escopo global — chamado pela página que carregou o partial
     window.inicializarModalComposto = inicializarModalComposto;
     window.carregarCompostoEdicao = carregarCompostoEdicao;
+    window.abrirModalGrupoExistente = abrirModalGrupoExistente;
+    window.confirmarGrupoRef = confirmarGrupoRef;
   })();
 </script>

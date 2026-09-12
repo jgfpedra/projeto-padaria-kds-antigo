@@ -312,115 +312,115 @@
   function criarCardHtml(pedido) {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
-
     const dataEntrega = new Date(pedido.data_entrega);
-    let faixa = "";
+    const hojeStr = new Date().toISOString().split("T")[0];
 
-    if (pedido.data_entrega === new Date().toISOString().split("T")[0]) {
-      faixa = '<span class="badge bg-success">HOJE</span>';
-    } else if (dataEntrega < hoje) {
-      faixa = '<span class="badge bg-danger">ATRASADO</span>';
+    let faixa = "";
+    if (!pedido.data_finalizacao) {
+      if (pedido.data_entrega === hojeStr) {
+        faixa =
+          '<span class="badge bg-success"><i class="bi bi-clock"></i> HOJE</span>';
+      } else if (dataEntrega < hoje) {
+        faixa =
+          '<span class="badge bg-danger"><i class="bi bi-exclamation-triangle"></i> ATRASADO</span>';
+      }
     }
 
-    const valorTotalFormatado = (pedido.valor_total || 0).toLocaleString(
-      "pt-BR",
-      {
-        style: "currency",
-        currency: "BRL",
-      },
-    );
     const itensHtml = (pedido.itens || [])
       .map(
         (item) => `
         <li class="text-break">
-            ${
-              item.quantidade_un > 0
-                ? `${formatarQuantidade(item.quantidade_un)} UN`
-                : `${item.quantidade} KG`
-            } - ${item.descricao}
-            ${item.desc_produto_associado ? " - " + item.desc_produto_associado : ""}
-            ${item.observacao ? " (<em>" + item.observacao + "</em>)" : ""}
+          <span class="item-qtd">${item.quantidade_un > 0 ? `${formatarQuantidade(item.quantidade_un)} UN` : `${item.quantidade} KG`}</span>
+          <span class="item-desc">${item.descricao}${item.desc_produto_associado ? " · " + item.desc_produto_associado : ""}</span>
+          ${item.observacao ? `<div class="item-obs"><em>${item.observacao}</em></div>` : ""}
         </li>
-    `,
+      `,
       )
       .join("");
-
-    const enderecoHtml =
-      pedido.tipo_entrega === "entrega"
-        ? `<p><strong>Endereço:</strong> ${pedido.endereco || ""}</p>`
-        : "";
 
     const mostrarBotoes = pedido.id_status !== 7;
 
     const btnFinalizar =
       pedido.impresso && mostrarBotoes
-        ? `<button class="btn botao-finalizar" onclick="escolherSistemaFinalizacao(${pedido.id}, ${pedido.impresso})">Finalizar</button>`
+        ? `<button class="btn btn-sm botao-finalizar" onclick="escolherSistemaFinalizacao(${pedido.id}, ${pedido.impresso})">
+           <i class="bi bi-check-lg"></i> Finalizar
+         </button>`
         : "";
 
     const btnStatus = mostrarBotoes
-      ? `<button class="btn botao-status" onclick="abrirModalStatus(${pedido.id})">Status</button>`
+      ? `<button class="btn btn-sm botao-status" onclick="abrirModalStatus(${pedido.id})">
+           <i class="bi bi-arrow-repeat"></i> Status
+         </button>`
       : "";
 
     const infoFinalizado = pedido.data_finalizacao
-      ? `
-        <p>
-            <i class="bi bi-check2-circle"></i> Finalizado em:
-            ${formatarDataHora(pedido.data_finalizacao)}<br>
-            <span style="font-size:1.3em">${compararDatasIso(pedido.data_finalizacao, pedido.data_entrega)}</span>
-        </p>
-    `
+      ? `<div class="finalizado-box">
+           <i class="bi bi-check2-circle"></i> Finalizado em ${formatarDataHora(pedido.data_finalizacao)}
+         </div>`
       : "";
 
     return `
-        <div class="col-md-4" id="pedido-${pedido.id}">
-            <div class="card-pedido">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <div><span class="badge bg-primary">Pedido #${pedido.id}</span></div>
-                    <div><i class="bi bi-clock"></i> ${formatarDataHora(pedido.data_pedido)}</div>
-                </div>
+      <div class="col-md-4" id="pedido-${pedido.id}">
+        <div class="card-pedido">
 
-                ${
-                  pedido.impresso
-                    ? `<span class="badge bg-success"><i class="bi bi-printer"></i> Impresso</span>`
-                    : `<span class="badge bg-secondary"><i class="bi bi-printer"></i> Não impresso</span>`
-                }
-
-                <p><i class="bi bi-shop"></i> ${pedido.nome_loja || ""}</p>
-                <p><i class="bi bi-person"></i> ${pedido.nome_cliente || ""} - ${pedido.telefone || ""}</p>
-
-                <p><strong>Tipo Entrega:</strong> ${(pedido.tipo_entrega || "").toUpperCase()}</p>
-
-                ${enderecoHtml}
-
-                <p><strong>Status Atual:</strong> ${pedido.status_descricao || ""}</p>
-
-                ${pedido.observacoes ? `<p><strong>Observação:</strong> ${pedido.observacoes}</p>` : ""}
-
-                <ul>${itensHtml}</ul>
-
-                <hr>
-
-                <p><i class="bi bi-calendar-event"></i>
-                    Entrega: ${formatarData(pedido.data_entrega)} -
-                    ${diaSemanaExtenso(pedido.data_entrega)}
-                </p>
-
-                <p><strong>Hora Entrega:</strong> ${pedido.hora_entrega || ""} ${!pedido.data_finalizacao ? faixa : ""}</p>
-
-                ${infoFinalizado}
-
-                <p><strong>Valor Total:</strong> ${valorTotalFormatado}</p>
-
-                <div class="botoes">
-                    ${btnStatus}
-                    ${btnFinalizar}
-                    <button class="btn btn-success btn-sm"
-                        onclick="imprimirPedido(${pedido.id})">
-                        Imprimir
-                    </button>
-                </div>
+          <!-- Cabeçalho -->
+          <div class="card-header-pedido">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-primary">#${pedido.id}</span>
+              ${faixa}
             </div>
+            ${
+              pedido.impresso
+                ? `<span class="badge bg-success"><i class="bi bi-printer"></i> Impresso</span>`
+                : `<span class="badge bg-secondary"><i class="bi bi-printer"></i> Não impresso</span>`
+            }
+          </div>
+
+          <!-- Entrega -->
+          <div class="card-section">
+            <div class="linha-info">
+              <i class="bi bi-calendar-event"></i>
+              <span><strong>${formatarData(pedido.data_entrega)}</strong> ${pedido.hora_entrega || ""}</span>
+            </div>
+            <div class="linha-info">
+              <i class="bi bi-truck"></i>
+              <span>${(pedido.tipo_entrega || "").toUpperCase()}</span>
+            </div>
+            ${
+              pedido.tipo_entrega === "entrega"
+                ? `<div class="linha-info"><i class="bi bi-geo-alt"></i><span>${pedido.endereco || ""}</span></div>`
+                : ""
+            }
+          </div>
+
+          <hr class="my-2">
+
+          <!-- Cliente / Loja -->
+          <div class="card-section">
+            <div class="linha-info"><i class="bi bi-shop"></i><span>${pedido.nome_loja || ""}</span></div>
+            <div class="linha-info"><i class="bi bi-person"></i><span>${pedido.nome_cliente || ""} — ${pedido.telefone || ""}</span></div>
+            <div class="linha-info status-linha"><i class="bi bi-info-circle"></i><span>${pedido.status_descricao || ""}</span></div>
+            ${pedido.observacoes ? `<div class="obs-geral"><strong>Obs:</strong> ${pedido.observacoes}</div>` : ""}
+          </div>
+
+          <!-- Itens -->
+          <div class="itens-box">
+            <ul class="lista-itens">${itensHtml}</ul>
+          </div>
+
+          ${infoFinalizado}
+
+          <!-- Ações -->
+          <div class="botoes mt-2">
+            ${btnStatus}
+            ${btnFinalizar}
+            <button class="btn btn-sm btn-success" onclick="imprimirPedido(${pedido.id})">
+              <i class="bi bi-printer-fill"></i> Imprimir
+            </button>
+          </div>
+
         </div>
+      </div>
     `;
   }
 

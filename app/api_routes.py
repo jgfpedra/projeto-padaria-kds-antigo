@@ -1924,6 +1924,40 @@ def api_get_composto(id_produto):
     )
 
 
+@app.route("/api/grupos_opcionais", methods=["GET"])
+def api_get_grupos_opcionais():
+    id_produto = request.args.get("excluir_produto", type=int)
+    try:
+        conn = conectar_app()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT g.id, g.chave, g.quantidade_total, g.id_produto_comp,
+                   COUNT(oi.id) as total_itens
+            FROM produto_composto_opcional_grupo g
+            LEFT JOIN produto_composto_opcional_item oi ON oi.id_grupo = g.id
+            WHERE g.id_grupo_ref IS NULL
+              AND (%s IS NULL OR g.id_produto_comp != %s)
+            GROUP BY g.id
+            ORDER BY g.id_produto_comp, g.chave
+            """,
+            (id_produto, id_produto),
+        )
+        rows = cur.fetchall()
+        return jsonify([
+            {"id": r[0], "chave": r[1],
+             "quantidade_total": r[2],
+             "id_produto_comp": r[3],
+             "total_itens": r[4]}
+            for r in rows
+        ])
+    except Exception as e:
+        logger.error(e)
+        return jsonify({"erro": "Erro ao buscar grupos."}), 500
+    finally:
+        conn.close()
+
+
 @app.route("/api/produtos_compostos/explodir/<int:id_produto>", methods=["POST"])
 def api_explodir_composto(id_produto):
     dados = request.get_json(silent=True) or {}
