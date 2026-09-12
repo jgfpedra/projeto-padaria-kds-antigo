@@ -728,13 +728,17 @@
         const card = `
         <div class="col-md-4">
           <div class="card-pedido">
-
             <div class="card-topo">
               <div class="card-topo-entrega">
                 ${pedido.hora_entrega ? `<span class="topo-hora">${pedido.hora_entrega.substring(0,5)}</span>` : ""}
                 <span class="topo-data">${formatarData(pedido.data_entrega)}</span>
                 <span class="topo-tipo topo-tipo--${pedido.tipo_entrega}">${pedido.tipo_entrega.toUpperCase()}</span>
                 ${!pedido.data_finalizacao ? faixa : ""}
+                ${pedido.id_status === 0
+                  ? `<span class="topo-edit-hint" title="Editar pedido" onclick="editarPedido(${pedido.id})">
+                       <i class="bi bi-pencil-square"></i>
+                     </span>`
+                  : ""}
               </div>
               ${pedido.observacoes ? `<div class="topo-obs"><i class="bi bi-chat-left-text"></i> ${pedido.observacoes}</div>` : ""}
               ${pedido.tipo_entrega === "entrega"
@@ -1775,6 +1779,11 @@
     div.classList.add("d-none");
     input.value = "";
   }
+
+  function editarPedido(id) {
+    window.location.href = `/pedido?id=${id}`;
+  }
+
   function validarEtiquetaBalança(
     codigoEtiqueta,
     codInternoEsperado,
