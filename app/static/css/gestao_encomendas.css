@@ -6,7 +6,7 @@ body {
   background: white;
   border: 1px solid #dee2e6;
   border-radius: 12px;
-  box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.08);
   margin-bottom: 20px;
   display: flex;
   flex-direction: column;
@@ -44,7 +44,7 @@ body {
 .topo-tipo {
   font-size: 11px;
   font-weight: 700;
-  background: rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.15);
   color: #fff;
   padding: 2px 10px;
   border-radius: 20px;
@@ -89,7 +89,7 @@ body {
   border-radius: 6px;
   white-space: nowrap;
   z-index: 10;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .topo-obs {
@@ -104,10 +104,12 @@ body {
 
 .topo-edit-hint {
   margin-left: auto;
-  color: rgba(255,255,255,0.25);
+  color: rgba(255, 255, 255, 0.25);
   font-size: 13px;
   cursor: pointer;
-  transition: color 0.2s, transform 0.2s;
+  transition:
+    color 0.2s,
+    transform 0.2s;
 }
 
 .topo-edit-hint:hover {
@@ -158,15 +160,31 @@ body {
   color: #ccc;
 }
 
-.linha-status { font-weight: 600; }
+.linha-status {
+  font-weight: 600;
+}
 
-.status-aguardando  { color: #888; }
-.status-producao    { color: #f59e0b; }
-.status-produzido   { color: #3b82f6; }
-.status-cancelado   { color: #ef4444; }
-.status-balcao      { color: #8b5cf6; }
-.status-finalizado  { color: #22c55e; }
-.status-finalizando { color: #06b6d4; }/* ITENS */
+.status-aguardando {
+  color: #888;
+}
+.status-producao {
+  color: #f59e0b;
+}
+.status-produzido {
+  color: #3b82f6;
+}
+.status-cancelado {
+  color: #ef4444;
+}
+.status-balcao {
+  color: #8b5cf6;
+}
+.status-finalizado {
+  color: #22c55e;
+}
+.status-finalizando {
+  color: #06b6d4;
+} /* ITENS */
 
 .card-itens {
   padding: 8px 16px;
