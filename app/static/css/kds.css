@@ -1,0 +1,11 @@
+.kds-info {
+  font-size: 0.9rem;
+  color: #0d6efd;
+  cursor: help;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.tooltip-inner {
+  text-align: left;
+  max-width: 340px;
+}
