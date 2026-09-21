@@ -1,185 +1,243 @@
 {% extends "layout_base.html" %} {% block conteudo_central %}
 
-<div class="container mt-4">
-  <h2 id="titulo_pedido" class="mb-4">Pedido</h2>
+<div class="container-fluid px-3 pt-2">
+  <!-- Título + Voltar na mesma linha -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h5 id="titulo_pedido" class="mb-0">Pedido</h5>
+  </div>
+
   <form id="form-novo-pedido">
-    <div class="mb-3">
-      <input type="hidden" id="id_cliente_hidden" />
-      <input type="hidden" id="id_pedido_hidden" />
-      <label for="cliente" class="form-label">Cliente</label>
-      <input
-        type="text"
-        class="form-control"
-        id="cliente"
-        name="cliente"
-        placeholder="Nome ou telefone..."
-        autocomplete="off"
-      />
-      <div id="sugestoes-clientes" class="list-group"></div>
-    </div>
-    <div class="mb-3">
-      <label for="telefone" class="form-label">Telefone</label>
-      <input
-        type="text"
-        class="form-control"
-        id="telefone"
-        name="telefone"
-        readonly
-      />
-    </div>
-    <!-- Tipo de Entrega -->
-    <div class="mb-3">
-      <label class="form-label">Tipo de Entrega</label><br />
-      <div class="form-check form-check-inline">
-        <input
-          class="form-check-input"
-          type="radio"
-          name="tipo_entrega"
-          id="retirada"
-          value="retirada"
-          checked
-        />
-        <label class="form-check-label" for="retirada">Retirada na loja</label>
-      </div>
-      <div class="form-check form-check-inline">
-        <input
-          class="form-check-input"
-          type="radio"
-          name="tipo_entrega"
-          id="entrega"
-          value="entrega"
-        />
-        <label class="form-check-label" for="entrega">Entrega</label>
-      </div>
-      <div class="form-check form-check-inline">
-        <input
-          class="form-check-input"
-          type="radio"
-          name="tipo_entrega"
-          id="balcao"
-          value="balcao"
-        />
-        <label class="form-check-label" for="balcao">Balcão</label>
-      </div>
-    </div>
-    <!-- Endereço (somente se for entrega) -->
-    <div id="endereco-container" style="display: none">
-      <div class="mb-3">
-        <label class="form-label">Endereço</label>
+    <input type="hidden" id="id_cliente_hidden" />
+    <input type="hidden" id="id_pedido_hidden" />
+    <input type="hidden" id="id_setor_hidden" />
+
+    <!-- CABEÇALHO -->
+    <div class="row g-2">
+      <!-- Col 1 / Linha 1 -->
+      <div class="col-md-6 position-relative">
+        <label for="cliente" class="form-label mb-0 small text-muted"
+          >Cliente</label
+        >
         <input
           type="text"
-          class="form-control"
-          id="endereco"
-          name="endereco"
+          class="form-control form-control-sm"
+          id="cliente"
+          name="cliente"
+          placeholder="Nome ou telefone..."
+          autocomplete="off"
+        />
+        <div
+          id="sugestoes-clientes"
+          class="list-group position-absolute w-100 shadow"
+          style="z-index: 1050; max-height: 250px; overflow-y: auto"
+        ></div>
+      </div>
+
+      <!-- Col 2 / Linha 1 -->
+      <div class="col-md-6">
+        <div class="row g-2">
+          <div class="col-md-7">
+            <label class="form-label mb-0 small text-muted d-block"
+              >Tipo de entrega</label
+            >
+            <div class="form-check form-check-inline me-2">
+              <input
+                class="form-check-input"
+                type="radio"
+                name="tipo_entrega"
+                id="retirada"
+                value="retirada"
+                checked
+              />
+              <label class="form-check-label small" for="retirada"
+                >Retirada</label
+              >
+            </div>
+            <div class="form-check form-check-inline me-2">
+              <input
+                class="form-check-input"
+                type="radio"
+                name="tipo_entrega"
+                id="entrega"
+                value="entrega"
+              />
+              <label class="form-check-label small" for="entrega"
+                >Entrega</label
+              >
+            </div>
+          </div>
+          <div class="col-md-5">
+            <label for="loja" class="form-label mb-0 small text-muted"
+              >Loja</label
+            >
+            <select class="form-select form-select-sm" id="loja" name="loja">
+              <option selected>Selecione...</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Col 1 / Linha 2 -->
+      <div class="col-md-6">
+        <label for="telefone" class="form-label mb-0 small text-muted"
+          >Telefone</label
+        >
+        <input
+          type="text"
+          class="form-control form-control-sm"
+          id="telefone"
+          name="telefone"
           readonly
         />
       </div>
-      <div class="mb-3">
-        <label class="form-label">Observações</label>
-        <input
-          type="text"
-          class="form-control"
-          id="obs_endereco"
-          name="obs_endereco"
-        />
+
+      <!-- Col 2 / Linha 2 -->
+      <div class="col-md-6">
+        <div class="row g-2">
+          <div class="col-6">
+            <label for="data" class="form-label mb-0 small text-muted"
+              >Data entrega</label
+            >
+            <input
+              type="date"
+              class="form-control form-control-sm"
+              id="data"
+              name="data"
+            />
+          </div>
+          <div class="col-6">
+            <label for="hora" class="form-label mb-0 small text-muted"
+              >Hora entrega</label
+            >
+            <input
+              type="time"
+              class="form-control form-control-sm"
+              id="hora"
+              name="hora"
+            />
+          </div>
+        </div>
       </div>
-    </div>
-    <!-- Loja e Data de Entrega -->
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <label for="loja" class="form-label">Loja</label>
-        <select class="form-select" id="loja" name="loja">
-          <option selected>Selecione...</option>
-        </select>
+
+      <!-- Só aparece em Entrega -->
+      <div id="endereco-container" class="col-12" style="display: none">
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label mb-0 small text-muted">Endereço</label>
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              id="endereco"
+              name="endereco"
+              readonly
+            />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label mb-0 small text-muted"
+              >Observações do endereço</label
+            >
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              id="obs_endereco"
+              name="obs_endereco"
+            />
+          </div>
+        </div>
       </div>
-      <div class="col-md-3 mb-3">
-        <label for="data" class="form-label">Data entrega</label>
-        <input type="date" class="form-control" id="data" name="data" />
+
+      <!-- Obs do pedido: 1 linha, sem handle de redimensionar -->
+      <div class="col-12">
+        <label class="form-label mb-0 small text-muted"
+          >Observações do pedido</label
+        >
+        <textarea
+          class="form-control form-control-sm"
+          name="observacoes"
+          rows="1"
+          style="resize: none"
+        ></textarea>
       </div>
-      <div class="col-md-3 mb-3">
-        <label for="hora" class="form-label">Hora entrega</label>
-        <input type="time" class="form-control" id="hora" name="hora" />
-      </div>
-    </div>
-    <!-- Observação geral -->
-    <div class="mb-4">
-      <label class="form-label">Observações do pedido</label>
-      <textarea class="form-control" name="observacoes" rows="2"></textarea>
     </div>
 
-    <!-- Seção: Itens do Pedido -->
-    <h5>Itens do Pedido</h5>
-    <div class="row mb-3">
-      <div class="col-md-2">
-        <label for="cod_produto" class="form-label">ID Produto</label>
+    <hr class="my-2" />
+
+    <!-- ITENS -->
+    <div class="row g-2 align-items-end">
+      <div class="col-md-1">
+        <label for="cod_produto" class="form-label mb-0 small text-muted"
+          >ID</label
+        >
         <input
           type="text"
-          class="form-control"
+          class="form-control form-control-sm"
           id="cod_produto"
           name="cod_produto"
           placeholder="1"
         />
       </div>
-      <div class="col-md-4">
-        <label for="desc_produto" class="form-label">Descrição Produto</label>
+      <div class="col-md-3 position-relative">
+        <label for="desc_produto" class="form-label mb-0 small text-muted"
+          >Descrição</label
+        >
         <input
           type="text"
-          class="form-control"
+          class="form-control form-control-sm"
           id="desc_produto"
           name="desc_produto"
           placeholder="PÃO FRANCÊS"
         />
-        <div id="sugestoes-produtos" class="list-group"></div>
+        <div
+          id="sugestoes-produtos"
+          class="list-group position-absolute w-100 shadow"
+          style="z-index: 1050; max-height: 250px; overflow-y: auto"
+        ></div>
       </div>
-      <div
-        class="col-md-4"
-        id="div-item-associado"
-        style="display: none; margin-top: 10px"
-      >
-        <label for="item-associado">Item Produção</label>
-        <select id="item-associado" class="form-control"></select>
-      </div>
-      <div class="col-md-2">
-        <label for="tipo_embalagem" class="form-label">Tipo Embalagem</label>
+      <div class="col-md-1">
+        <label for="tipo_embalagem" class="form-label mb-0 small text-muted"
+          >Embal.</label
+        >
         <input
           type="text"
-          class="form-control"
+          class="form-control form-control-sm"
           id="tipo_embalagem"
           name="tipo_embalagem"
           placeholder="KG"
           readonly
         />
       </div>
-      <div class="col-md-2">
-        <label for="peso_bruto" class="form-label">Peso Unitário</label>
+      <div class="col-md-1">
+        <label for="peso_bruto" class="form-label mb-0 small text-muted"
+          >Peso unit.</label
+        >
         <input
           type="text"
-          class="form-control"
+          class="form-control form-control-sm"
           id="peso_bruto"
           name="peso_bruto"
           placeholder="0,000"
         />
       </div>
-      <input type="hidden" id="id_setor_hidden" />
-      <div class="col-md-2">
-        <label for="setor" class="form-label">Setor</label>
+      <div class="col-md-1">
+        <label for="setor" class="form-label mb-0 small text-muted"
+          >Setor</label
+        >
         <input
           type="text"
-          class="form-control"
+          class="form-control form-control-sm"
           id="setor"
           name="setor"
           placeholder="GERAL"
           readonly
         />
       </div>
-    </div>
-
-    <div class="row mb-3">
-      <div class="col-md-2">
-        <label for="quantidade" class="form-label">Peso Total</label>
+      <div class="col-md-1">
+        <label for="quantidade" class="form-label mb-0 small text-muted"
+          >Peso total</label
+        >
         <input
           type="number"
-          class="form-control"
+          class="form-control form-control-sm"
           id="quantidade"
           name="quantidade"
           placeholder="0,000"
@@ -187,11 +245,13 @@
           step="any"
         />
       </div>
-      <div class="col-md-2">
-        <label for="quantidade_un" class="form-label">Unidades</label>
+      <div class="col-md-1">
+        <label for="quantidade_un" class="form-label mb-0 small text-muted"
+          >Unid.</label
+        >
         <input
           type="number"
-          class="form-control"
+          class="form-control form-control-sm"
           id="quantidade_un"
           name="quantidade_un"
           placeholder="0"
@@ -199,11 +259,13 @@
           step="any"
         />
       </div>
-      <div class="col-md-2">
-        <label for="preco_venda" class="form-label">Preço Venda</label>
+      <div class="col-md-1">
+        <label for="preco_venda" class="form-label mb-0 small text-muted"
+          >Preço</label
+        >
         <input
           type="text"
-          class="form-control"
+          class="form-control form-control-sm"
           id="preco_venda"
           name="preco_venda"
           placeholder="0,00"
@@ -211,139 +273,113 @@
         />
       </div>
       <div class="col-md-2">
-        <label for="total" class="form-label">Total</label>
+        <label for="total" class="form-label mb-0 small text-muted"
+          >Total</label
+        >
         <input
           type="text"
-          class="form-control"
+          class="form-control form-control-sm"
           id="total"
           name="total"
           placeholder="0,00"
           readonly
         />
       </div>
-    </div>
 
-    <!-- Campo Observação do Produto -->
-    <div class="row mb-3">
-      <div class="col-md-12">
-        <label for="obs_item" class="form-label">Observação</label>
+      <!-- Linha 2: só ocupa espaço o que existir -->
+      <div class="col-md-3" id="div-item-associado" style="display: none">
+        <label for="item-associado" class="form-label mb-0 small text-muted"
+          >Item produção</label
+        >
+        <select id="item-associado" class="form-select form-select-sm"></select>
+      </div>
+      <div class="col">
+        <label for="obs_item" class="form-label mb-0 small text-muted"
+          >Observação do item</label
+        >
         <input
           type="text"
-          class="form-control"
+          class="form-control form-control-sm"
           id="obs_item"
           name="obs_item"
           placeholder="Detalhes do item..."
         />
       </div>
+      <div class="col-auto d-flex gap-2">
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-danger"
+          onclick="limparItens()"
+        >
+          Limpar
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm btn-primary"
+          onclick="adicionarItem()"
+        >
+          Adicionar
+        </button>
+      </div>
     </div>
 
+    <!-- Opções de produto composto: só aparece quando necessário -->
     <div
       id="div-opcionais-composto"
       style="display: none"
-      class="mb-3 p-3 border rounded"
+      class="mt-2 p-2 border rounded"
     >
-      <h6>Opções do produto</h6>
+      <h6 class="mb-1">Opções do produto</h6>
       <div id="grupos-opcionais-container"></div>
     </div>
 
-    <!-- Botão Adicionar Item -->
-    <div class="row mb-3">
-      <div class="col-md-12 d-flex justify-content-between">
-        <button
-          type="button"
-          class="btn btn-outline-danger"
-          onclick="limparItens()"
-        >
-          Limpar Itens
-        </button>
-        <button type="button" class="btn btn-primary" onclick="adicionarItem()">
-          Adicionar Produto
-        </button>
-      </div>
+    <!-- TABELA: altura = conteúdo, até um limite; depois rola -->
+    <div
+      class="border rounded mt-2"
+      style="max-height: calc(100vh - 430px); overflow-y: auto"
+    >
+      <table
+        class="table table-sm table-hover mb-0 small align-middle"
+        id="tabela_itens"
+      >
+        <thead class="table-light" style="position: sticky; top: 0; z-index: 1">
+          <tr>
+            <th>Cód</th>
+            <th>Descrição</th>
+            <th>Item Produção</th>
+            <th>Embalagem</th>
+            <th>Peso Unit.</th>
+            <th>Setor</th>
+            <th>Peso Total</th>
+            <th>Unid.</th>
+            <th>Preço</th>
+            <th>Total</th>
+            <th>Obs</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
 
-    <!-- Tabela de Itens -->
-    <table class="table table-bordered" id="tabela_itens">
-      <thead>
-        <tr>
-          <th>Cód</th>
-          <th>Descrição</th>
-          <th>Item Produção</th>
-          <th>Embalagem</th>
-          <th>Peso Unitário</th>
-          <th>Setor</th>
-          <th>Peso Total</th>
-          <th>Unidades</th>
-          <th>Preço</th>
-          <th>Total</th>
-          <th>Obs</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <div class="row mb-3">
-      <div class="col-md-12 text-end">
-        <div class="d-inline-flex" style="gap: 10px">
-          <a href="/pedidos/consulta" class="btn btn-secondary">Voltar</a>
-          <button
-            type="button"
-            class="btn btn-success"
-            onclick="salvarPedido()"
-          >
-            Salvar Pedido
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="row mb-3">
-      <div class="col-md-3 offset-md-9 text-end">
-        <label for="valor_total_pedido" class="form-label"
-          >Valor Total do Pedido:</label
-        >
-        <input
-          type="text"
-          id="valor_total_pedido"
-          class="form-control text-end"
-          readonly
-          value="0,00"
-        />
-      </div>
+    <!-- RODAPÉ colado na tabela -->
+    <div class="d-flex justify-content-end align-items-center gap-2 mt-2 pb-2">
+      <label for="valor_total_pedido" class="form-label mb-0 fw-bold"
+        >Valor total:</label
+      >
+      <input
+        type="text"
+        id="valor_total_pedido"
+        class="form-control form-control-sm text-end fw-bold"
+        style="width: 140px"
+        readonly
+        value="0,00"
+      />
+      <button type="button" class="btn btn-success" onclick="salvarPedido()">
+        Salvar pedido
+      </button>
     </div>
   </form>
-</div>
-
-<!-- Modal Opções do Produto -->
-<div
-  class="modal fade"
-  id="modalOpcoes"
-  tabindex="-1"
-  aria-labelledby="modalOpcoesLabel"
-  aria-hidden="true"
->
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalOpcoesLabel">Opções do Produto</h5>
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="modal"
-          aria-label="Fechar"
-        ></button>
-      </div>
-      <div class="modal-body" id="modalOpcoesBody">
-        <!-- conteúdo inserido via JS -->
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Fechar
-        </button>
-      </div>
-    </div>
-  </div>
 </div>
 <script>
   let mapaProdutos = {};
@@ -545,8 +581,8 @@
       });
     return escolhas;
   }
-  
-  
+
+
   function sincronizarCampos(evt = null) {
     const quantidadeEl = document.getElementById("quantidade");
     const pesoBrutoEl = document.getElementById("peso_bruto");
@@ -941,7 +977,6 @@
   // Exibe/oculta campo de endereço conforme tipo de entrega
   const entregaRadio = document.getElementById("entrega");
   const retiradaRadio = document.getElementById("retirada");
-  const balcaoRadio = document.getElementById("balcao");
   const enderecoContainer = document.getElementById("endereco-container");
 
   entregaRadio.addEventListener(
@@ -949,10 +984,6 @@
     () => (enderecoContainer.style.display = "block"),
   );
   retiradaRadio.addEventListener(
-    "change",
-    () => (enderecoContainer.style.display = "none"),
-  );
-  balcaoRadio.addEventListener(
     "change",
     () => (enderecoContainer.style.display = "none"),
   );
@@ -1013,10 +1044,7 @@
           $('textarea[name="observacoes"]').val(pedido.observacoes);
           $("#obs_endereco").val(pedido.obs_endereco || "");
 
-          if (pedido.id_status === 6) {
-            $("#balcao").prop("checked", true);
-            $("#endereco-container").hide();
-          } else if (pedido.tipo_entrega === "entrega") {
+          if (pedido.tipo_entrega === "entrega") {
             $("#entrega").prop("checked", true);
             $("#endereco-container").show();
           } else {

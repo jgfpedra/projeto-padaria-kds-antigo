@@ -707,7 +707,7 @@
         if (pedido.data_finalizacao) {
           infoFinalizado = `
       <p>
-        <i class="bi bi-check2-circle"></i> Finalizado em: 
+        <i class="bi bi-check2-circle"></i> Finalizado em:
         ${formatarDataHora(pedido.data_finalizacao)}<br>
         <span style="font-size:1.3em">${compararDatasIso(pedido.data_finalizacao, pedido.data_entrega)}</span>
       </p>
@@ -931,15 +931,15 @@
           <td>${item.cod_produto}</td>
           <td>${item.descricao}</td>
           <td>
-			<div class="input-group">
-			<input type="number" class="form-control form-control-sm quantidade" style="width: 80px;"
-					value="${quantidade}" onchange="atualizarValorTotalFinalizar(this)" />
-			<button type="button" class="btn btn-secondary btn-sm"
-					onclick="abrirCampoEtiqueta(this, ${item.cod_produto}, ${precoVenda})">Etiqueta</button>
-			<button type="button" class="btn btn-outline-primary btn-sm"
-					title="Bipar várias etiquetas"
-					onclick="abrirModalMultiEtiquetas(this, ${item.cod_produto}, ${precoVenda})">+</button>
-			</div>
+  	<div class="input-group">
+  	<input type="number" class="form-control form-control-sm quantidade" style="width: 80px;"
+  			value="${quantidade}" onchange="atualizarValorTotalFinalizar(this)" />
+  	<button type="button" class="btn btn-secondary btn-sm"
+  			onclick="abrirCampoEtiqueta(this, ${item.cod_produto}, ${precoVenda})">Etiqueta</button>
+  	<button type="button" class="btn btn-outline-primary btn-sm"
+  			title="Bipar várias etiquetas"
+  			onclick="abrirModalMultiEtiquetas(this, ${item.cod_produto}, ${precoVenda})">+</button>
+  	</div>
             <div class="mt-1 d-none campo-etiqueta">
               <input type="text" class="form-control form-control-sm etiqueta-input" placeholder="Digite ou bip a etiqueta"
                      onkeydown="if(event.key==='Enter'){lerEtiquetaBalança(this, ${item.cod_produto}, ${precoVenda});}">
@@ -1415,30 +1415,30 @@
           totalPedido += total;
 
           return `
-				<tr data-id-produto="${item.cod_produto}" data-preco-venda="${precoVenda}">
-					<td>${item.cod_produto}</td>
-					<td>${item.descricao}</td>
-					<td>
-					<div class="input-group">
-					<input type="number" class="form-control form-control-sm quantidade" style="width: 80px;"
-							value="${quantidade}" onchange="atualizarValorTotalFinalizar(this)" />
-					<button type="button" class="btn btn-secondary btn-sm"
-							onclick="abrirCampoEtiqueta(this, ${item.cod_produto}, ${precoVenda})">Etiqueta</button>
-					<button type="button" class="btn btn-outline-primary btn-sm"
-							title="Bipar várias etiquetas"
-							onclick="abrirModalMultiEtiquetas(this, ${item.cod_produto}, ${precoVenda})">+</button>
-					</div>
-					<div class="mt-1 d-none campo-etiqueta">
-					<input type="text" class="form-control form-control-sm etiqueta-input" placeholder="Digite ou bip a etiqueta"
-							onkeydown="if(event.key==='Enter'){lerEtiquetaBalança(this, ${item.cod_produto}, ${precoVenda});}">
-					<small class="text-danger etiqueta-erro"></small>
-					</div>
+  		<tr data-id-produto="${item.cod_produto}" data-preco-venda="${precoVenda}">
+  			<td>${item.cod_produto}</td>
+  			<td>${item.descricao}</td>
+  			<td>
+  			<div class="input-group">
+  			<input type="number" class="form-control form-control-sm quantidade" style="width: 80px;"
+  					value="${quantidade}" onchange="atualizarValorTotalFinalizar(this)" />
+  			<button type="button" class="btn btn-secondary btn-sm"
+  					onclick="abrirCampoEtiqueta(this, ${item.cod_produto}, ${precoVenda})">Etiqueta</button>
+  			<button type="button" class="btn btn-outline-primary btn-sm"
+  					title="Bipar várias etiquetas"
+  					onclick="abrirModalMultiEtiquetas(this, ${item.cod_produto}, ${precoVenda})">+</button>
+  			</div>
+  			<div class="mt-1 d-none campo-etiqueta">
+  			<input type="text" class="form-control form-control-sm etiqueta-input" placeholder="Digite ou bip a etiqueta"
+  					onkeydown="if(event.key==='Enter'){lerEtiquetaBalança(this, ${item.cod_produto}, ${precoVenda});}">
+  			<small class="text-danger etiqueta-erro"></small>
+  			</div>
 
-					</td>
-					<td>${quantidadeUn}</td>
-					<td>${precoVenda.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td>
-					<td class="valor-total">${total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td>
-				</tr>`;
+  			</td>
+  			<td>${quantidadeUn}</td>
+  			<td>${precoVenda.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td>
+  			<td class="valor-total">${total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td>
+  		</tr>`;
         })
         .join("");
 
