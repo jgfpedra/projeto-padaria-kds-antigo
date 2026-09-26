@@ -5,131 +5,52 @@
     <title>KDS Gestão de Setores</title>
     <link
       rel="stylesheet"
+      href="{{ url_for('static', filename='css/kds.css') }}"
+    />
+    <link
+      rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
     />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
     />
-    <style>
-      body {
-        background: #e7f1fa;
-      }
-      .kanban-board {
-        display: flex;
-        gap: 1.5rem;
-        padding: 2rem;
-      }
-      .kanban-column {
-        flex: 1;
-        background: #fff;
-        border-radius: 12px;
-        padding: 1rem;
-        min-height: 80vh;
-        box-shadow: 0 2px 8px #0001;
-      }
-      .kanban-title {
-        font-size: 1.3rem;
-        font-weight: 700;
-        margin-bottom: 1rem;
-        text-align: center;
-      }
-      .kds-card {
-        background: #f7faff;
-        border-radius: 10px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 1px 4px #0002;
-        position: relative;
-      }
-      .kds-card.novo {
-        border-left: 5px solid #33cc33;
-        background: #eaffea;
-      }
-      .kds-card.balcao {
-        border-left: 5px solid #6633cc;
-        background: #efeaff;
-      }
-      .kds-card.finalizado {
-        border-left: 5px solid #999;
-        opacity: 0.7;
-      }
-      .kds-btn {
-        width: 100%;
-        margin-top: 8px;
-      }
-      .quantidade-total {
-        font-size: 1.4rem;
-        font-weight: bold;
-        color: #006622;
-      }
-      .card-observacao {
-        background: #fff7e6;
-        border-left: 5px solid #ffaa33;
-      }
-      .badge.bg-purple {
-        background: #8e24aa !important;
-        color: #fff !important;
-      }
-      .kds-card.emproducao {
-        border-left: 5px solid #ffe066 !important;
-        background: #fffbe9 !important;
-      }
-      .kds-card.finalizado {
-        background: #ececec !important;
-        border-left: 5px solid #bbb !important;
-      }
-
-      /* ações por card */
-      .kds-card-actions {
-        display: flex;
-        gap: 8px;
-        margin-top: 10px;
-      }
-      .kds-card-actions .btn {
-        flex: 1;
-      }
-    </style>
   </head>
+
   <body>
-    <div class="row mb-4">
-      <div class="col-md-4">
-        <label for="selectLoja" class="form-label">Loja</label>
-        <select id="selectLoja" class="form-select"></select>
-      </div>
-      <div class="col-md-4">
-        <label for="selectSetor" class="form-label">Setor</label>
-        <select id="selectSetor" class="form-select"></select>
-      </div>
-      <div class="col-md-2">
-        <label for="selectExibirHorario" class="form-label"
-          >Exibir Horário</label
-        >
-        <select id="selectExibirHorario" class="form-select">
-          <option value="SIM" selected>SIM</option>
-          <option value="NAO">NÃO</option>
+    <div class="filtros-bar">
+      <div class="input-group">
+        <span class="input-group-text"><i class="fa-solid fa-store"></i></span>
+        <select id="selectLoja" class="form-select" aria-label="Loja">
+          <option value="">Selecione a Loja</option>
         </select>
       </div>
-      <div class="col-md-2 d-flex align-items-end" style="gap: 8px">
-        <button
-          class="btn btn-outline-secondary w-100"
-          type="button"
-          onclick="atualizarPedidos()"
-          title="Atualizar agora"
-        >
-          <i class="fas fa-sync-alt"></i>
-          Atualizar
-        </button>
-        <button
-          class="btn btn-outline-primary w-100"
-          type="button"
-          onclick="abrirModalConfig()"
-          title="Configurar impressora"
-        >
-          <i class="fas fa-gear"></i>
-          Configurar
-        </button>
+
+      <div class="input-group">
+        <span class="input-group-text"
+          ><i class="fa-solid fa-layer-group"></i
+        ></span>
+        <select id="selectSetor" class="form-select" aria-label="Setor">
+          <option value="">Selecione o Setor</option>
+        </select>
       </div>
+
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        onclick="atualizarPedidos()"
+        title="Atualizar agora"
+      >
+        <i class="fas fa-sync-alt"></i> Atualizar
+      </button>
+      <button
+        class="btn btn-outline-primary"
+        type="button"
+        onclick="abrirModalConfig()"
+        title="Configurar impressora"
+      >
+        <i class="fas fa-gear"></i> Configurar
+      </button>
     </div>
 
     <div class="kanban-board" id="kanban-board">
@@ -244,12 +165,19 @@
       </div>
     </div>
 
+    <div
+      id="toggle-finalizado"
+      title="Mostrar/ocultar Finalizados"
+      onclick="toggleFinalizado()"
+    >
+      <i class="fa-solid fa-chevron-left"></i>
+    </div>
+
     <script>
       let lojaSelecionada = null;
       let setorSelecionado = null;
-      let pedidos = [];
+      window.pedidos = [];
       let idsSempreComHorario = []; // vindo de produto_exibir_horario
-      let exibirHorarioGlobal = "SIM"; // SIM | NAO
       let snapshotUltimosPedidos = ""; // para detectar novos
 
       // --- Utilitários de data ---
@@ -315,7 +243,7 @@
           lojaSelecionada = this.value;
           await carregarSetores();
           setorSelecionado = null;
-          pedidos = [];
+          window.pedidos = [];
           renderCards();
         };
       }
@@ -333,25 +261,6 @@
           atualizarPedidos();
         };
       }
-      async function carregarIdsSempreComHorario() {
-        // apesar do nome "ocultar", este endpoint devolve os ids que DEVEM exibir horário (tabela produto_exibir_horario)
-        const res = await fetch("/api/produtos_ocultar_horario");
-        idsSempreComHorario = await res.json();
-      }
-
-      // --- Filtro de exibir horário ---
-      document.addEventListener("change", (e) => {
-        if (e.target && e.target.id === "selectExibirHorario") {
-          exibirHorarioGlobal = e.target.value;
-          renderCards(); // re-renderiza aplicando a regra
-        }
-      });
-      function deveExibirHorarioParaProduto(idProduto) {
-        if (exibirHorarioGlobal === "SIM") return true;
-        // Quando NÃO, só exibe para produtos listados na produto_exibir_horario
-        return idsSempreComHorario.includes(idProduto);
-      }
-
       // --- Atualização dos pedidos ---
       let timerAtualizacao = null;
       function chegouNovoPedido(listaAtual) {
@@ -365,7 +274,7 @@
         const loja = document.getElementById("selectLoja").value;
         const setor = document.getElementById("selectSetor").value;
         if (!loja || !setor) {
-          pedidos = [];
+          window.pedidos = [];
           renderCards();
           return;
         }
@@ -374,7 +283,7 @@
         if (auto && chegouNovoPedido(novosPedidos)) {
           tocarSomNovoPedido();
         }
-        pedidos = novosPedidos;
+        window.pedidos = novosPedidos;
         renderCards();
         snapshotUltimosPedidos = pedidos
           .map((p) => p.id)
@@ -386,30 +295,72 @@
         timerAtualizacao = setInterval(() => atualizarPedidos(true), 60000);
       }
 
+      function toggleFinalizado() {
+        const visivel = document.body.classList.toggle("mostrar-finalizado");
+        localStorage.setItem("kdsMostrarFinalizado", visivel ? "1" : "0");
+        atualizarSetaFinalizado();
+      }
+
+      function atualizarSetaFinalizado() {
+        const icone = document.querySelector("#toggle-finalizado i");
+        const visivel = document.body.classList.contains("mostrar-finalizado");
+        // seta aponta para a direita quando aberto (clicar recolhe)
+        icone.className = visivel
+          ? "fa-solid fa-chevron-right"
+          : "fa-solid fa-chevron-left";
+      }
+
+      function escHtml(s) {
+        return String(s ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function montarTooltipPedidos(pedidosCard) {
+        const codigos = [...new Set(pedidosCard.map((p) => p.id))]
+          .sort((a, b) => Number(a) - Number(b))
+          .map((id) => "#" + escHtml(id))
+          .join(", ");
+
+        return escHtml(`<div><b>Pedidos:</b> ${codigos}</div>`);
+      }
+
+      function iniciarTooltips() {
+        document
+          .querySelectorAll('[data-bs-toggle="tooltip"]')
+          .forEach((el) => {
+            new bootstrap.Tooltip(el, { container: "body" });
+          });
+      }
+
       // --- Renderização de cards ---
       let agrupadosGlobal = {};
       function renderCards() {
+        document.querySelectorAll(".tooltip").forEach((t) => t.remove());
         // limpa colunas
         document.getElementById("col-aguardando").innerHTML = `
-	<div class="kanban-title" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-	<span>Aguardando</span>
-	<div class="d-flex" style="gap:8px;">
-	<button class="btn btn-sm btn-secondary" onclick="imprimirColuna('aguardando')">
-	<i class="fa fa-print"></i> Imprimir
-	</button>
-	<button class="btn btn-sm btn-primary" onclick="produzirTodos()">Produzir Todos</button>
-	</div>
-	</div>`;
+      <div class="kanban-title" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+      <span>Aguardando</span>
+      <div class="d-flex" style="gap:8px;">
+      <button class="btn btn-sm btn-secondary" onclick="imprimirColuna('aguardando')">
+      <i class="fa fa-print"></i> Imprimir
+      </button>
+      <button class="btn btn-sm btn-primary" onclick="produzirTodos()">Produzir Todos</button>
+      </div>
+      </div>`;
         document.getElementById("col-producao").innerHTML = `
-	<div class="kanban-title" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-	<span>Em Produção</span>
-	<div class="d-flex" style="gap:8px;">
-	<button class="btn btn-sm btn-secondary" onclick="imprimirColuna('producao')">
-	<i class="fa fa-print"></i> Imprimir
-	</button>
-	<button class="btn btn-sm btn-success" onclick="finalizarTodos()">Finalizar Todos</button>
-	</div>
-	</div>`;
+      <div class="kanban-title" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+      <span>Em Produção</span>
+      <div class="d-flex" style="gap:8px;">
+      <button class="btn btn-sm btn-secondary" onclick="imprimirColuna('producao')">
+      <i class="fa fa-print"></i> Imprimir
+      </button>
+      <button class="btn btn-sm btn-success" onclick="finalizarTodos()">Finalizar Todos</button>
+      </div>
+      </div>`;
         document.getElementById("col-finalizado").innerHTML =
           `<div class="kanban-title">Finalizado</div>`;
 
@@ -431,31 +382,20 @@
           agrupados[chave].push(p);
         });
 
-        // ordena grupos alfabeticamente por produto (pt-BR) e, em empate, pela observação
         const coll = new Intl.Collator("pt-BR", {
           sensitivity: "base",
           numeric: true,
         });
-        const chavesOrdenadas = Object.keys(agrupados).sort((a, b) => {
-          const A = agrupados[a][0];
-          const B = agrupados[b][0];
-          const prodA = String(A.descricao || A.produto || A.id_produto).trim();
-          const prodB = String(B.descricao || B.produto || B.id_produto).trim();
-          const cmpProd = coll.compare(prodA, prodB);
-          if (cmpProd !== 0) return cmpProd;
-          const obsA = String(A.observacao || "").trim();
-          theObsB = String(B.observacao || "").trim();
-          return coll.compare(obsA, theObsB);
-        });
 
-        chavesOrdenadas.forEach((chave) => {
+        const cardsPorStatus = { 0: [], 1: [], 2: [] };
+
+        Object.keys(agrupados).forEach((chave) => {
           const lista = agrupados[chave];
           const produto =
             lista[0].descricao || lista[0].produto || lista[0].id_produto;
           const observacao = lista[0].observacao || "";
           const idProduto = lista[0].id_produto;
 
-          // <<< NOVO: prepara chave segura para uso no onclick >>>
           const chaveSafe = String(chave)
             .replace(/\\/g, "\\\\") // escapa barra invertida
             .replace(/'/g, "\\'"); // escapa aspas simples
@@ -525,38 +465,35 @@
               ? `${formatarDataBr(pedidosAmanha[0].data)} - <span style="color:#d00;font-weight:bold;">AMANHÃ</span>`
               : "";
 
-            const mostrarHorario = deveExibirHorarioParaProduto(idProduto);
             let blocos = "";
-            if (mostrarHorario) {
-              const btnHoje = pedidosHoje.length
-                ? status == 0
-                  ? `<button class="btn btn-sm btn-primary mt-2 w-100" onclick="produzirPedidosDia('${chaveSafe}','hoje')"><i class="fa-solid fa-play"></i> Produzir</button>`
-                  : status == 1
-                    ? `<button class="btn btn-sm btn-success mt-2 w-100" onclick="finalizarPedidosDia('${chaveSafe}','hoje')"><i class="fa-solid fa-check"></i> Finalizar</button>`
-                    : ""
-                : "";
-              const btnAmanha = pedidosAmanha.length
-                ? status == 0
-                  ? `<button class="btn btn-sm btn-primary mt-2 w-100" onclick="produzirPedidosDia('${chaveSafe}','amanha')"><i class="fa-solid fa-play"></i> Produzir</button>`
-                  : status == 1
-                    ? `<button class="btn btn-sm btn-success mt-2 w-100" onclick="finalizarPedidosDia('${chaveSafe}','amanha')"><i class="fa-solid fa-check"></i> Finalizar</button>`
-                    : ""
-                : "";
+            const btnHoje = pedidosHoje.length
+              ? status == 0
+                ? `<button class="btn btn-sm btn-primary mt-2 w-100" onclick="produzirPedidosDia('${chaveSafe}','hoje')"><i class="fa-solid fa-play"></i> Produzir</button>`
+                : status == 1
+                  ? `<button class="btn btn-sm btn-success mt-2 w-100" onclick="finalizarPedidosDia('${chaveSafe}','hoje')"><i class="fa-solid fa-check"></i> Finalizar</button>`
+                  : ""
+              : "";
+            const btnAmanha = pedidosAmanha.length
+              ? status == 0
+                ? `<button class="btn btn-sm btn-primary mt-2 w-100" onclick="produzirPedidosDia('${chaveSafe}','amanha')"><i class="fa-solid fa-play"></i> Produzir</button>`
+                : status == 1
+                  ? `<button class="btn btn-sm btn-success mt-2 w-100" onclick="finalizarPedidosDia('${chaveSafe}','amanha')"><i class="fa-solid fa-check"></i> Finalizar</button>`
+                  : ""
+              : "";
 
-              blocos = `
-            <div style="display:flex; gap:16px;">
-            <div style="flex:1; border:1px solid #222; border-radius:6px; min-height:70px; padding:7px; background:#f5fff5;">
-            ${hojeLabel ? `<div style="font-weight:500; margin-bottom:3px; color:#333;">${hojeLabel}</div>` : ""}
-            ${horariosHoje || "<div style='color:#bbb;'>-</div>"}
-            ${btnHoje}
-            </div>
-            <div style="flex:1; border:1px solid #222; border-radius:6px; min-height:70px; padding:7px; background:#f5fff5;">
-            ${amanhaLabel ? `<div style="font-weight:500; margin-bottom:3px; color:#333;">${amanhaLabel}</div>` : ""}
-            ${horariosAmanha || "<div style='color:#bbb;'>-</div>"}
-            ${btnAmanha}
-            </div>
-            </div>`;
-            }
+            blocos = `
+                 <div style="display:flex; gap:16px;">
+                 <div style="flex:1; border:1px solid #222; border-radius:6px; min-height:70px; padding:7px; background:#f5fff5;">
+                 ${hojeLabel ? `<div style="font-weight:500; margin-bottom:3px; color:#333;">${hojeLabel}</div>` : ""}
+                 ${horariosHoje || "<div style='color:#bbb;'>-</div>"}
+                 ${btnHoje}
+                 </div>
+                 <div style="flex:1; border:1px solid #222; border-radius:6px; min-height:70px; padding:7px; background:#f5fff5;">
+                 ${amanhaLabel ? `<div style="font-weight:500; margin-bottom:3px; color:#333;">${amanhaLabel}</div>` : ""}
+                 ${horariosAmanha || "<div style='color:#bbb;'>-</div>"}
+                 ${btnAmanha}
+                 </div>
+                 </div>`;
             let cardClass = "kds-card novo";
             if (status == 1) cardClass = "kds-card emproducao";
             if (status == 2) cardClass = "kds-card finalizado";
@@ -565,45 +502,86 @@
             let botoesCard = "";
             if (status == 0) {
               botoesCard = `
-                <div class="kds-card-actions">
-                  <button class="btn btn-primary"
-                  title="Produzir todos os itens deste produto/observação"
-                  onclick="produzirPedidos('${chaveSafe}')">
-                  <i class="fa-solid fa-play"></i> Produzir Todos
-                  </button>
-                </div>`;
+                    <div class="kds-card-actions">
+                      <button class="btn btn-primary"
+                        title="Produzir todos os itens deste produto/observação"
+                        onclick="produzirPedidos('${chaveSafe}')">
+                        <i class="fa-solid fa-play"></i> Produzir Todos
+                      </button>
+                    </div>`;
             } else if (status == 1) {
               botoesCard = `
-                <div class="kds-card-actions">
-                <button class="btn btn-success"
-                title="Finalizar todos os itens deste produto/observação"
-                onclick="finalizarPedidos('${chaveSafe}')">
-                <i class="fa-solid fa-check"></i> Finalizar Todos
-                </button>
-                </div>`;
+                    <div class="kds-card-actions">
+                      <button class="btn btn-success"
+                        title="Finalizar todos os itens deste produto/observação"
+                        onclick="finalizarPedidos('${chaveSafe}')">
+                        <i class="fa-solid fa-check"></i> Finalizar Todos
+                      </button>
+                    </div>`;
             }
+
+            const infoPedidos = montarTooltipPedidos([
+              ...pedidosHoje,
+              ...pedidosAmanha,
+            ]);
 
             const card = `
-                <div class="${cardClass}">
-                <div class="quantidade-total">
-                ${produto}
-                <span class="badge bg-success ms-2">TOTAL: ${totalFormatado} UN</span>
-                </div>
-                ${observacao ? `<div class="mt-1"><span class="badge bg-warning text-dark" style="font-size:0.93em; font-weight:400; padding:3px 10px;">${observacao}</span></div>` : ""}
-                ${blocos}
-                ${botoesCard}
-                </div>`;
+                     <div class="${cardClass}">
+                     <div class="quantidade-total">
+                     <span class="produto-nome">${escHtml(produto)}</span>
+                     <i class="fa-solid fa-circle-info kds-info"
+                        data-bs-toggle="tooltip"
+                        data-bs-html="true"
+                        data-bs-placement="right"
+                        title="${infoPedidos}"></i>
+                     <span class="badge bg-success ms-2">TOTAL: ${totalFormatado} UN</span>
+                     </div>
+                     ${observacao ? `<div class="mt-1"><span class="badge bg-warning text-dark" style="font-size:0.93em; font-weight:400; padding:3px 10px;">${observacao}</span></div>` : ""}
+                     ${blocos}
+                     ${botoesCard}
+                     </div>`;
 
-            if (status == 0) {
-              document.getElementById("col-aguardando").innerHTML += card;
-            } else if (status == 1) {
-              document.getElementById("col-producao").innerHTML += card;
-            } else {
-              document.getElementById("col-finalizado").innerHTML += card;
-            }
+            const sortKey = (() => {
+              if (pedidosHoje.length) {
+                return (
+                  "0_" + pedidosHoje.map((p) => p.hora || "99:99").sort()[0]
+                );
+              }
+              if (pedidosAmanha.length) {
+                return (
+                  "1_" + pedidosAmanha.map((p) => p.hora || "99:99").sort()[0]
+                );
+              }
+              return "2_99:99";
+            })();
+
+            cardsPorStatus[status].push({
+              sortKey,
+              produto: String(produto).trim(),
+              html: card,
+            });
           });
         });
 
+        const destinos = {
+          0: "col-aguardando",
+          1: "col-producao",
+          2: "col-finalizado",
+        };
+
+        [0, 1, 2].forEach((status) => {
+          cardsPorStatus[status]
+            .sort((a, b) => {
+              if (a.sortKey !== b.sortKey)
+                return a.sortKey < b.sortKey ? -1 : 1;
+              return coll.compare(a.produto, b.produto);
+            })
+            .forEach((c) => {
+              document.getElementById(destinos[status]).innerHTML += c.html;
+            });
+        });
+
+        iniciarTooltips();
         agrupadosGlobal = agrupados;
       }
 
@@ -724,6 +702,7 @@
 
         return result;
       }
+
       async function imprimirColuna(coluna) {
         const loja = document.getElementById("selectLoja").value;
         const setor = document.getElementById("selectSetor").value;
@@ -811,8 +790,11 @@
       // --- Boot ---
       let alertaCarregado = false;
       window.onload = async function () {
+        if (localStorage.getItem("kdsMostrarFinalizado") === "1") {
+          document.body.classList.add("mostrar-finalizado");
+        }
+        atualizarSetaFinalizado();
         await carregarLojas();
-        await carregarIdsSempreComHorario();
         agendarAtualizacaoAutomatica();
         atualizarPedidos();
         // carrega áudio
@@ -872,6 +854,8 @@
         else alert("Falha ao finalizar itens!");
       }
     </script>
+    <script src="{{ url_for('static', filename='js/acougue.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/kds-acougue.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>

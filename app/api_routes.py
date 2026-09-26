@@ -2,6 +2,7 @@
 
 import logging
 import os
+import json
 
 from flask import (
     jsonify,
@@ -2095,7 +2096,8 @@ def api_kds_pedidos():
                pi.id_status AS id_status_item,
                p.tipo_entrega,
                p.id_status AS id_status_pedido,
-               pi.quantidade
+               pi.quantidade,
+               p.id_cliente
           FROM pedidos p
           JOIN pedido_itens pi ON pi.id_pedido = p.id
          WHERE p.id_loja = %s
@@ -2152,6 +2154,7 @@ def api_kds_pedidos():
                 "tipo_entrega": row[10],
                 "id_status_pedido": row[11],
                 "peso": row[12],
+                "id_cliente": row[13],
             }
         )
 
@@ -2324,7 +2327,6 @@ def imprimir_pedido(id_pedido):
         status = buscar_status(cursor_app, pedido["id_status"])
         valor_total = buscar_valor_total(cursor_app, id_pedido)
         itens = buscar_itens(cursor_app, cursor_vr, id_pedido)
-
         texto = montar_texto_pedido(
             pedido=pedido,
             cliente=cliente,
@@ -2707,6 +2709,53 @@ def api_kds_imprimir_coluna():
     ok, msg = _enviar_para_impressora_kds(row[0], texto)
     if not ok:
         return jsonify({"erro": f"Falha ao imprimir: {msg}"}), 500
+    return jsonify({"ok": True})
+
+
+@app.route("/api/acougue/pendencias", methods=["GET"])
+def acougue_ler_pendencias():
+    ACOUGUE_FILE = os.path.join(os.path.dirname(__file__), "acougue.json")
+    if request.method == "GET":
+        id_cliente = request.args.get("id_cliente")
+        if not os.path.exists(ACOUGUE_FILE):
+            return jsonify({"pendencias": [] if id_cliente else {}})
+        with open(ACOUGUE_FILE, "r", encoding="utf-8") as f:
+            try:
+                data = json.load(f)
+            except Exception:
+                data = {"pendencias": {}}
+        pendencias = data.get("pendencias", {})
+        if id_cliente:
+            return jsonify({"pendencias": pendencias.get(str(id_cliente), [])})
+        return jsonify({"pendencias": pendencias})
+
+
+@app.route("/api/acougue/pendencias", methods=["GET", "POST"])
+def acougue_pendencias():
+    ACOUGUE_FILE = os.path.join(os.path.dirname(__file__), "acougue.json")
+    CLIENTES_ACOUGUE = {"5306", "131"}
+    body = request.get_json()
+    id_cliente = str(body.get("id_cliente", ""))
+    novas = body.get("pendencias", [])
+    print(id_cliente)
+    if id_cliente not in CLIENTES_ACOUGUE:
+        return jsonify({"ok": True, "ignorado": True})  # ignora silenciosamente
+
+    if os.path.exists(ACOUGUE_FILE):
+        with open(ACOUGUE_FILE, "r", encoding="utf-8") as f:
+            try:
+                data = json.load(f)
+            except Exception:
+                data = {"pendencias": {}}
+    else:
+        data = {"pendencias": {}}
+
+    existentes = data["pendencias"].get(id_cliente, [])
+    data["pendencias"][id_cliente] = existentes + novas
+
+    with open(ACOUGUE_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
     return jsonify({"ok": True})
 
 

@@ -148,7 +148,10 @@
                 >
               </li>
               <li>
-                <a href="/pedidos/novo" class="nav-link" id="menu-novo-pedido"
+                <a
+                  href="{{ url_for('pedido') }}"
+                  class="nav-link"
+                  id="menu-novo-pedido"
                   ><i class="bi bi-plus-circle"></i> Criar novo pedido</a
                 >
               </li>
@@ -163,25 +166,11 @@
       </ul>
       <hr />
       <div class="text-center small sidebar-text">
-        <span class="text-muted">v1.0</span>
+        <span class="text-muted">{{ session['usuario_nome'] }}</span>
       </div>
     </nav>
     <!-- Main content -->
     <div class="main-content">
-      <!-- Topbar -->
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h2 id="titulo-tela" class="mb-0">{{ titulo_tela or 'Sistema' }}</h2>
-        </div>
-        <div>
-          <span class="me-3"
-            >Olá, {{ session['usuario_nome'] or 'Usuário' }}!</span
-          >
-          <a href="/logout" class="btn btn-outline-secondary btn-sm"
-            ><i class="bi bi-box-arrow-right"></i> Sair</a
-          >
-        </div>
-      </div>
       <!-- Conteúdo dinâmico -->
       <div id="conteudo-central">
         {% block conteudo_central %}{% endblock %}
