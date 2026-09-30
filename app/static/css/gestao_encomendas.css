@@ -7,46 +7,234 @@ body {
   border: 1px solid #dee2e6;
   border-radius: 12px;
   box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.08);
-  padding: 16px;
   margin-bottom: 20px;
-  position: relative;
-  min-height: 300px;
-  height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  overflow: hidden;
 }
 
-.card-pedido h5 {
-  font-weight: bold;
-  font-size: 18px;
+/* TOPO - destaque de entrega */
+.card-topo {
+  background: #2d2d4a;
+  padding: 12px 16px;
+  border-radius: 12px 12px 0 0;
 }
 
-.card-pedido p {
-  margin-bottom: 5px;
-  font-size: 14px;
-}
-
-.card-pedido ul {
-  padding-left: 18px;
-  margin-top: 10px;
-}
-
-.card-pedido ul li {
-  margin-bottom: 5px;
-  font-size: 14px;
-}
-
-.card-pedido .botoes {
-  margin-top: 12px;
+.card-topo-entrega {
   display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.topo-hora {
+  font-size: 26px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.topo-data {
+  font-size: 14px;
+  font-weight: 600;
+  color: #aab4d4;
+}
+
+.topo-tipo {
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  padding: 2px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+}
+
+.topo-tipo--entrega {
+  background: #1565c0;
+  color: #fff;
+}
+
+.topo-tipo--retirada {
+  background: #e65100;
+  color: #fff;
+}
+
+.topo-cliente {
+  font-size: 15px;
+  color: #ccd4e8;
+  margin-top: 6px;
+  cursor: default;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.topo-endereco-icon {
+  color: #f59e0b;
+  font-size: 13px;
+}
+
+.topo-cliente[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: #2d2d4e;
+  color: #fff;
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  z-index: 10;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.topo-obs {
+  background: #fff8e1;
+  border-left: 3px solid #f59e0b;
+  color: #6b4c00;
+  font-size: 13px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.topo-edit-hint {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    transform 0.2s;
+}
+
+.topo-edit-hint:hover {
+  color: #f59e0b;
+  transform: scale(1.3);
+}
+
+.topo-endereco {
+  font-size: 12px;
+  color: #aab4d4;
+  margin-top: 4px;
+}
+
+/* MEIO - cliente/loja/status */
+.card-meio {
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.card-meio-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
 }
 
-.card-pedido .botoes button {
+.linha-badges {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.linha-info {
+  font-size: 13px;
+  color: #444;
+}
+
+.linha-info i {
+  color: #888;
+  margin-right: 4px;
+}
+
+.sep {
+  margin: 0 5px;
+  color: #ccc;
+}
+
+.linha-status {
+  font-weight: 600;
+}
+
+.status-aguardando {
+  color: #888;
+}
+.status-producao {
+  color: #f59e0b;
+}
+.status-produzido {
+  color: #3b82f6;
+}
+.status-cancelado {
+  color: #ef4444;
+}
+.status-balcao {
+  color: #8b5cf6;
+}
+.status-finalizado {
+  color: #22c55e;
+}
+.status-finalizando {
+  color: #06b6d4;
+} /* ITENS */
+
+.card-itens {
+  padding: 8px 16px;
   flex: 1;
-  font-size: 14px;
-  font-weight: bold;
+}
+
+.card-itens ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.card-itens ul li {
+  font-size: 15px;
+  padding: 4px 0;
+  border-bottom: 1px solid #f4f4f4;
+  color: #333;
+}
+
+.card-itens ul li:last-child {
+  border-bottom: none;
+}
+
+/* FINALIZADO */
+.card-finalizado {
+  margin: 0 16px 8px;
+  padding: 6px 10px;
+  background: #e8f5e9;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #2e7d32;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* BOTÕES */
+.botoes {
+  padding: 10px 16px 14px;
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  background: #2d2d4a;
+  border-radius: 0 0 12px 12px;
+}
+
+.botoes button {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .botao-status {
@@ -54,47 +242,9 @@ body {
   border: none !important;
   color: black !important;
 }
-.botao-editar {
-  background-color: #0dcaf0;
-  border: none;
-  color: white;
-}
 
 .botao-finalizar {
   background-color: #198754 !important;
   border: none !important;
   color: white !important;
-}
-
-.badge-hoje {
-  background-color: #28a745;
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 12px;
-  color: white;
-  font-weight: bold;
-  display: inline-block;
-  margin-left: 8px;
-}
-
-.badge-atrasado {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background-color: #dc3545;
-  font-size: 12px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  color: white;
-  font-weight: bold;
-}
-
-.bi {
-  margin-right: 4px;
-}
-#sugestoes-clientes {
-  position: absolute;
-  z-index: 9999;
-  width: 100%;
-  top: 100%;
 }

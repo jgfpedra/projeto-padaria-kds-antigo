@@ -81,72 +81,103 @@ def repo_vr_get_nome_produto(id_produto):
         conn.close()
 
 
-def repo_vr_buscar_produtos(termo, por_id=False, limite=20):
+def _filtro_setor_por_loja():
+    return """
+        AND EXISTS (
+            SELECT 1
+            FROM ficha.setorproduto sp
+            INNER JOIN ficha.setor s
+                ON s.id = sp.id_setor
+            WHERE sp.id_produto = p.id
+              AND s.id_loja = %s
+        )
+    """
+
+
+def _sql_buscar_produto_por_id():
+    return f"""
+        SELECT
+            p.id,
+            p.descricaocompleta,
+            p.pesoliquido
+        FROM produto p
+        INNER JOIN produtocomplemento pc
+            ON pc.id_produto = p.id
+        WHERE pc.id_situacaocadastro = 1
+          AND p.id = %s
+          {_filtro_setor_por_loja()}
+        LIMIT %s
+    """
+
+
+def _sql_buscar_produtos_por_termo():
+    return f"""
+        SELECT
+            p.id,
+            p.descricaocompleta,
+            p.pesoliquido,
+            CASE
+                WHEN LOWER(p.descricaocompleta) = %s THEN 1
+                WHEN LOWER(p.descricaocompleta) LIKE %s THEN 2
+                ELSE 3
+            END AS prioridade
+        FROM produto p
+        INNER JOIN produtocomplemento pc
+            ON pc.id_produto = p.id
+        WHERE pc.id_situacaocadastro = 1
+          AND LOWER(p.descricaocompleta) LIKE %s
+          {_filtro_setor_por_loja()}
+        ORDER BY
+            prioridade,
+            p.descricaocompleta
+        LIMIT %s
+    """
+
+
+def _mapear_produto(row):
+    return {
+        "id": row[0],
+        "descricaocompleta": row[1],
+        "peso_unitario_kg": row[2],
+    }
+
+
+def repo_vr_buscar_produtos(termo, id_loja, por_id=False, limite=20):
     conn = conectar_vr()
     cursor = conn.cursor()
 
     try:
         if por_id:
-            sql = """
-                SELECT DISTINCT
-                    p.id,
-                    p.descricaocompleta,
-                    p.pesoliquido
-                FROM produto p
-                INNER JOIN produtocomplemento pc
-                    ON pc.id_produto = p.id
-                WHERE pc.id_situacaocadastro = 1
-                  AND p.id = %s
-                LIMIT %s
-            """
+            sql = _sql_buscar_produto_por_id()
 
-            cursor.execute(sql, (int(termo), limite))
+            cursor.execute(
+                sql,
+                (
+                    int(termo),
+                    id_loja,
+                    limite,
+                ),
+            )
 
         else:
             termo = termo.lower()
-            termo_inicio = f"{termo}%"
-            termo_contem = f"%{termo}%"
 
-            sql = """
-                SELECT DISTINCT
-                    p.id,
-                    p.descricaocompleta,
-                    p.pesoliquido,
-                    CASE
-                        WHEN LOWER(p.descricaocompleta) = %s THEN 1
-                        WHEN LOWER(p.descricaocompleta) LIKE %s THEN 2
-                        ELSE 3
-                    END AS prioridade
-                FROM produto p
-                INNER JOIN produtocomplemento pc
-                    ON pc.id_produto = p.id
-                WHERE pc.id_situacaocadastro = 1
-                  AND LOWER(p.descricaocompleta) LIKE %s
-                ORDER BY
-                    prioridade,
-                    p.descricaocompleta
-                LIMIT %s
-            """
+            sql = _sql_buscar_produtos_por_termo()
 
             cursor.execute(
                 sql,
                 (
                     termo,
-                    termo_inicio,
-                    termo_contem,
+                    f"{termo}%",
+                    f"%{termo}%",
+                    id_loja,
                     limite,
                 ),
             )
 
-        rows = cursor.fetchall()
-
         return [
-            {
-                "id": row[0],
-                "descricaocompleta": row[1],
-                "peso_unitario_kg": row[2],
-            }
-            for row in rows
+            _mapear_produto(row)
+            for row in cursor.fetchall()
         ]
 
     finally:

@@ -1,0 +1,15 @@
+{
+  "pendencias": {
+    "5306": [
+      {
+        "produto": "ACEM EM CUBOS ( TRANSFERENCIA )",
+        "quantidade_pedida": 1,
+        "quantidade_enviada": 0.81,
+        "falta": 0.19,
+        "enviado": 0.81,
+        "totalPedido": 1,
+        "data": "2026-09-30"
+      }
+    ]
+  }
+}

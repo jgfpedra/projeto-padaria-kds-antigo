@@ -11,16 +11,13 @@ def adicionar_nomes_produtos(itens, nomes):
     ]
 
 
-def buscar_produtos(termo):
-    termo = (termo or "").strip()
-
+def buscar_produtos(termo, id_loja):
     if not termo:
         return []
-
     por_id = termo.isdigit()
-
     return repo_vr_buscar_produtos(
         termo=termo,
+        id_loja=int(id_loja),
         por_id=por_id,
         limite=20,
     )

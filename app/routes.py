@@ -32,6 +32,7 @@ def login():
         if usuario and senha_valida:
             login_user(usuario)
             session["usuario_nome"] = usuario.nome
+            session['id_loja'] = usuario.id_loja
             return redirect(url_for("dashboard"))
         else:
             flash("Credenciais inválidas.")
@@ -50,15 +51,8 @@ def logout():
     return redirect(url_for("login"))
 
 
-@app.route("/pedidos/novo", methods=["GET", "POST"])
+@app.route("/pedido", methods=["GET", "POST"])
 @login_required
-def novo_pedido():
-    if request.method == "POST":
-        # lógica para salvar o pedido no banco aqui
-        pass
-    return render_template("pedidos/novo_pedido.html")
-
-
-@app.route("/pedido")
-def tela_pedido():
-    return render_template("pedido.html")
+def pedido():
+    id_pedido = request.args.get("id", type=int)
+    return render_template("pedido.html", id_pedido=id_pedido)
