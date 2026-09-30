@@ -350,12 +350,12 @@
     </div>
   </div>
 </div>
+<script src="{{ url_for('static', filename='js/acougue.js') }}"></script>
 <script>
     let mapaProdutos = {};
     const TIPOS_MULTIPLOS = ["salgado", "salgadosFritos", "salgadosAssados"];
     const urlParams = new URLSearchParams(window.location.search);
     const idPedido = {{ id_pedido | tojson }};
-    console.log(window.location.search, idPedido);
 
     async function buscarProdutoPorCodigo(codigo) {
       let lojaSelecionada = $("#loja").val();
@@ -560,7 +560,6 @@
       const pesoBruto = parseFloat(pesoBrutoEl.value.replace(",", ".")) || 0;
       const qtdUn = parseFloat(qtdUnEl.value.replace(",", ".")) || 0;
       const origem = evt ? evt.target.id : null;
-      console.log(pesoBrutoEl.value, qtdUnEl.value, quantidadeEl.value);
       if (origem === "quantidade_un" && qtdUn > 0 && pesoBruto > 0) {
         quantidadeEl.value = (qtdUn * pesoBruto).toFixed(3);
       }
@@ -690,7 +689,7 @@
     }
   }
 
-    function limparCamposItemAtual() {
+    function limparCamposProduto() {
       [
         "cod_produto",
         "desc_produto",
@@ -738,7 +737,7 @@
           <button type="button" class="btn btn-warning btn-sm me-1" onclick="editarItem(this)">Editar</button>
           <button type="button" class="btn btn-danger btn-sm" onclick="excluirItem(this)">Excluir</button>
       `;
-      limparCamposItemAtual();
+      limparCamposProduto();
       atualizarTotalPedido();
     }
 
@@ -1176,16 +1175,52 @@
         calcularTotal();
       });
 
-      function preencherCliente(cliente) {
+      async function preencherCliente(cliente) {
         $("#cliente").val(cliente.nome);
         $("#telefone").val(cliente.telefone);
-        $("#endereco").val(
-          `${cliente.endereco}, ${cliente.cidade} - ${cliente.estado}`,
-        );
+        $("#endereco").val(`${cliente.endereco}, ${cliente.cidade} - ${cliente.estado}`);
         $("#obs_endereco").val(cliente.observacao);
         $("#id_cliente_hidden").val(cliente.id);
-      }
+        console.log(cliente.id);
 
+        // Injeta pendências se for açougue e cliente elegível
+        const CLIENTES_ACOUGUE = ["5306", "131"];
+        const tipoEntrega = document.querySelector('input[name="tipo_entrega"]:checked').value;
+
+        if (tipoEntrega === "acougue" && CLIENTES_ACOUGUE.includes(String(cliente.id))) {
+          const res = await fetch(`/api/acougue/pendencias?id_cliente=${cliente.id}`);
+          const data = await res.json();
+          const pendencias = Array.isArray(data.pendencias) ? data.pendencias : [];
+
+          pendencias.forEach(pen => {
+            const tbody = document.querySelector("#tabela_itens tbody");
+            const row = tbody.insertRow();
+            row.dataset.idSetor = "";
+            row.dataset.codProdutoAssociado = "";
+            [
+              "",                        // cod
+              pen.produto,               // descrição
+              "",                        // item produção
+              "",                        // embalagem
+              "",                        // peso unit
+              "",                        // setor
+              pen.falta.toFixed(3),      // quantidade que falta
+              "",                        // unid
+              "",                        // preço
+              "",                        // total
+              "pendência anterior",      // obs
+            ].forEach(valor => {
+              const cell = row.insertCell();
+              cell.textContent = valor;
+            });
+            const actionsCell = row.insertCell();
+            actionsCell.innerHTML = `
+              <button type="button" class="btn btn-warning btn-sm me-1" onclick="editarItem(this)">Editar</button>
+              <button type="button" class="btn btn-danger btn-sm" onclick="excluirItem(this)">Excluir</button>`;
+          });
+          atualizarTotalPedido();
+        }
+      }
       function calcularTotal() {
         const qtd = parseFloat($("#quantidade").val().replace(",", ".")) || 0;
         const preco = parseFloat($("#preco_venda").val().replace(",", ".")) || 0;
@@ -1198,15 +1233,17 @@
       if (e.key === "Enter") {
         e.preventDefault();
         let termo = $("#desc_produto").val().trim();
-        if (termo.length < 3) {
-          alert("Digite pelo menos 3 letras!");
+        let id_loja = $("#loja").val().trim();
+        if (!["1", "2"].includes(id_loja)) {
+          alert("Selecione uma loja antes de pesquisar o produto.");
+          $("#loja").focus();
           return;
         }
         $.ajax({
           url: "/api/produtos/busca_descricao",
           method: "POST",
           contentType: "application/json",
-          data: JSON.stringify({ termo: termo }),
+          data: JSON.stringify({ termo: termo, id_loja: id_loja }),
           success: function (produtos) {
             let $lista = $("#sugestoes-produtos");
             $lista.empty();
@@ -1230,7 +1267,6 @@
       }
     });
 
-    console.log("A");
 
     $("#sugestoes-produtos").on("click", "button", function () {
       let id_produto = $(this).data("id");

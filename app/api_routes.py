@@ -2407,7 +2407,8 @@ def dashboard_partial():
 @app.route("/api/produtos/busca_descricao", methods=["POST"])
 def buscar_produtos_por_descricao():
     data = request.get_json() or {}
-    produtos = buscar_produtos(data.get("termo"))
+    produtos = buscar_produtos(data.get("termo"),
+                               data.get("id_loja"))
     return jsonify(produtos)
 
 
@@ -2734,13 +2735,24 @@ def acougue_ler_pendencias():
 def acougue_pendencias():
     ACOUGUE_FILE = os.path.join(os.path.dirname(__file__), "acougue.json")
     CLIENTES_ACOUGUE = {"5306", "131"}
+    if request.method == "GET":
+        id_cliente = request.args.get("id_cliente")
+        if not os.path.exists(ACOUGUE_FILE):
+            return jsonify({"pendencias": [] if id_cliente else {}})
+        with open(ACOUGUE_FILE, "r", encoding="utf-8") as f:
+            try:
+                data = json.load(f)
+            except Exception:
+                data = {"pendencias": {}}
+        pendencias = data.get("pendencias", {})
+        if id_cliente:
+            return jsonify({"pendencias": pendencias.get(str(id_cliente), [])})
+        return jsonify({"pendencias": pendencias})
     body = request.get_json()
     id_cliente = str(body.get("id_cliente", ""))
     novas = body.get("pendencias", [])
-    print(id_cliente)
     if id_cliente not in CLIENTES_ACOUGUE:
-        return jsonify({"ok": True, "ignorado": True})  # ignora silenciosamente
-
+        return jsonify({"ok": True, "ignorado": True})
     if os.path.exists(ACOUGUE_FILE):
         with open(ACOUGUE_FILE, "r", encoding="utf-8") as f:
             try:
@@ -2749,13 +2761,10 @@ def acougue_pendencias():
                 data = {"pendencias": {}}
     else:
         data = {"pendencias": {}}
-
     existentes = data["pendencias"].get(id_cliente, [])
     data["pendencias"][id_cliente] = existentes + novas
-
     with open(ACOUGUE_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-
     return jsonify({"ok": True})
 
 

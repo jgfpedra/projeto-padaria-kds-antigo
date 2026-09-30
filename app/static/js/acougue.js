@@ -116,7 +116,6 @@ async function acougue_abrirModalFinalizar(
     0,
   );
   const ids = itensFiltrados.map((p) => p.id_item);
-  console.log(itensFiltrados[0].id_cliente);
   const idCliente = itensFiltrados[0].id_cliente;
   const CLIENTES_ACOUGUE = ["5306", "131"];
 
@@ -158,8 +157,6 @@ async function acougue_abrirModalFinalizar(
     const prodNome = elProduto.textContent;
     const flagAcougue = elProduto.dataset.isAcougue === "1";
 
-    console.log(idCliente);
-
     if (isNaN(enviado) || enviado < 0) {
       alert("Informe uma quantidade válida.");
       return;
@@ -189,7 +186,6 @@ async function acougue_abrirModalFinalizar(
       alert("Falha ao finalizar itens!");
       return;
     }
-    console.log("3: " + idCliente);
     if (flagAcougue && enviado < totalReq) {
       const falta = totalReq - enviado;
       const pendencias = await acougue_ler_pendencias(idCliente);
