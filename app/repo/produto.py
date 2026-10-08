@@ -81,8 +81,15 @@ def repo_vr_get_nome_produto(id_produto):
         conn.close()
 
 
-def _filtro_setor_por_loja():
+def _filtro_ativo_e_setor_por_loja():
     return """
+        AND EXISTS (
+            SELECT 1
+            FROM produtocomplemento pc
+            WHERE pc.id_produto = p.id
+              AND pc.id_situacaocadastro = 1
+              AND pc.id_loja = %s
+        )
         AND EXISTS (
             SELECT 1
             FROM ficha.setorproduto sp
@@ -101,16 +108,17 @@ def _sql_buscar_produto_por_id():
             p.descricaocompleta,
             p.pesoliquido
         FROM produto p
-        INNER JOIN produtocomplemento pc
-            ON pc.id_produto = p.id
-        WHERE pc.id_situacaocadastro = 1
-          AND p.id = %s
-          {_filtro_setor_por_loja()}
+        WHERE p.id = %s
+          {_filtro_ativo_e_setor_por_loja()}
         LIMIT %s
     """
 
 
-def _sql_buscar_produtos_por_termo():
+def _sql_buscar_produtos_por_termo(n_palavras):
+    condicoes = " AND ".join(
+        ["LOWER(p.descricaocompleta) LIKE %s"] * n_palavras
+    )
+
     return f"""
         SELECT
             p.id,
@@ -122,11 +130,8 @@ def _sql_buscar_produtos_por_termo():
                 ELSE 3
             END AS prioridade
         FROM produto p
-        INNER JOIN produtocomplemento pc
-            ON pc.id_produto = p.id
-        WHERE pc.id_situacaocadastro = 1
-          AND LOWER(p.descricaocompleta) LIKE %s
-          {_filtro_setor_por_loja()}
+        WHERE {condicoes}
+          {_filtro_ativo_e_setor_por_loja()}
         ORDER BY
             prioridade,
             p.descricaocompleta
@@ -142,43 +147,67 @@ def _mapear_produto(row):
     }
 
 
+def repo_get_precos_produtos(ids, id_loja):
+    """Retorna {id_produto: preco_venda} para a loja."""
+    if not ids:
+        return {}
+    conn = None
+    try:
+        conn = conectar_vr()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT id_produto, precovenda
+            FROM produtocomplemento
+            WHERE id_loja = %s AND id_produto = ANY(%s)
+            """,
+            (id_loja, list(ids)),
+        )
+        return {r[0]: float(r[1] or 0) for r in cur.fetchall()}
+    except Exception as e:
+        logger.error(f"[PRECOS_PRODUTOS] {e}")
+        return {}
+    finally:
+        if conn:
+            conn.close()
+
+
 def repo_vr_buscar_produtos(termo, id_loja, por_id=False, limite=20):
+    termo = str(termo).strip()
+
+    # só busca por id se realmente for numérico
+    buscar_por_id = por_id and termo.isascii() and termo.isdigit()
+
     conn = conectar_vr()
     cursor = conn.cursor()
 
     try:
-        if por_id:
-            sql = _sql_buscar_produto_por_id()
-
+        if buscar_por_id:
             cursor.execute(
-                sql,
-                (
-                    int(termo),
-                    id_loja,
-                    limite,
-                ),
+                _sql_buscar_produto_por_id(),
+                (int(termo), id_loja, id_loja, limite),
             )
-
         else:
             termo = termo.lower()
+            palavras = termo.split()
 
-            sql = _sql_buscar_produtos_por_termo()
+            if not palavras:
+                return []
 
-            cursor.execute(
-                sql,
-                (
-                    termo,
-                    f"{termo}%",
-                    f"%{termo}%",
-                    id_loja,
-                    limite,
-                ),
-            )
+            sql = _sql_buscar_produtos_por_termo(len(palavras))
 
-        return [
-            _mapear_produto(row)
-            for row in cursor.fetchall()
-        ]
+            params = [
+                termo,
+                f"{termo}%",
+                *[f"%{p}%" for p in palavras],
+                id_loja,
+                id_loja,
+                limite,
+            ]
+
+            cursor.execute(sql, tuple(params))
+
+        return [_mapear_produto(row) for row in cursor.fetchall()]
 
     finally:
         cursor.close()

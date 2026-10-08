@@ -320,7 +320,6 @@
   </form>
 </div>
 
-<!-- Modal Opções do Produto -->
 <div
   class="modal fade"
   id="modalOpcoes"
@@ -489,7 +488,7 @@
         const tipo_input = multiplo ? "checkbox" : "radio";
         const nome_grupo = `opcional_${grupo.chave}`;
         const qtd_total = grupo.quantidade_total;
-
+        console.log(grupo);
         let html = `<div class="mb-2">
               <strong>${grupo.chave}</strong>
               <span class="text-muted ms-2" id="info_${nome_grupo}">
@@ -497,18 +496,24 @@
               </span><br>`;
 
         grupo.itens.forEach((item) => {
+          const preco =
+            item.considera_valor && item.preco_venda > 0
+              ? `<span class="badge bg-warning text-dark ms-1">+ R$ ${Number(item.preco_venda).toFixed(2).replace(".", ",")}</span>`
+              : "";
+
           html += `
-                  <div class="form-check">
-                      <input class="form-check-input" type="${tipo_input}"
-                          name="${nome_grupo}"
-                          value="${item.id_produto}"
-                          data-qtd-total="${qtd_total}"
-                          ${multiplo ? `onchange="atualizarCheckboxes('${nome_grupo}')"` : ""}>
-                      <label class="form-check-label">
-                          ${item.descricao}
-                          <span class="text-muted" id="qtd_${nome_grupo}_${item.id_produto}"></span>
-                      </label>
-                  </div>`;
+            <div class="form-check">
+              <input class="form-check-input" type="${tipo_input}"
+                  name="${nome_grupo}"
+                  value="${item.id_produto}"
+                  data-qtd-total="${qtd_total}"
+                  ${multiplo ? `onchange="atualizarCheckboxes('${nome_grupo}')"` : ""}>
+              <label class="form-check-label">
+                  ${item.descricao}
+                  ${preco}
+                  <span class="text-muted" id="qtd_${nome_grupo}_${item.id_produto}"></span>
+              </label>
+            </div>`;
         });
         html += `</div>`;
         container.innerHTML += html;
@@ -645,7 +650,7 @@
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({}),
+            body: JSON.stringify({ id_loja: parseInt(id_loja)}),
           },
         );
         if (resComposto.ok) {
@@ -1037,6 +1042,7 @@
       function preencherGridItens(itens) {
         const tabela = document.getElementById("tabela_itens").getElementsByTagName("tbody")[0];
         tabela.innerHTML = "";
+        console.log(itens);
         itens.forEach(item => {
           const row = tabela.insertRow();
           row.dataset.idSetor = item.id_setor || "";

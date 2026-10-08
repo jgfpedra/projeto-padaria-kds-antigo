@@ -20,8 +20,13 @@ from app.repo.produto_composto import (
     repo_get_grupos_opcionais,
     repo_get_itens_fixos,
     repo_get_produto_detalhe,
+    repo_get_itens_grupo,
 )
-from app.services.produto import adicionar_nomes_produtos, buscar_produtos
+from app.services.produto import (
+    adicionar_nomes_produtos,
+    buscar_produtos,
+    preencher_precos_opcionais
+)
 from app.services.usuario import (
     consultar_usuarios,
     buscar_usuario,
@@ -96,7 +101,7 @@ def api_clientes():
 @app.route("/api/produtos")
 def api_produtos():
     try:
-        somente_ativos = request.args.get("ativos") in ("1", "true", "True")
+        somente_ativos = request.args.get("ativos") in ("1")
         id_loja = request.args.get("id_loja", type=int)
 
         conn = conectar_vr()
@@ -1908,10 +1913,13 @@ def api_get_composto(id_produto):
             "chave": chave,
             "quantidade_total": dados["quantidade_total"],
             "itens": adicionar_nomes_produtos(dados["itens"], nomes),
+            "id_grupo_ref": dados["id_grupo_ref"],
         }
         for chave, dados in grupos.items()
     ]
-
+    id_loja = (request.get_json(silent=True) or {}).get("id_loja")
+    if id_loja:
+        preencher_precos_opcionais(grupos_com_nomes, int(id_loja))
     return jsonify(
         {
             "id": id_produto,
@@ -1923,6 +1931,15 @@ def api_get_composto(id_produto):
             "grupos_opcionais": grupos_com_nomes,
         }
     )
+
+
+@app.route("/api/grupos_opcionais/<int:id_grupo>/itens", methods=["GET"])
+def api_get_itens_grupo(id_grupo):
+    itens = repo_get_itens_grupo(id_grupo)
+    if itens is False:
+        return jsonify({"erro": "Erro ao buscar itens do grupo."}), 500
+    nomes = repo_vr_get_nomes_produtos([i["id_produto"] for i in itens]) if itens else {}
+    return jsonify(adicionar_nomes_produtos(itens, nomes))
 
 
 @app.route("/api/grupos_opcionais", methods=["GET"])
