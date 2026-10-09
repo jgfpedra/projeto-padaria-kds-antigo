@@ -32,7 +32,7 @@ def repo_get_pendencias(id_cliente: int) -> list[tuple]:
         conn.close()
 
 
-def repo_get_produtos_vr(ids_produto: list[int]) -> dict:
+def repo_get_produtos_vr(ids_produto: list[int], id_loja: int) -> dict:
     if not ids_produto:
         return {}
     conn_vr = conectar_vr()
@@ -46,13 +46,15 @@ def repo_get_produtos_vr(ids_produto: list[int]) -> dict:
                    pc.precovenda
               FROM produto p
               LEFT JOIN produtocomplemento pc ON pc.id_produto = p.id
+                     AND pc.id_loja = %s
               LEFT JOIN tipoembalagem te ON te.id = pc.id_tipoembalagem
               LEFT JOIN ficha.setorproduto sp ON sp.id_produto = p.id
               LEFT JOIN ficha.setor s ON s.id = sp.id_setor
                      AND s.id_situacaocadastro = 1
+                     AND s.id_loja = %s
              WHERE p.id = ANY(%s)
-             ORDER BY p.id
-        """, (list(ids_produto),))
+             ORDER BY p.id, s.id
+        """, (id_loja, id_loja, list(ids_produto)))
         result = {}
         for row in cursor_vr.fetchall():
             if row[0] not in result:

@@ -16,9 +16,10 @@ logger = logging.getLogger("route.acougue")
 @login_required
 def acougue_pendencias_get():
     id_cliente = request.args.get("id_cliente", type=int)
-    if not id_cliente:
+    id_loja = request.args.get("id_loja", type=int)
+    if not id_cliente or not id_loja:
         return jsonify({"pendencias": []})
-    return jsonify({"pendencias": svc_get_pendencias(id_cliente)})
+    return jsonify({"pendencias": svc_get_pendencias(id_cliente, id_loja)})
 
 
 @app.route("/api/acougue/pendencias", methods=["POST"])

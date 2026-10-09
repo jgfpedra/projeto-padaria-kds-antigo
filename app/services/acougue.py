@@ -12,14 +12,12 @@ logger = logging.getLogger("services.acougue")
 CLIENTES_ACOUGUE = {5306, 131}
 
 
-def svc_get_pendencias(id_cliente: int) -> list[dict]:
+def svc_get_pendencias(id_cliente: int, id_loja: int) -> list[dict]:
     rows = repo_get_pendencias(id_cliente)
     if not rows:
         return []
-
     ids_produto = list({r[1] for r in rows})
-    produtos_vr = repo_get_produtos_vr(ids_produto)
-    print(produtos_vr)
+    produtos_vr = repo_get_produtos_vr(ids_produto, id_loja)
     return [
         {
             "id": r[0],
