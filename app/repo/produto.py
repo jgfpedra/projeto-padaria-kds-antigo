@@ -115,9 +115,7 @@ def _sql_buscar_produto_por_id():
 
 
 def _sql_buscar_produtos_por_termo(n_palavras):
-    condicoes = " AND ".join(
-        ["LOWER(p.descricaocompleta) LIKE %s"] * n_palavras
-    )
+    condicoes = " AND ".join(["LOWER(p.descricaocompleta) LIKE %s"] * n_palavras)
 
     return f"""
         SELECT

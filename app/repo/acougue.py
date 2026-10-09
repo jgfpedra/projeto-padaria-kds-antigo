@@ -11,7 +11,8 @@ def repo_get_pendencias(id_cliente: int) -> list[tuple]:
     conn = conectar_app()
     cursor = conn.cursor()
     try:
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT ap.id, ap.id_produto, ap.id_pedido_criacao, ap.id_pedido_atual,
                    ap.total_pedido, ap.falta, ap.data
               FROM acougue_pendencias ap
@@ -22,7 +23,9 @@ def repo_get_pendencias(id_cliente: int) -> list[tuple]:
                AND (ap.id_pedido_atual IS NULL
                     OR ped.id_status = %s)
              ORDER BY ap.id
-        """, (id_cliente, STATUS_CANCELADO))
+        """,
+            (id_cliente, STATUS_CANCELADO),
+        )
         return cursor.fetchall()
     except Exception as e:
         logger.error(e)
@@ -38,7 +41,8 @@ def repo_get_produtos_vr(ids_produto: list[int], id_loja: int) -> dict:
     conn_vr = conectar_vr()
     cursor_vr = conn_vr.cursor()
     try:
-        cursor_vr.execute("""
+        cursor_vr.execute(
+            """
             SELECT DISTINCT ON (p.id)
                    p.id, p.descricaocompleta, p.pesoliquido,
                    te.descricao AS embalagem,
@@ -54,7 +58,9 @@ def repo_get_produtos_vr(ids_produto: list[int], id_loja: int) -> dict:
                      AND s.id_loja = %s
              WHERE p.id = ANY(%s)
              ORDER BY p.id, s.id
-        """, (id_loja, id_loja, list(ids_produto)))
+        """,
+            (id_loja, id_loja, list(ids_produto)),
+        )
         result = {}
         for row in cursor_vr.fetchall():
             if row[0] not in result:
@@ -81,13 +87,16 @@ def repo_get_setores_por_produto(ids_produto: list[int]) -> dict:
     conn_vr = conectar_vr()
     cursor_vr = conn_vr.cursor()
     try:
-        cursor_vr.execute("""
+        cursor_vr.execute(
+            """
             SELECT sp.id_produto, s.id, s.descricao
               FROM ficha.setorproduto sp
               JOIN ficha.setor s ON s.id = sp.id_setor
              WHERE sp.id_produto = ANY(%s)
                AND s.id_situacaocadastro = 1
-        """, (ids_produto,))
+        """,
+            (ids_produto,),
+        )
         return {
             row[0]: {"id_setor": row[1], "setor": row[2]}
             for row in cursor_vr.fetchall()
@@ -109,29 +118,35 @@ def repo_inserir_pendencias(id_cliente: int, pendencias: list[dict]) -> None:
 
             # 1) Fecha a(s) pendência(s) que foram absorvidas por este pedido
             if ids_pedido:
-                cursor.execute("""
+                cursor.execute(
+                    """
                     UPDATE acougue_pendencias
                        SET resolvido = TRUE
                      WHERE id_cliente = %s
                        AND id_produto = %s
                        AND resolvido = FALSE
                        AND id_pedido_atual = ANY(%s)
-                """, (id_cliente, pen.get("id_produto"), ids_pedido))
+                """,
+                    (id_cliente, pen.get("id_produto"), ids_pedido),
+                )
 
             # 2) Só cria a nova se ainda falta algo
             if float(pen.get("falta") or 0) > 0:
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT INTO acougue_pendencias
                         (id_cliente, id_produto, id_pedido_criacao, total_pedido, falta, data)
                     VALUES (%s, %s, %s, %s, %s, %s)
-                """, (
-                    id_cliente,
-                    pen.get("id_produto"),
-                    pen.get("id_pedido_criacao"),
-                    pen.get("total_pedido"),
-                    pen.get("falta"),
-                    pen.get("data"),
-                ))
+                """,
+                    (
+                        id_cliente,
+                        pen.get("id_produto"),
+                        pen.get("id_pedido_criacao"),
+                        pen.get("total_pedido"),
+                        pen.get("falta"),
+                        pen.get("data"),
+                    ),
+                )
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -146,7 +161,8 @@ def repo_atualizar_falta(id_pendencia: int, enviado: float) -> None:
     conn = conectar_app()
     cursor = conn.cursor()
     try:
-        cursor.execute("""
+        cursor.execute(
+            """
             WITH alvo AS (
                 SELECT CASE
                          WHEN o.resolvido = FALSE THEN o.id
@@ -166,7 +182,9 @@ def repo_atualizar_falta(id_pendencia: int, enviado: float) -> None:
                    resolvido = (p.resolvido OR p.falta - %s <= 0)
               FROM alvo
              WHERE p.id = alvo.id
-        """, (id_pendencia, enviado, enviado))
+        """,
+            (id_pendencia, enviado, enviado),
+        )
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -177,11 +195,14 @@ def repo_atualizar_falta(id_pendencia: int, enviado: float) -> None:
         conn.close()
 
 
-def repo_vincular_pedido_atual(id_pedido: int, id_cliente: int, ids_produto: list[int]) -> None:
+def repo_vincular_pedido_atual(
+    id_pedido: int, id_cliente: int, ids_produto: list[int]
+) -> None:
     conn = conectar_app()
     cursor = conn.cursor()
     try:
-        cursor.execute("""
+        cursor.execute(
+            """
             UPDATE acougue_pendencias
                SET id_pedido_atual = %s
              WHERE id IN (
@@ -195,7 +216,9 @@ def repo_vincular_pedido_atual(id_pedido: int, id_cliente: int, ids_produto: lis
                            OR ap.id_pedido_atual = %s
                            OR ped.id_status = %s)
              )
-        """, (id_pedido, id_cliente, ids_produto, id_pedido, STATUS_CANCELADO))
+        """,
+            (id_pedido, id_cliente, ids_produto, id_pedido, STATUS_CANCELADO),
+        )
         conn.commit()
     except Exception as e:
         conn.rollback()

@@ -102,14 +102,16 @@ def repo_get_grupos_opcionais(id_produto):
         rows = cur.fetchall()
         grupos = {}
         for r in rows:
-            grupos.setdefault(r[0], {"quantidade_total": r[1],
-                                     "id_grupo_ref": r[5],
-                                     "itens": []})
-            grupos[r[0]]["itens"].append({
-                "id_produto": r[2],
-                "quantidade": r[3],
-                "considera_valor": r[4],
-            })
+            grupos.setdefault(
+                r[0], {"quantidade_total": r[1], "id_grupo_ref": r[5], "itens": []}
+            )
+            grupos[r[0]]["itens"].append(
+                {
+                    "id_produto": r[2],
+                    "quantidade": r[3],
+                    "considera_valor": r[4],
+                }
+            )
         return grupos
     except Exception as e:
         logger.error(e)
@@ -157,9 +159,10 @@ def repo_get_opcionais_escolhidos(id_produto, chave, ids):
             (id_produto, chave, ids, id_produto, chave, ids),
         )
         rows = cur.fetchall()
-        return [{"id_produto": r[0],
-                 "quantidade": r[1],
-                 "considera_valor": r[2]} for r in rows]
+        return [
+            {"id_produto": r[0], "quantidade": r[1], "considera_valor": r[2]}
+            for r in rows
+        ]
     except Exception as e:
         logger.error(e)
         return False

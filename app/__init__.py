@@ -7,7 +7,6 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 
-
 # 👇 Detecta se está rodando como .exe ou em modo dev
 if getattr(sys, "frozen", False):
     base_dir = os.path.dirname(sys.executable)

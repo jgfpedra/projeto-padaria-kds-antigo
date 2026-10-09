@@ -130,7 +130,7 @@
         id_cliente: idCliente,
         id_produto: itens[0].id_produto,
         id_pedido_criacao: itens[0].id,
-        ids_pedido: [...new Set(itens.map((p) => p.id))],   // novo
+        ids_pedido: [...new Set(itens.map((p) => p.id))], // novo
         total_pedido: totalPedido,
         falta: faltante > 0.001 ? parseFloat(faltante.toFixed(3)) : 0,
         enviado: parseFloat(quantidadeEnviada.toFixed(3)),

@@ -32,7 +32,7 @@ def login():
         if usuario and senha_valida:
             login_user(usuario)
             session["usuario_nome"] = usuario.nome
-            session['id_loja'] = usuario.id_loja
+            session["id_loja"] = usuario.id_loja
             return redirect(url_for("dashboard"))
         else:
             flash("Credenciais inválidas.")

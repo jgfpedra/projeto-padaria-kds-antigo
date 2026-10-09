@@ -33,16 +33,18 @@ def svc_get_pendencias(id_cliente: int, id_loja: int) -> list[dict]:
             "falta": float(r[5]),
             "data": str(r[6]) if r[6] else None,
             "preco_venda": float(produtos_vr.get(r[1], {}).get("preco_venda", "") or 0),
-            "preco_total": (float(produtos_vr.get(r[1],
-                                                  {}).get("preco_venda", "") or 0) * float(r[5] or 0)),
+            "preco_total": (
+                float(produtos_vr.get(r[1], {}).get("preco_venda", "") or 0)
+                * float(r[5] or 0)
+            ),
         }
         for r in rows
     ]
 
 
-def svc_salvar_pendencias(id_cliente: int,
-                          pendencias: list[dict],
-                          id_pedido: int | None = None) -> dict:
+def svc_salvar_pendencias(
+    id_cliente: int, pendencias: list[dict], id_pedido: int | None = None
+) -> dict:
     if id_cliente not in CLIENTES_ACOUGUE:
         return {"ok": True, "ignorado": True}
     repo_inserir_pendencias(id_cliente, pendencias)
@@ -54,9 +56,9 @@ def svc_atualizar_falta(id_pendencia: int, enviado: float) -> dict:
     return {"ok": True}
 
 
-def svc_vincular_pedido_atual(id_pedido: int,
-                              id_cliente: int,
-                              ids_produto: list[int]) -> dict:
+def svc_vincular_pedido_atual(
+    id_pedido: int, id_cliente: int, ids_produto: list[int]
+) -> dict:
     if id_cliente not in CLIENTES_ACOUGUE:
         return {"ok": True, "ignorado": True}
     repo_vincular_pedido_atual(id_pedido, id_cliente, ids_produto)

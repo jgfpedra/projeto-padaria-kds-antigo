@@ -102,8 +102,9 @@ def montar_filtros_pedidos(filtros):
         return where, params
     adicionar_filtro_impresso(where, filtros.get("impresso"))
     adicionar_filtro_data(where, params, filtros)
-    adicionar_filtro_simples(where, params, "p.tipo_entrega",
-                             filtros.get("tipo_entrega"))
+    adicionar_filtro_simples(
+        where, params, "p.tipo_entrega", filtros.get("tipo_entrega")
+    )
     adicionar_filtro_simples(where, params, "p.id_loja", filtros.get("id_loja"))
     adicionar_filtro_status(where, params, filtros.get("status"))
     adicionar_filtro_simples(where, params, "p.id_cliente", filtros.get("id_cliente"))

@@ -9,9 +9,7 @@ def salvar_impressora_setor(dados):
     caminho = (dados.get("caminho_impressora") or "").strip()
 
     if not id_loja or not caminho:
-        raise ValueError(
-            "id_loja e caminho_impressora são obrigatórios"
-        )
+        raise ValueError("id_loja e caminho_impressora são obrigatórios")
 
     try:
         id_loja = int(id_loja)
