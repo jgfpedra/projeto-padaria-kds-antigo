@@ -824,10 +824,8 @@
     });
 
     async function salvarPedido() {
-      // Pergunta antes de salvar
       const confirmar = window.confirm("Salvar pedido?");
       if (!confirmar) {
-        // usuário clicou "Não" -> não chama API e não limpa a tela
         return;
       }
 
@@ -861,7 +859,6 @@
         });
       });
 
-      // CAPTURAR OS DADOS FALTANTES
       const id_loja = document.getElementById("loja").value;
       const data_entrega = document.getElementById("data").value;
       const hora_entrega = document.getElementById("hora").value;
@@ -926,6 +923,24 @@
         });
 
         if (response.ok) {
+          const resultado = await response.json();
+          const idPedidoCriado = resultado.id_pedido;
+
+          if (tipo_entrega === "acougue") {
+            const CLIENTES_ACOUGUE = ["5306", "131"];
+            if (CLIENTES_ACOUGUE.includes(String(id_cliente)) && idPedidoCriado) {
+              const idsProduto = itens
+                .map(item => parseInt(item.cod_produto))
+                .filter(Boolean);
+
+              await fetch(`/api/acougue/pendencias/pedido/${idPedidoCriado}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id_cliente, ids_produto: idsProduto }),
+              });
+            }
+          }
+
           if (idPedidoExistente) {
             alert("Pedido atualizado com sucesso!");
             window.location.href = "/pedidos/consulta";
@@ -956,10 +971,48 @@
       "change",
       () => (enderecoContainer.style.display = "none"),
     );
-    acougueRadio.addEventListener(
-      "change",
-      () => (enderecoContainer.style.display = "none"),
-    );
+    acougueRadio.addEventListener("change", async function () {
+      const idCliente = $("#id_cliente_hidden").val();
+      const CLIENTES_ACOUGUE = ["5306", "131"];
+      console.log(idCliente);
+
+      if (!idCliente || !CLIENTES_ACOUGUE.includes(String(idCliente))) return;
+
+      const res = await fetch(`/api/acougue/pendencias?id_cliente=${idCliente}`);
+      const data = await res.json();
+      const pendencias = Array.isArray(data.pendencias) ? data.pendencias : [];
+      console.log(pendencias);
+      pendencias.forEach(pen => {
+        const tbody = document.querySelector("#tabela_itens tbody");
+        const row = tbody.insertRow();
+        row.dataset.idSetor = pen.id_setor || "";
+        row.dataset.codProdutoAssociado = "";
+
+        [
+          pen.id_produto,           // cod
+          pen.produto,              // descrição
+          "",                       // item produção
+          pen.embalagem,            // embalagem
+          pen.peso_unitario.toFixed(3), // peso unitário
+          pen.setor,                // setor
+          pen.falta.toFixed(3),     // peso total
+          "",                       // unidades
+          pen.preco_venda.toFixed(2), // preço
+          pen.preco_total.toFixed(2), // total
+          "pendência anterior",
+        ].forEach(valor => {
+          const cell = row.insertCell();
+          cell.textContent = valor;
+        });
+
+        const actionsCell = row.insertCell();
+        actionsCell.innerHTML = `
+          <button type="button" class="btn btn-warning btn-sm me-1" onclick="editarItem(this)">Editar</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="excluirItem(this)">Excluir</button>`;
+      });
+
+      atualizarTotalPedido();
+    });
 
     let clientesCache = [];
     let lojasCache = [];
@@ -1187,46 +1240,8 @@
         $("#endereco").val(`${cliente.endereco}, ${cliente.cidade} - ${cliente.estado}`);
         $("#obs_endereco").val(cliente.observacao);
         $("#id_cliente_hidden").val(cliente.id);
-        console.log(cliente.id);
-
-        // Injeta pendências se for açougue e cliente elegível
-        const CLIENTES_ACOUGUE = ["5306", "131"];
-        const tipoEntrega = document.querySelector('input[name="tipo_entrega"]:checked').value;
-
-        if (tipoEntrega === "acougue" && CLIENTES_ACOUGUE.includes(String(cliente.id))) {
-          const res = await fetch(`/api/acougue/pendencias?id_cliente=${cliente.id}`);
-          const data = await res.json();
-          const pendencias = Array.isArray(data.pendencias) ? data.pendencias : [];
-
-          pendencias.forEach(pen => {
-            const tbody = document.querySelector("#tabela_itens tbody");
-            const row = tbody.insertRow();
-            row.dataset.idSetor = "";
-            row.dataset.codProdutoAssociado = "";
-            [
-              "",                        // cod
-              pen.produto,               // descrição
-              "",                        // item produção
-              "",                        // embalagem
-              "",                        // peso unit
-              "",                        // setor
-              pen.falta.toFixed(3),      // quantidade que falta
-              "",                        // unid
-              "",                        // preço
-              "",                        // total
-              "pendência anterior",      // obs
-            ].forEach(valor => {
-              const cell = row.insertCell();
-              cell.textContent = valor;
-            });
-            const actionsCell = row.insertCell();
-            actionsCell.innerHTML = `
-              <button type="button" class="btn btn-warning btn-sm me-1" onclick="editarItem(this)">Editar</button>
-              <button type="button" class="btn btn-danger btn-sm" onclick="excluirItem(this)">Excluir</button>`;
-          });
-          atualizarTotalPedido();
-        }
       }
+
       function calcularTotal() {
         const qtd = parseFloat($("#quantidade").val().replace(",", ".")) || 0;
         const preco = parseFloat($("#preco_venda").val().replace(",", ".")) || 0;

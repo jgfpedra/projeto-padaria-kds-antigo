@@ -54,3 +54,4 @@ def load_user(user_id):
 # ✅ Por último, os módulos de rotas (dependem de app, bcrypt, e indiretamente de Usuario)
 from app import routes
 from app import api_routes
+from app.route import acougue

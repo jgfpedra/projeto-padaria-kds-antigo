@@ -2,7 +2,6 @@
 
 import logging
 import os
-import json
 
 from flask import (
     jsonify,
@@ -303,7 +302,7 @@ def salvar_pedido():
             )
 
         conn.commit()
-        return jsonify({"success": True})
+        return jsonify({"success": True, "id_pedido": id_pedido})
 
     except Exception as e:
         conn.rollback()
@@ -1938,7 +1937,8 @@ def api_get_itens_grupo(id_grupo):
     itens = repo_get_itens_grupo(id_grupo)
     if itens is False:
         return jsonify({"erro": "Erro ao buscar itens do grupo."}), 500
-    nomes = repo_vr_get_nomes_produtos([i["id_produto"] for i in itens]) if itens else {}
+    nomes = repo_vr_get_nomes_produtos(
+        [i["id_produto"] for i in itens]) if itens else {}
     return jsonify(adicionar_nomes_produtos(itens, nomes))
 
 
@@ -2727,61 +2727,6 @@ def api_kds_imprimir_coluna():
     ok, msg = _enviar_para_impressora_kds(row[0], texto)
     if not ok:
         return jsonify({"erro": f"Falha ao imprimir: {msg}"}), 500
-    return jsonify({"ok": True})
-
-
-@app.route("/api/acougue/pendencias", methods=["GET"])
-def acougue_ler_pendencias():
-    ACOUGUE_FILE = os.path.join(os.path.dirname(__file__), "acougue.json")
-    if request.method == "GET":
-        id_cliente = request.args.get("id_cliente")
-        if not os.path.exists(ACOUGUE_FILE):
-            return jsonify({"pendencias": [] if id_cliente else {}})
-        with open(ACOUGUE_FILE, "r", encoding="utf-8") as f:
-            try:
-                data = json.load(f)
-            except Exception:
-                data = {"pendencias": {}}
-        pendencias = data.get("pendencias", {})
-        if id_cliente:
-            return jsonify({"pendencias": pendencias.get(str(id_cliente), [])})
-        return jsonify({"pendencias": pendencias})
-
-
-@app.route("/api/acougue/pendencias", methods=["GET", "POST"])
-def acougue_pendencias():
-    ACOUGUE_FILE = os.path.join(os.path.dirname(__file__), "acougue.json")
-    CLIENTES_ACOUGUE = {"5306", "131"}
-    if request.method == "GET":
-        id_cliente = request.args.get("id_cliente")
-        if not os.path.exists(ACOUGUE_FILE):
-            return jsonify({"pendencias": [] if id_cliente else {}})
-        with open(ACOUGUE_FILE, "r", encoding="utf-8") as f:
-            try:
-                data = json.load(f)
-            except Exception:
-                data = {"pendencias": {}}
-        pendencias = data.get("pendencias", {})
-        if id_cliente:
-            return jsonify({"pendencias": pendencias.get(str(id_cliente), [])})
-        return jsonify({"pendencias": pendencias})
-    body = request.get_json()
-    id_cliente = str(body.get("id_cliente", ""))
-    novas = body.get("pendencias", [])
-    if id_cliente not in CLIENTES_ACOUGUE:
-        return jsonify({"ok": True, "ignorado": True})
-    if os.path.exists(ACOUGUE_FILE):
-        with open(ACOUGUE_FILE, "r", encoding="utf-8") as f:
-            try:
-                data = json.load(f)
-            except Exception:
-                data = {"pendencias": {}}
-    else:
-        data = {"pendencias": {}}
-    existentes = data["pendencias"].get(id_cliente, [])
-    data["pendencias"][id_cliente] = existentes + novas
-    with open(ACOUGUE_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
     return jsonify({"ok": True})
 
 

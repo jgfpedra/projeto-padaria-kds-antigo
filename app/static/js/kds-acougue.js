@@ -118,36 +118,26 @@
 
   async function processarFinalizacaoAcougue(resultados) {
     const idsFinalizar = [];
-    const pendenciasPorCliente = {}; // agrupa por id_cliente
-    console.log(resultados)
     const CLIENTES_ACOUGUE = ["5306", "131"];
+    const inserts = [];
     resultados.forEach(({ itens, quantidadeEnviada }) => {
-      console.log("id_cliente dos itens:", itens.map(p => p.id_cliente));
       const totalPedido = totalDoGrupo(itens);
       itens.forEach((p) => idsFinalizar.push(p.id_item));
-
+      const idCliente = String(itens[0].id_cliente || "");
+      if (!CLIENTES_ACOUGUE.includes(idCliente)) return;
       const faltante = totalPedido - quantidadeEnviada;
-      if (faltante > 0.001) {
-        const produto = itens[0].descricao || itens[0].produto || itens[0].id_produto;
-        const idCliente = String(itens[0].id_cliente || "");
-
-        if (!CLIENTES_ACOUGUE.includes(idCliente)) return; // ignora outros clientes
-
-        if (!pendenciasPorCliente[idCliente]) pendenciasPorCliente[idCliente] = [];
-        pendenciasPorCliente[idCliente].push({
-          produto: String(produto).trim(),
-          quantidade_pedida: totalPedido,
-          quantidade_enviada: quantidadeEnviada,
-          falta: parseFloat(faltante.toFixed(3)),
-          enviado: parseFloat(quantidadeEnviada.toFixed(3)),
-          totalPedido: parseFloat(totalPedido.toFixed(3)),
-          data: new Date().toISOString().slice(0, 10),
-        });
-      }
+      inserts.push({
+        id_cliente: idCliente,
+        id_produto: itens[0].id_produto,
+        id_pedido_criacao: itens[0].id,
+        ids_pedido: [...new Set(itens.map((p) => p.id))],   // novo
+        total_pedido: totalPedido,
+        falta: faltante > 0.001 ? parseFloat(faltante.toFixed(3)) : 0,
+        enviado: parseFloat(quantidadeEnviada.toFixed(3)),
+        data: new Date().toISOString().slice(0, 10),
+      });
     });
-
     if (!idsFinalizar.length) return;
-
     try {
       const res = await fetch("/api/kds/item/finalizar", {
         method: "POST",
@@ -159,22 +149,16 @@
         alert("Falha ao finalizar itens!");
         return;
       }
-      for (const [idCliente, novas] of Object.entries(pendenciasPorCliente)) {
-        const resGet = await fetch(`/api/acougue/pendencias?id_cliente=${idCliente}`);
-        const dadosAtuais = await resGet.json();
-        const existentes = Array.isArray(dadosAtuais.pendencias) ? dadosAtuais.pendencias : [];
-        const payload = {
-          id_cliente: idCliente,
-          pendencias: [...existentes, ...novas],
-        };
-        console.log("payload enviado:", JSON.stringify(payload)); // ← adiciona isso
+      for (const pen of inserts) {
         await fetch("/api/acougue/pendencias", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({
+            id_cliente: pen.id_cliente,
+            pendencias: [pen],
+          }),
         });
       }
-
       await atualizarPedidos();
     } catch (e) {
       console.error("Erro ao finalizar itens do açougue:", e);
