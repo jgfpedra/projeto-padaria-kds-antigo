@@ -139,6 +139,13 @@
               <label class="form-label">Setor</label>
               <select id="cfgSetor" class="form-select" disabled></select>
             </div>
+            <div class="mb-2">
+              <label class="form-label">Modo de visão dos cards</label>
+              <select id="cfgModoVisao" class="form-select">
+                <option value="produtos">Por Produtos (agrupado)</option>
+                <option value="pedidos">Por Pedidos</option>
+              </select>
+            </div>
             <div class="mb-1">
               <label class="form-label">Caminho Impressora</label>
               <input
@@ -179,6 +186,7 @@
       window.pedidos = [];
       let idsSempreComHorario = []; // vindo de produto_exibir_horario
       let snapshotUltimosPedidos = ""; // para detectar novos
+      let modoVisao = localStorage.getItem("kdsModoVisao") || "produtos";
 
       // --- Utilitários de data ---
       function getHojeObj() {
@@ -199,6 +207,11 @@
         const amanha = getHojeObj();
         amanha.setDate(amanha.getDate() + 1);
         return data.getTime() === amanha.getTime();
+      }
+      function setModoVisao(modo) {
+        modoVisao = modo;
+        localStorage.setItem("kdsModoVisao", modo);
+        renderCards();
       }
       function formatarDataBr(dataIso) {
         if (!dataIso) return "";
@@ -381,6 +394,13 @@
           if (!agrupados[chave]) agrupados[chave] = [];
           agrupados[chave].push(p);
         });
+
+        // visão por pedidos
+        if (modoVisao === "pedidos") {
+          agrupadosGlobal = agrupados; // mantém "Produzir Todos", "Finalizar Todos" e "Imprimir" funcionando
+          renderCardsPorPedido();
+          return;
+        }
 
         const coll = new Intl.Collator("pt-BR", {
           sensitivity: "base",
@@ -585,6 +605,135 @@
         agrupadosGlobal = agrupados;
       }
 
+      // --- Renderização por PEDIDO ---
+      function renderCardsPorPedido() {
+        // agrupa por pedido + status (um pedido pode ter itens em status diferentes)
+        const grupos = {};
+        pedidos.forEach((p) => {
+          if (!(isHoje(p.data) || isAmanha(p.data))) return;
+          const st = p.id_status == null ? 0 : Number(p.id_status);
+          const k = p.id + "|" + st;
+          if (!grupos[k]) grupos[k] = { id: p.id, status: st, itens: [] };
+          grupos[k].itens.push(p);
+        });
+
+        const cardsPorStatus = { 0: [], 1: [], 2: [] };
+
+        Object.values(grupos).forEach((g) => {
+          const itens = g.itens.sort((a, b) =>
+            String(a.descricao || a.produto || "").localeCompare(
+              String(b.descricao || b.produto || ""),
+              "pt-BR",
+            ),
+          );
+          const ref = itens[0];
+          const hoje = isHoje(ref.data);
+          const diaLabel = `${formatarDataBr(ref.data)} - <span style="color:#d00;font-weight:bold;">${hoje ? "HOJE" : "AMANHÃ"}</span>`;
+          const etiquetaBalcao =
+            ref.tipo_entrega?.toLowerCase() === "balcao"
+              ? '<span class="badge bg-purple text-white ms-2">BALCÃO</span>'
+              : "";
+
+          const linhas = itens
+            .map((item) => {
+              const nome = item.descricao || item.produto || item.id_produto;
+              const q = Math.trunc(Number(item.quantidade)).toLocaleString("pt-BR");
+              const qp = Number(item.peso).toLocaleString("pt-BR", {
+                minimumFractionDigits: 3,
+                maximumFractionDigits: 3,
+              });
+              const quantidade = Number(item.quantidade) !== 0 ? `${q} UN - ` : "";
+              const obs = item.observacao
+                ? `<div><span class="badge bg-warning text-dark" style="font-weight:400;">${escHtml(item.observacao)}</span></div>`
+                : "";
+              return `
+                <div style="padding:5px 0; border-bottom:1px dashed #bbb;">
+                  <div style="font-size:1.05em;"><b>${escHtml(nome)}</b></div>
+                  <div>${quantidade}${qp} Kg</div>
+                  ${obs}
+                </div>`;
+            })
+            .join("");
+
+          let cardClass = "kds-card novo";
+          if (g.status == 1) cardClass = "kds-card emproducao";
+          if (g.status == 2) cardClass = "kds-card finalizado";
+
+          let botao = "";
+          if (g.status == 0) {
+            botao = `<div class="kds-card-actions">
+              <button class="btn btn-primary" onclick="acaoPedido('${escHtml(g.id)}', 0)">
+                <i class="fa-solid fa-play"></i> Produzir Pedido
+              </button></div>`;
+          } else if (g.status == 1) {
+            botao = `<div class="kds-card-actions">
+              <button class="btn btn-success" onclick="acaoPedido('${escHtml(g.id)}', 1)">
+                <i class="fa-solid fa-check"></i> Finalizar Pedido
+              </button></div>`;
+          }
+
+          const html = `
+            <div class="${cardClass}">
+              <div class="quantidade-total">
+                <span class="produto-nome">Pedido #${escHtml(g.id)}</span>
+                <span class="badge bg-success ms-2">${itens.length} ${itens.length === 1 ? "ITEM" : "ITENS"}</span>
+                ${etiquetaBalcao}
+              </div>
+              <div style="margin:4px 0; font-weight:500; color:#333;">
+                ${diaLabel} - <b>${formatarHora(ref.hora)}</b>
+              </div>
+              <div style="border:1px solid #222; border-radius:6px; padding:7px; background:#f5fff5;">
+                ${linhas}
+              </div>
+              ${botao}
+            </div>`;
+
+          cardsPorStatus[g.status].push({
+            sortKey: (hoje ? "0_" : "1_") + (ref.hora || "99:99"),
+            id: Number(g.id),
+            html,
+          });
+        });
+
+        const destinos = { 0: "col-aguardando", 1: "col-producao", 2: "col-finalizado" };
+        [0, 1, 2].forEach((status) => {
+          cardsPorStatus[status]
+            .sort((a, b) =>
+              a.sortKey !== b.sortKey
+                ? a.sortKey < b.sortKey ? -1 : 1
+                : a.id - b.id,
+            )
+            .forEach((c) => {
+              document.getElementById(destinos[status]).innerHTML += c.html;
+            });
+        });
+      }
+      // Produzir / Finalizar todos os itens de UM pedido (no status informado)
+      async function acaoPedido(idPedido, statusAtual) {
+        try {
+          const ids = pedidos
+            .filter(
+              (p) =>
+                String(p.id) === String(idPedido) &&
+                (p.id_status == null ? 0 : Number(p.id_status)) === statusAtual,
+            )
+            .map((p) => p.id_item);
+          if (!ids.length) return;
+          const url =
+            statusAtual === 0 ? "/api/kds/item/produzir" : "/api/kds/item/finalizar";
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids }),
+          });
+          const ret = await res.json();
+          if (ret.success) await atualizarPedidos();
+          else alert("Falha ao atualizar itens do pedido!");
+        } catch (e) {
+          console.error("Erro em acaoPedido:", e);
+          alert("Erro ao atualizar o pedido.");
+        }
+      }
       // --- Ações em massa (reutilizadas pelos botões por card) ---
       async function produzirPedidos(chave) {
         try {
@@ -761,14 +910,21 @@
             })
             .catch(() => {});
         }
+        document.getElementById("cfgModoVisao").value = modoVisao;
         modalConfig.show();
       }
       async function salvarConfigImpressora() {
+        const novoModo = document.getElementById("cfgModoVisao").value;
+        if (novoModo !== modoVisao) setModoVisao(novoModo);
         const loja = document.getElementById("selectLoja").value;
         const setor = document.getElementById("selectSetor").value;
         const caminho = document.getElementById("cfgCaminho").value.trim();
-        if (!loja || !setor || !caminho) {
-          alert("Preencha Loja, Setor e Caminho.");
+        if (!caminho) {
+          modalConfig.hide();
+          return;
+        }
+        if (!loja || !setor) {
+          alert("Selecione Loja e Setor para salvar a impressora.");
           return;
         }
         const r = await fetch("/api/impressora/setor", {
@@ -786,8 +942,6 @@
           modalConfig.hide();
         } else alert(j.erro || "Erro ao salvar");
       }
-
-      // --- Boot ---
       let alertaCarregado = false;
       window.onload = async function () {
         if (localStorage.getItem("kdsMostrarFinalizado") === "1") {
