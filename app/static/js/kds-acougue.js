@@ -1,5 +1,5 @@
+/* global setorSelecionado, pedidos, escHtml, atualizarPedidos, isHoje, isAmanha, agrupadosGlobal */
 // kds-acougue.js
-
 (function () {
   const SETOR_ACOUGUE_ID = 15;
   const CAMPO_QUANTIDADE = "peso";
