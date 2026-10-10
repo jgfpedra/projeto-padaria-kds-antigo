@@ -629,6 +629,7 @@
       }
 
       // ===== ORDENAR =====
+      console.log(pedidos);
       pedidos.sort((a, b) => {
         const ordenarPor = document.getElementById("ordenar_por").value;
         const ordem = document.getElementById("ordem").value; // 'asc' | 'desc'
@@ -755,7 +756,11 @@
                   ${pedido.status_descricao ? `<span class="sep">—</span><span class="linha-status ${statusClasse}">${pedido.status_descricao}</span>` : ""}
                 </div>
                 <div class="linha-badges">
+                  <div class="linha-badges">
                   <span class="badge bg-primary">#${pedido.id}</span>
+                  ${pedido.pago
+                    ? `<span class="badge bg-success"><i class="bi bi-cash-coin"></i> PAGO</span>`
+                    : `<span class="badge bg-danger"><i class="bi bi-cash-coin"></i> NÃO PAGO</span>`}
                   ${pedido.impresso
                     ? `<span class="badge bg-success"><i class="bi bi-printer"></i> Impresso</span>`
                     : `<span class="badge bg-secondary"><i class="bi bi-printer"></i> Não impresso</span>`}

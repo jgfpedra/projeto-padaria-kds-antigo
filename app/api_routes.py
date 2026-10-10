@@ -191,6 +191,7 @@ def salvar_pedido():
     try:
         cursor = conn.cursor()
         id_pedido = data.get("id_pedido")
+        pago = 1 if str(data.get("pago", 0)) in ("1", "true", "True") else 0
         novo_pedido = False
         if id_pedido:
             cursor.execute(
@@ -210,7 +211,8 @@ def salvar_pedido():
                         hora_entrega = %s,
                         telefone = %s,
                         observacoes = %s,
-                        tipo_entrega = %s
+                        tipo_entrega = %s,
+                        pago = %s
                     WHERE id = %s
                 """,
                     (
@@ -221,6 +223,7 @@ def salvar_pedido():
                         data["telefone"],
                         data["observacoes"],
                         data["tipo_entrega"],
+                        pago,
                         id_pedido,
                     ),
                 )
@@ -237,8 +240,8 @@ def salvar_pedido():
             cursor.execute(
                 """
                 INSERT INTO pedidos (id_cliente, id_loja, data_entrega,
-                hora_entrega, telefone, observacoes, tipo_entrega, id_status)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                hora_entrega, telefone, observacoes, tipo_entrega, id_status, pago)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """,
                 (
@@ -250,6 +253,7 @@ def salvar_pedido():
                     data["observacoes"],
                     data["tipo_entrega"],
                     data.get("id_status", None),
+                    pago,
                 ),
             )
             id_pedido = cursor.fetchone()[0]
@@ -390,14 +394,14 @@ def buscar_pedido_edicao(id):
             """
             SELECT id_cliente, id_loja,
             data_entrega, hora_entrega,
-            telefone, observacoes, tipo_entrega, id_status
+            telefone, observacoes, tipo_entrega, id_status, pago
             FROM pedidos
             WHERE id = %s
         """,
             (id,),
         )
         pedido_row = cursor_app.fetchone()
-
+        print(pedido_row)
         if not pedido_row:
             return jsonify({"erro": "Pedido não encontrado"}), 404
 
@@ -440,11 +444,12 @@ def buscar_pedido_edicao(id):
             "endereco": cliente_row[2],
             "observacao_endereco": cliente_row[3] or "",
             "tipo_entrega": pedido_row[6],
-            "id_status": pedido_row[7],  # 🔥 agora traz o id_status também
+            "id_status": pedido_row[7],
             "id_loja": id_loja,
             "data_entrega": pedido_row[2].isoformat(),
             "hora_entrega": pedido_row[3].strftime("%H:%M"),
             "observacoes": pedido_row[5],
+            "pago": pedido_row[8],
             "itens": [],
         }
 

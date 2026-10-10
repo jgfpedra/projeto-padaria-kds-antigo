@@ -48,42 +48,39 @@
         <input type="time" class="form-control" id="hora" name="hora" />
       </div>
     </div>
-    <!-- Tipo de Entrega -->
-    <div class="mb-3">
-      <label class="form-label">Tipo de Entrega</label><br />
-      <div class="form-check form-check-inline">
-        <input
-          class="form-check-input"
-          type="radio"
-          name="tipo_entrega"
-          id="retirada"
-          value="retirada"
-          checked
-        />
-        <label class="form-check-label" for="retirada">Retirada na loja</label>
+    <!-- Tipo de Entrega + Pagamento -->
+    <div class="row align-items-end">
+      <div class="col-md-8 mb-3">
+        <label class="form-label">Tipo de Entrega</label>
+        <div class="btn-group w-100" role="group" aria-label="Tipo de entrega">
+          <input type="radio" class="btn-check" name="tipo_entrega" id="retirada"
+                 value="retirada" autocomplete="off" checked />
+          <label class="btn btn-outline-primary" for="retirada">
+            <i class="bi bi-bag"></i> Retirada na loja
+          </label>
+
+          <input type="radio" class="btn-check" name="tipo_entrega" id="entrega"
+                 value="entrega" autocomplete="off" />
+          <label class="btn btn-outline-primary" for="entrega">
+            <i class="bi bi-truck"></i> Entrega
+          </label>
+
+          <input type="radio" class="btn-check" name="tipo_entrega" id="acougue"
+                 value="acougue" autocomplete="off" />
+          <label class="btn btn-outline-primary" for="acougue">
+            <i class="bi bi-scissors"></i> Açougue
+          </label>
+        </div>
       </div>
-      <div class="form-check form-check-inline">
-        <input
-          class="form-check-input"
-          type="radio"
-          name="tipo_entrega"
-          id="entrega"
-          value="entrega"
-        />
-        <label class="form-check-label" for="entrega">Entrega</label>
+
+      <div class="col-md-4 mb-3">
+        <label for="pago" class="form-label">Pagamento</label>
+        <select class="form-select" id="pago" name="pago">
+          <option value="0" selected>Não pago</option>
+          <option value="1">Pago</option>
+        </select>
       </div>
-      <div class="form-check form-check-inline">
-        <input
-          class="form-check-input"
-          type="radio"
-          name="tipo_entrega"
-          id="acougue"
-          value="acougue"
-        />
-        <label class="form-check-label" for="balcao">Açougue</label>
-      </div>
-    </div>
-    <!-- Endereço (somente se for entrega) -->
+    </div>    <!-- Endereço (somente se for entrega) -->
     <div id="endereco-container" style="display: none">
       <div class="mb-3">
         <label class="form-label">Endereço</label>
@@ -910,6 +907,7 @@
         telefone,
         observacoes,
         tipo_entrega,
+        pago: document.getElementById("pago").value === "1" ? 1 : 0,
         itens,
         id_status: idPedidoExistente ? undefined : 0,
       };
@@ -1074,9 +1072,9 @@
             $("#endereco").val(pedido.endereco);
             $('textarea[name="observacoes"]').val(pedido.observacoes);
             $("#obs_endereco").val(pedido.obs_endereco || "");
-
+            $("#pago").val(pedido.pago ? "1" : "0");
             if (pedido.id_status === 6) {
-              $("#balcao").prop("checked", true);
+              $("#acougue").prop("checked", true);
               $("#endereco-container").hide();
             } else if (pedido.tipo_entrega === "entrega") {
               $("#entrega").prop("checked", true);

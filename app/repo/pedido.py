@@ -168,6 +168,12 @@ def buscar_impresso(cursor, id_pedido):
     return row[0] if row else ""
 
 
+def buscar_pago(cursor, id_pedido):
+    cursor.execute("SELECT pago FROM pedidos p WHERE p.id = %s", (id_pedido,))
+    row = cursor.fetchone()
+    return row[0] if row else ""
+
+
 def buscar_valor_total(cursor, id_pedido):
     cursor.execute(
         """
