@@ -12,6 +12,7 @@ logger = logging.getLogger("repo.produto_composto")
 
 
 def repo_get_composto_estrutura(id_produto):
+    conn = None
     try:
         conn = conectar_app()
         cur = conn.cursor()
@@ -20,10 +21,10 @@ def repo_get_composto_estrutura(id_produto):
             SELECT pc.tipo, pc.id_calculo_pessoa, pc.pedido_min_pessoas,
                    cp.bebida_ml, cp.bolo_g, cp.salgados_unid
             FROM produto_composto pc
-            LEFT JOIN produto_composto_calculo_pessoa cp ON
-            cp.id = pc.id_calculo_pessoa
+            LEFT JOIN produto_composto_calculo_pessoa cp
+                   ON cp.id = pc.id_calculo_pessoa
             WHERE pc.id_produto = %s
-        """,
+            """,
             (id_produto,),
         )
         row = cur.fetchone()
@@ -33,7 +34,12 @@ def repo_get_composto_estrutura(id_produto):
             "tipo": row[0],
             "pedido_min_pessoas": row[2],
             "calculo_pessoa": (
-                {"bebida_ml": row[3], "bolo_g": row[4], "salgados_unid": row[5]}
+                {
+                    "id": row[1],
+                    "bebida_ml": row[3],
+                    "bolo_g": row[4],
+                    "salgados_unid": row[5],
+                }
                 if row[1]
                 else None
             ),
@@ -42,7 +48,8 @@ def repo_get_composto_estrutura(id_produto):
         logger.error(e)
         return False
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 
 def repo_get_itens_fixos(id_produto):
@@ -95,14 +102,16 @@ def repo_get_grupos_opcionais(id_produto):
         rows = cur.fetchall()
         grupos = {}
         for r in rows:
-            grupos.setdefault(r[0], {"quantidade_total": r[1],
-                                     "id_grupo_ref": r[5],
-                                     "itens": []})
-            grupos[r[0]]["itens"].append({
-                "id_produto": r[2],
-                "quantidade": r[3],
-                "considera_valor": r[4],
-            })
+            grupos.setdefault(
+                r[0], {"quantidade_total": r[1], "id_grupo_ref": r[5], "itens": []}
+            )
+            grupos[r[0]]["itens"].append(
+                {
+                    "id_produto": r[2],
+                    "quantidade": r[3],
+                    "considera_valor": r[4],
+                }
+            )
         return grupos
     except Exception as e:
         logger.error(e)
@@ -150,9 +159,10 @@ def repo_get_opcionais_escolhidos(id_produto, chave, ids):
             (id_produto, chave, ids, id_produto, chave, ids),
         )
         rows = cur.fetchall()
-        return [{"id_produto": r[0],
-                 "quantidade": r[1],
-                 "considera_valor": r[2]} for r in rows]
+        return [
+            {"id_produto": r[0], "quantidade": r[1], "considera_valor": r[2]}
+            for r in rows
+        ]
     except Exception as e:
         logger.error(e)
         return False
@@ -363,46 +373,146 @@ def salvar_itens(cur, id_produto, itens):
 
 def salvar_grupos(cur, id_produto, grupos):
     try:
+        # valida chaves
+        chaves = [g.get("chave") for g in grupos]
+        if any(not c for c in chaves):
+            raise ValueError("Todo grupo opcional precisa de uma chave.")
+        if len(chaves) != len(set(chaves)):
+            raise ValueError("Há grupos opcionais com a mesma chave.")
+
+        # grupos que já existem neste composto: {chave: id}
         cur.execute(
-            "DELETE FROM produto_composto_opcional_grupo WHERE id_produto_comp = %s",
+            """
+            SELECT id, chave
+            FROM produto_composto_opcional_grupo
+            WHERE id_produto_comp = %s
+            """,
             (id_produto,),
         )
-        for grupo in grupos:
-            id_grupo_ref = grupo.get("id_grupo_ref") or None
-            cur.execute(
-                """
-                INSERT INTO produto_composto_opcional_grupo
-                    (id_produto_comp, chave, quantidade_total, id_grupo_ref)
-                VALUES (%s, %s, %s, %s)
-                RETURNING id
-                """,
-                (id_produto, grupo["chave"], grupo.get(
-                    "quantidade_total"), id_grupo_ref),
-            )
-            id_grupo = cur.fetchone()[0]
+        existentes = {r[1]: r[0] for r in cur.fetchall()}
 
-            # só salva itens se não for referenciado
-            if not id_grupo_ref:
-                itens = grupo.get("itens", [])
-                if itens:
-                    cur.executemany(
-                        """
-                        INSERT INTO produto_composto_opcional_item
-                            (id_grupo, id_produto, quantidade, considera_valor)
-                        VALUES (%s, %s, %s, %s)
-                        """,
-                        [
-                            (id_grupo, it["id_produto"], it.get(
-                                "quantidade"), it.get("considera_valor", False))
-                            for it in itens
-                        ],
-                    )
+        # ── 1. remove grupos que saíram da lista ─────────────────────────────
+        for chave, id_grupo in existentes.items():
+            if chave in chaves:
+                continue
+            _bloquear_se_referenciado(cur, id_grupo, chave)
+            cur.execute(
+                "DELETE FROM produto_composto_opcional_item WHERE id_grupo = %s",
+                (id_grupo,),
+            )
+            cur.execute(
+                "DELETE FROM produto_composto_opcional_grupo WHERE id = %s",
+                (id_grupo,),
+            )
+
+        # ── 2. atualiza ou cria os demais ────────────────────────────────────
+        for grupo in grupos:
+            chave = grupo["chave"]
+            qtd_total = grupo.get("quantidade_total")
+            id_grupo_ref = grupo.get("id_grupo_ref") or None
+            id_grupo = existentes.get(chave)
+
+            if id_grupo is None:
+                cur.execute(
+                    """
+                    INSERT INTO produto_composto_opcional_grupo
+                        (id_produto_comp, chave, quantidade_total, id_grupo_ref)
+                    VALUES (%s, %s, %s, %s)
+                    RETURNING id
+                    """,
+                    (id_produto, chave, qtd_total, id_grupo_ref),
+                )
+                id_grupo = cur.fetchone()[0]
+            else:
+                cur.execute(
+                    """
+                    UPDATE produto_composto_opcional_grupo
+                    SET quantidade_total = %s,
+                        id_grupo_ref     = %s
+                    WHERE id = %s
+                    """,
+                    (qtd_total, id_grupo_ref, id_grupo),
+                )
+
+            if id_grupo_ref:
+                # grupo vinculado não tem itens próprios.
+                # se outros compostos apontam pra ele, não pode virar vínculo
+                _bloquear_se_referenciado(cur, id_grupo, chave)
+                cur.execute(
+                    "DELETE FROM produto_composto_opcional_item WHERE id_grupo = %s",
+                    (id_grupo,),
+                )
+            else:
+                _sincronizar_itens_grupo(cur, id_grupo, grupo.get("itens", []))
     except Exception as e:
         logger.error(f"[GRUPOS_OPCIONAIS] {e}")
         raise
 
 
+def _bloquear_se_referenciado(cur, id_grupo, chave):
+    cur.execute(
+        """
+        SELECT DISTINCT id_produto_comp
+        FROM produto_composto_opcional_grupo
+        WHERE id_grupo_ref = %s
+        """,
+        (id_grupo,),
+    )
+    usados_por = [r[0] for r in cur.fetchall()]
+    if usados_por:
+        raise ValueError(
+            f"O grupo '{chave}' é usado pelos compostos {usados_por}. "
+            "Remova o vínculo neles antes de excluir ou alterar este grupo."
+        )
+
+
+def _sincronizar_itens_grupo(cur, id_grupo, itens):
+    # último item vence se o mesmo produto vier duplicado
+    novos = {int(it["id_produto"]): it for it in itens if it.get("id_produto")}
+
+    cur.execute(
+        """
+        SELECT id, id_produto
+        FROM produto_composto_opcional_item
+        WHERE id_grupo = %s
+        """,
+        (id_grupo,),
+    )
+    atuais = {r[1]: r[0] for r in cur.fetchall()}  # {id_produto: id_item}
+
+    # remove os que saíram
+    remover = [id_item for id_prod, id_item in atuais.items() if id_prod not in novos]
+    if remover:
+        cur.execute(
+            "DELETE FROM produto_composto_opcional_item WHERE id = ANY(%s)",
+            (remover,),
+        )
+
+    for id_prod, it in novos.items():
+        quantidade = it.get("quantidade")
+        considera_valor = bool(it.get("considera_valor", False))
+        if id_prod in atuais:
+            cur.execute(
+                """
+                UPDATE produto_composto_opcional_item
+                SET quantidade = %s, considera_valor = %s
+                WHERE id = %s
+                """,
+                (quantidade, considera_valor, atuais[id_prod]),
+            )
+        else:
+            cur.execute(
+                """
+                INSERT INTO produto_composto_opcional_item
+                    (id_grupo, id_produto, quantidade, considera_valor)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (id_grupo, id_prod, quantidade, considera_valor),
+            )
+
+
 def repo_salvar_produto_composto(dados: dict):
+    conn_app = None
     try:
         conn_app = conectar_app()
         cur = conn_app.cursor()
@@ -412,10 +522,19 @@ def repo_salvar_produto_composto(dados: dict):
         salvar_itens(cur, id_produto, dados.get("itens", []))
         salvar_grupos(cur, id_produto, dados.get("grupos_opcionais", []))
         conn_app.commit()
-        return True
+        return True, None
+    except ValueError as e:
+        if conn_app:
+            conn_app.rollback()
+        return False, str(e)
     except Exception as e:
-        logger.error(f"[repo_salvar_produto_composto] {e}")
-        return False
+        if conn_app:
+            conn_app.rollback()
+        logger.exception(f"[repo_salvar_produto_composto] {e}")
+        return False, "Erro ao salvar."
+    finally:
+        if conn_app:
+            conn_app.close()
 
 
 def repo_remover_produto_composto(id_produto: int):
@@ -474,6 +593,32 @@ def repo_remover_produto_composto(id_produto: int):
     finally:
         if conn_app:
             conn_app.close()
+
+
+def repo_get_itens_grupo(id_grupo):
+    conn = None
+    try:
+        conn = conectar_app()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT id_produto, quantidade, considera_valor
+            FROM produto_composto_opcional_item
+            WHERE id_grupo = %s
+            ORDER BY id
+            """,
+            (id_grupo,),
+        )
+        return [
+            {"id_produto": r[0], "quantidade": r[1], "considera_valor": r[2]}
+            for r in cur.fetchall()
+        ]
+    except Exception as e:
+        logger.exception(e)
+        return False
+    finally:
+        if conn:
+            conn.close()
 
 
 def repo_get_produtos_compostos():

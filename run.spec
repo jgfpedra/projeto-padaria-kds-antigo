@@ -2,10 +2,14 @@
 
 
 a = Analysis(
-    ['run.py'],
+    ["run.py"],
     pathex=[],
     binaries=[],
-    datas=[('app\\\\templates', 'templates'), ('app\\\\static', 'static'), ('app\\\\static', 'app/static')],
+    datas=[
+        ("app\\\\templates", "templates"),
+        ("app\\\\static", "static"),
+        ("app\\\\static", "app/static"),
+    ],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -22,7 +26,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='run',
+    name="run",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

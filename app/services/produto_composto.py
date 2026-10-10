@@ -1,5 +1,6 @@
 import logging
 
+from flask import jsonify
 from app.repo.produto_composto import (
     repo_get_calculos_pessoa,
     repo_get_itens_fixos,
@@ -9,7 +10,7 @@ from app.repo.produto_composto import (
     repo_get_quantidade_total_grupo,
     repo_remover_produto_composto,
     repo_salvar_produto_composto,
-    repo_get_peso_unitario_item
+    repo_get_peso_unitario_item,
 )
 from app.utils.produto_composto import bebidas, bolos, salgados
 from app.utils.conversions import to_float
@@ -22,8 +23,10 @@ def svc_get_produtos_compostos():
 
 
 def svc_salvar_produtos_compostos(dados):
-    print(dados)
-    return repo_salvar_produto_composto(dados)
+    ok, erro = repo_salvar_produto_composto(dados)
+    if not ok:
+        return jsonify({"erro": erro}), 400
+    return jsonify({"ok": True}), 200
 
 
 def svc_remover_produtos_compostos(id_produto):
@@ -93,11 +96,13 @@ def montar_itens(produto_pai, fator, componentes, tipo, id_loja):
     itens = []
     for comp in componentes:
         detalhe = repo_get_produto_detalhe(comp["id_produto"], id_loja)
-        peso_unitario = repo_get_peso_unitario_item(produto_pai["id"],
-                                                    comp["id_produto"])
-
+        peso_unitario = repo_get_peso_unitario_item(
+            produto_pai["id"], comp["id_produto"]
+        )
+        quantidade_unidades = comp["quantidade"]
+        if comp["id_produto"] in (91, 851, 3077):
+            quantidade_unidades = 0
         considera_valor = comp.get("considera_valor", False)
-        print(detalhe)
         preco_venda = detalhe["preco_venda"] if considera_valor else 0
         total = 0
         if considera_valor:
@@ -121,10 +126,8 @@ def montar_itens(produto_pai, fator, componentes, tipo, id_loja):
                 "peso_liquido": peso_unitario,
                 "setor": detalhe["setor"],
                 "id_setor": detalhe["id_setor"],
-                "quantidade": (
-                    to_float(comp["quantidade"]) * to_float(peso_unitario)
-                ),
-                "quantidade_un": comp["quantidade"],
+                "quantidade": (to_float(comp["quantidade"]) * to_float(peso_unitario)),
+                "quantidade_un": quantidade_unidades,
                 "preco_venda": preco_venda,
                 "total": total,
                 "observacao": observacao,

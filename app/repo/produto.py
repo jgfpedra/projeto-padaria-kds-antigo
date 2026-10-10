@@ -81,73 +81,131 @@ def repo_vr_get_nome_produto(id_produto):
         conn.close()
 
 
-def repo_vr_buscar_produtos(termo, por_id=False, limite=20):
+def _filtro_ativo_e_setor_por_loja():
+    return """
+        AND EXISTS (
+            SELECT 1
+            FROM produtocomplemento pc
+            WHERE pc.id_produto = p.id
+              AND pc.id_situacaocadastro = 1
+              AND pc.id_loja = %s
+        )
+        AND EXISTS (
+            SELECT 1
+            FROM ficha.setorproduto sp
+            INNER JOIN ficha.setor s
+                ON s.id = sp.id_setor
+            WHERE sp.id_produto = p.id
+              AND s.id_loja = %s
+        )
+    """
+
+
+def _sql_buscar_produto_por_id():
+    return f"""
+        SELECT
+            p.id,
+            p.descricaocompleta,
+            p.pesoliquido
+        FROM produto p
+        WHERE p.id = %s
+          {_filtro_ativo_e_setor_por_loja()}
+        LIMIT %s
+    """
+
+
+def _sql_buscar_produtos_por_termo(n_palavras):
+    condicoes = " AND ".join(["LOWER(p.descricaocompleta) LIKE %s"] * n_palavras)
+
+    return f"""
+        SELECT
+            p.id,
+            p.descricaocompleta,
+            p.pesoliquido,
+            CASE
+                WHEN LOWER(p.descricaocompleta) = %s THEN 1
+                WHEN LOWER(p.descricaocompleta) LIKE %s THEN 2
+                ELSE 3
+            END AS prioridade
+        FROM produto p
+        WHERE {condicoes}
+          {_filtro_ativo_e_setor_por_loja()}
+        ORDER BY
+            prioridade,
+            p.descricaocompleta
+        LIMIT %s
+    """
+
+
+def _mapear_produto(row):
+    return {
+        "id": row[0],
+        "descricaocompleta": row[1],
+        "peso_unitario_kg": row[2],
+    }
+
+
+def repo_get_precos_produtos(ids, id_loja):
+    """Retorna {id_produto: preco_venda} para a loja."""
+    if not ids:
+        return {}
+    conn = None
+    try:
+        conn = conectar_vr()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT id_produto, precovenda
+            FROM produtocomplemento
+            WHERE id_loja = %s AND id_produto = ANY(%s)
+            """,
+            (id_loja, list(ids)),
+        )
+        return {r[0]: float(r[1] or 0) for r in cur.fetchall()}
+    except Exception as e:
+        logger.error(f"[PRECOS_PRODUTOS] {e}")
+        return {}
+    finally:
+        if conn:
+            conn.close()
+
+
+def repo_vr_buscar_produtos(termo, id_loja, por_id=False, limite=20):
+    termo = str(termo).strip()
+
+    # só busca por id se realmente for numérico
+    buscar_por_id = por_id and termo.isascii() and termo.isdigit()
+
     conn = conectar_vr()
     cursor = conn.cursor()
 
     try:
-        if por_id:
-            sql = """
-                SELECT DISTINCT
-                    p.id,
-                    p.descricaocompleta,
-                    p.pesoliquido
-                FROM produto p
-                INNER JOIN produtocomplemento pc
-                    ON pc.id_produto = p.id
-                WHERE pc.id_situacaocadastro = 1
-                  AND p.id = %s
-                LIMIT %s
-            """
-
-            cursor.execute(sql, (int(termo), limite))
-
+        if buscar_por_id:
+            cursor.execute(
+                _sql_buscar_produto_por_id(),
+                (int(termo), id_loja, id_loja, limite),
+            )
         else:
             termo = termo.lower()
-            termo_inicio = f"{termo}%"
-            termo_contem = f"%{termo}%"
+            palavras = termo.split()
 
-            sql = """
-                SELECT DISTINCT
-                    p.id,
-                    p.descricaocompleta,
-                    p.pesoliquido,
-                    CASE
-                        WHEN LOWER(p.descricaocompleta) = %s THEN 1
-                        WHEN LOWER(p.descricaocompleta) LIKE %s THEN 2
-                        ELSE 3
-                    END AS prioridade
-                FROM produto p
-                INNER JOIN produtocomplemento pc
-                    ON pc.id_produto = p.id
-                WHERE pc.id_situacaocadastro = 1
-                  AND LOWER(p.descricaocompleta) LIKE %s
-                ORDER BY
-                    prioridade,
-                    p.descricaocompleta
-                LIMIT %s
-            """
+            if not palavras:
+                return []
 
-            cursor.execute(
-                sql,
-                (
-                    termo,
-                    termo_inicio,
-                    termo_contem,
-                    limite,
-                ),
-            )
+            sql = _sql_buscar_produtos_por_termo(len(palavras))
 
-        rows = cursor.fetchall()
+            params = [
+                termo,
+                f"{termo}%",
+                *[f"%{p}%" for p in palavras],
+                id_loja,
+                id_loja,
+                limite,
+            ]
 
-        return [
-            {
-                "id": row[0],
-                "descricaocompleta": row[1],
-                "peso_unitario_kg": row[2],
-            }
-            for row in rows
-        ]
+            cursor.execute(sql, tuple(params))
+
+        return [_mapear_produto(row) for row in cursor.fetchall()]
 
     finally:
         cursor.close()

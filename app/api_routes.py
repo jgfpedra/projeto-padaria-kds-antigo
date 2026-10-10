@@ -19,8 +19,13 @@ from app.repo.produto_composto import (
     repo_get_grupos_opcionais,
     repo_get_itens_fixos,
     repo_get_produto_detalhe,
+    repo_get_itens_grupo,
 )
-from app.services.produto import adicionar_nomes_produtos, buscar_produtos
+from app.services.produto import (
+    adicionar_nomes_produtos,
+    buscar_produtos,
+    preencher_precos_opcionais,
+)
 from app.services.usuario import (
     consultar_usuarios,
     buscar_usuario,
@@ -35,9 +40,7 @@ from app.services.produto_composto import (
     svc_remover_produtos_compostos,
     svc_salvar_produtos_compostos,
 )
-from app.services.impressora import (
-    salvar_impressora_setor
-)
+from app.services.impressora import salvar_impressora_setor
 from app.repo.pedido import (
     buscar_nome_loja,
     buscar_pedido,
@@ -95,7 +98,7 @@ def api_clientes():
 @app.route("/api/produtos")
 def api_produtos():
     try:
-        somente_ativos = request.args.get("ativos") in ("1", "true", "True")
+        somente_ativos = request.args.get("ativos") in ("1")
         id_loja = request.args.get("id_loja", type=int)
 
         conn = conectar_vr()
@@ -221,8 +224,11 @@ def salvar_pedido():
                         id_pedido,
                     ),
                 )
-                cursor.execute("""DELETE FROM pedido_itens
-                               WHERE id_pedido = %s""", (id_pedido,))
+                cursor.execute(
+                    """DELETE FROM pedido_itens
+                               WHERE id_pedido = %s""",
+                    (id_pedido,),
+                )
             else:
                 novo_pedido = True
         else:
@@ -297,7 +303,7 @@ def salvar_pedido():
             )
 
         conn.commit()
-        return jsonify({"success": True})
+        return jsonify({"success": True, "id_pedido": id_pedido})
 
     except Exception as e:
         conn.rollback()
@@ -1907,10 +1913,13 @@ def api_get_composto(id_produto):
             "chave": chave,
             "quantidade_total": dados["quantidade_total"],
             "itens": adicionar_nomes_produtos(dados["itens"], nomes),
+            "id_grupo_ref": dados["id_grupo_ref"],
         }
         for chave, dados in grupos.items()
     ]
-
+    id_loja = (request.get_json(silent=True) or {}).get("id_loja")
+    if id_loja:
+        preencher_precos_opcionais(grupos_com_nomes, int(id_loja))
     return jsonify(
         {
             "id": id_produto,
@@ -1922,6 +1931,17 @@ def api_get_composto(id_produto):
             "grupos_opcionais": grupos_com_nomes,
         }
     )
+
+
+@app.route("/api/grupos_opcionais/<int:id_grupo>/itens", methods=["GET"])
+def api_get_itens_grupo(id_grupo):
+    itens = repo_get_itens_grupo(id_grupo)
+    if itens is False:
+        return jsonify({"erro": "Erro ao buscar itens do grupo."}), 500
+    nomes = (
+        repo_vr_get_nomes_produtos([i["id_produto"] for i in itens]) if itens else {}
+    )
+    return jsonify(adicionar_nomes_produtos(itens, nomes))
 
 
 @app.route("/api/grupos_opcionais", methods=["GET"])
@@ -1944,13 +1964,18 @@ def api_get_grupos_opcionais():
             (id_produto, id_produto),
         )
         rows = cur.fetchall()
-        return jsonify([
-            {"id": r[0], "chave": r[1],
-             "quantidade_total": r[2],
-             "id_produto_comp": r[3],
-             "total_itens": r[4]}
-            for r in rows
-        ])
+        return jsonify(
+            [
+                {
+                    "id": r[0],
+                    "chave": r[1],
+                    "quantidade_total": r[2],
+                    "id_produto_comp": r[3],
+                    "total_itens": r[4],
+                }
+                for r in rows
+            ]
+        )
     except Exception as e:
         logger.error(e)
         return jsonify({"erro": "Erro ao buscar grupos."}), 500
@@ -2007,9 +2032,11 @@ def api_explodir_composto(id_produto):
     if componentes is False:
         return jsonify({"erro": "Erro ao calcular componentes."}), 500
     return jsonify(
-        {"itens": montar_itens(produto_pai, fator,
-                               componentes, estrutura['tipo'],
-                               int(id_loja))}
+        {
+            "itens": montar_itens(
+                produto_pai, fator, componentes, estrutura["tipo"], int(id_loja)
+            )
+        }
     )
 
 
@@ -2095,7 +2122,8 @@ def api_kds_pedidos():
                pi.id_status AS id_status_item,
                p.tipo_entrega,
                p.id_status AS id_status_pedido,
-               pi.quantidade
+               pi.quantidade,
+               p.id_cliente
           FROM pedidos p
           JOIN pedido_itens pi ON pi.id_pedido = p.id
          WHERE p.id_loja = %s
@@ -2152,6 +2180,7 @@ def api_kds_pedidos():
                 "tipo_entrega": row[10],
                 "id_status_pedido": row[11],
                 "peso": row[12],
+                "id_cliente": row[13],
             }
         )
 
@@ -2324,7 +2353,6 @@ def imprimir_pedido(id_pedido):
         status = buscar_status(cursor_app, pedido["id_status"])
         valor_total = buscar_valor_total(cursor_app, id_pedido)
         itens = buscar_itens(cursor_app, cursor_vr, id_pedido)
-
         texto = montar_texto_pedido(
             pedido=pedido,
             cliente=cliente,
@@ -2405,7 +2433,7 @@ def dashboard_partial():
 @app.route("/api/produtos/busca_descricao", methods=["POST"])
 def buscar_produtos_por_descricao():
     data = request.get_json() or {}
-    produtos = buscar_produtos(data.get("termo"))
+    produtos = buscar_produtos(data.get("termo"), data.get("id_loja"))
     return jsonify(produtos)
 
 
@@ -2477,9 +2505,7 @@ def api_usuarios_consulta():
         return jsonify(usuarios)
 
     except Exception as e:
-        return jsonify({
-            "erro": str(e)
-        }), 500
+        return jsonify({"erro": str(e)}), 500
 
 
 @app.route("/api/usuarios/<int:id_usuario>", methods=["GET"])
@@ -2490,19 +2516,13 @@ def api_usuario_get(id_usuario):
         return jsonify(usuario)
 
     except ValueError as e:
-        return jsonify({
-            "erro": str(e)
-        }), 400
+        return jsonify({"erro": str(e)}), 400
 
     except LookupError as e:
-        return jsonify({
-            "erro": str(e)
-        }), 404
+        return jsonify({"erro": str(e)}), 404
 
     except Exception as e:
-        return jsonify({
-            "erro": str(e)
-        }), 500
+        return jsonify({"erro": str(e)}), 500
 
 
 @app.route("/api/usuarios/novo", methods=["POST"])
@@ -2512,20 +2532,21 @@ def api_usuario_novo():
 
         id_usuario = criar_usuario(dados)
 
-        return jsonify({
-            "ok": True,
-            "id": id_usuario,
-        }), 201
+        return (
+            jsonify(
+                {
+                    "ok": True,
+                    "id": id_usuario,
+                }
+            ),
+            201,
+        )
 
     except ValueError as e:
-        return jsonify({
-            "erro": str(e)
-        }), 400
+        return jsonify({"erro": str(e)}), 400
 
     except Exception as e:
-        return jsonify({
-            "erro": str(e)
-        }), 500
+        return jsonify({"erro": str(e)}), 500
 
 
 @app.route(
@@ -2541,24 +2562,16 @@ def api_usuario_editar(id_usuario):
             dados,
         )
 
-        return jsonify({
-            "ok": True
-        })
+        return jsonify({"ok": True})
 
     except ValueError as e:
-        return jsonify({
-            "erro": str(e)
-        }), 400
+        return jsonify({"erro": str(e)}), 400
 
     except LookupError as e:
-        return jsonify({
-            "erro": str(e)
-        }), 404
+        return jsonify({"erro": str(e)}), 404
 
     except Exception as e:
-        return jsonify({
-            "erro": str(e)
-        }), 500
+        return jsonify({"erro": str(e)}), 500
 
 
 # GET /api/impressora/setor?loja=1&setor=2
@@ -2621,20 +2634,18 @@ def api_impressora_por_setor_post():
 
         acao = salvar_impressora_setor(dados)
 
-        return jsonify({
-            "ok": True,
-            "acao": acao,
-        })
+        return jsonify(
+            {
+                "ok": True,
+                "acao": acao,
+            }
+        )
 
     except ValueError as e:
-        return jsonify({
-            "erro": str(e)
-        }), 400
+        return jsonify({"erro": str(e)}), 400
 
     except Exception as e:
-        return jsonify({
-            "erro": str(e)
-        }), 500
+        return jsonify({"erro": str(e)}), 500
 
 
 def _montar_texto_impressao_kds(titulo, itens):

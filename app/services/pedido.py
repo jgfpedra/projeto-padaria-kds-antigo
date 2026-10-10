@@ -20,6 +20,9 @@ def adicionar_cabecalho(linhas, pedido, cliente, nome_loja, status):
 
     linhas.append(f"Telefone: {normalize_text(cliente['telefone'])}")
 
+    if pedido.get("tipo_entrega") == "entrega":
+        linhas.append(f"Endereço: {normalize_text(cliente['endereco'])}")
+
     if status:
         linhas.append(f"Status: {normalize_text(status)}")
 

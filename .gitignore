@@ -57,3 +57,7 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+#Acougue
+acougue.txt
+acougue.json

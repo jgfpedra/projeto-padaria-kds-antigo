@@ -1,0 +1,204 @@
+body {
+  background: #e7f1fa;
+}
+
+@media (max-width: 900px) {
+  .kanban-board {
+    flex-direction: column;
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .kanban-column {
+    min-height: auto;
+  }
+
+  .filtros-bar {
+    flex-wrap: wrap;
+    margin: 1rem 1rem 0;
+  }
+
+  .filtros-bar .input-group {
+    flex: 1 1 100%; /* cada select ocupa a linha toda */
+  }
+
+  .filtros-bar .btn {
+    flex: 1; /* os dois botões dividem a largura */
+  }
+}
+
+.kanban-board {
+  display: flex;
+  gap: 1.5rem;
+  padding: 2rem;
+}
+
+.kanban-column {
+  flex: 1 1 0;
+  min-width: 0;
+  background: #fff;
+  border-radius: 12px;
+  padding: 1rem;
+  min-height: 80vh;
+  box-shadow: 0 2px 8px #0001;
+}
+
+.kanban-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.kds-card {
+  background: #f7faff;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 4px #0002;
+  position: relative;
+}
+
+.kds-card.novo {
+  border-left: 5px solid #33cc33;
+  background: #eaffea;
+}
+
+.kds-card.balcao {
+  border-left: 5px solid #6633cc;
+  background: #efeaff;
+}
+
+.kds-card.finalizado {
+  border-left: 5px solid #999;
+  opacity: 0.7;
+}
+
+.kds-btn {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.filtros-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 1.5rem 2rem 0; /* mesmo recuo lateral do .kanban-board */
+  padding: 12px 16px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px #0001;
+}
+
+.filtros-bar .input-group {
+  flex: 1; /* selects dividem o espaço que sobra */
+}
+.filtros-bar .input-group-text {
+  background: #f1f5f9;
+  color: #6c757d;
+}
+.filtros-bar .btn {
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .quantidade-total {
+    font-size: 1.15rem;
+  }
+}
+
+.quantidade-total .produto-nome {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.card-observacao {
+  background: #fff7e6;
+  border-left: 5px solid #ffaa33;
+}
+
+.badge.bg-purple {
+  background: #8e24aa !important;
+  color: #fff !important;
+}
+
+.kds-card.emproducao {
+  border-left: 5px solid #ffe066 !important;
+  background: #fffbe9 !important;
+}
+
+.kds-card.finalizado {
+  background: #ececec !important;
+  border-left: 5px solid #bbb !important;
+}
+
+/* ações por card */
+.kds-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.kds-card-actions .btn {
+  flex: 1;
+}
+.kds-info {
+  font-size: 0.9rem;
+  color: #0d6efd;
+  cursor: help;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.tooltip-inner {
+  text-align: left;
+  max-width: 340px;
+}
+
+/* coluna finalizado escondida por padrão */
+#col-finalizado {
+  display: none;
+}
+body.mostrar-finalizado #col-finalizado {
+  display: block;
+}
+
+@media (max-width: 900px) {
+  #toggle-finalizado {
+    top: 12px;
+    right: 12px;
+    transform: none;
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* aba na borda direita */
+#toggle-finalizado {
+  position: fixed;
+  top: 50%;
+  right: 24px; /* afasta da barra de scroll */
+  transform: translateY(-50%);
+  width: 40px;
+  height: 140px;
+  background: #6c757d;
+  color: #fff;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.6;
+  transition:
+    background 0.15s,
+    opacity 0.15s;
+  z-index: 1050;
+  font-size: 1.2rem;
+  user-select: none;
+  box-shadow: 0 2px 8px #0003;
+}
+#toggle-finalizado:hover {
+  background: #495057;
+  opacity: 1;
+}

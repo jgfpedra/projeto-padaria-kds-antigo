@@ -7,7 +7,6 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 
-
 # 👇 Detecta se está rodando como .exe ou em modo dev
 if getattr(sys, "frozen", False):
     base_dir = os.path.dirname(sys.executable)
@@ -54,3 +53,4 @@ def load_user(user_id):
 # ✅ Por último, os módulos de rotas (dependem de app, bcrypt, e indiretamente de Usuario)
 from app import routes
 from app import api_routes
+from app.route import acougue
