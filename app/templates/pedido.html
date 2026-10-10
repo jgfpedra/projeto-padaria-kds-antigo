@@ -1,5 +1,5 @@
 {% extends "layout_base.html" %} {% block conteudo_central %}
-
+<link rel="stylesheet" href="static/css/pedido.css">
 <div class="container mt-4">
   <h2 id="titulo_pedido" class="mb-4">Pedido</h2>
   <form id="form-novo-pedido">
@@ -7,7 +7,7 @@
       <input type="hidden" id="id_cliente_hidden" />
       <input type="hidden" id="id_pedido_hidden" />
       <div class="row">
-        <div class="col-md-6 mb-3">
+        <div class="col-md-6 mb-3 position-relative">
           <label for="cliente" class="form-label">Cliente</label>
           <input
             type="text"
@@ -17,7 +17,7 @@
             placeholder="Nome ou telefone..."
             autocomplete="off"
           />
-          <div id="sugestoes-clientes" class="list-group"></div>
+          <div id="sugestoes-clientes" class="list-group sugestoes-flutuantes"></div>
         </div>
         <div class="col-md-6 mb-3">
           <label for="telefone" class="form-label">Telefone</label>
@@ -120,7 +120,7 @@
           placeholder="1"
         />
       </div>
-      <div class="col-md-4">
+      <div class="col-md-4 position-relative">
         <label for="desc_produto" class="form-label">Descrição Produto</label>
         <input
           type="text"
@@ -129,7 +129,7 @@
           name="desc_produto"
           placeholder="PÃO FRANCÊS"
         />
-        <div id="sugestoes-produtos" class="list-group"></div>
+        <div id="sugestoes-produtos" class="list-group sugestoes-flutuantes"></div>
       </div>
       <div
         class="col-md-4"
@@ -1291,6 +1291,14 @@
       }
     });
 
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest("#sugestoes-clientes, #cliente")) {
+        $("#sugestoes-clientes").empty();
+      }
+      if (!e.target.closest("#sugestoes-produtos, #desc_produto")) {
+        $("#sugestoes-produtos").empty();
+      }
+    });
 
     $("#sugestoes-produtos").on("click", "button", function () {
       let id_produto = $(this).data("id");
