@@ -95,6 +95,108 @@ def api_clientes():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/produto/<int:id_produto>", methods=["GET"])
+def api_produto_por_codigo(id_produto):
+    id_loja = request.args.get("id_loja", type=int)
+    print(id_loja)
+    if not id_loja:
+        return jsonify({"erro": "Parâmetro 'id_loja' é obrigatório"}), 400
+
+    conn = conectar_vr()
+    if not conn:
+        return jsonify({"erro": "Erro de conexão"}), 500
+    print("B")
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT p.id, p.descricaocompleta, te.descricao, pc.precovenda
+              FROM produto p
+              LEFT JOIN tipoembalagem te ON te.id = p.id_tipoembalagem
+              LEFT JOIN produtocomplemento pc
+                     ON pc.id_produto = p.id AND pc.id_loja = %s
+             WHERE p.id = %s
+             LIMIT 1
+            """,
+            (id_loja, id_produto),
+        )
+        row = cur.fetchone()
+        if not row:
+            return jsonify({"erro": "Produto não encontrado"}), 404
+        cur.execute(
+            """
+            SELECT s.id
+              FROM ficha.setorproduto sp
+              JOIN ficha.setor s ON s.id = sp.id_setor
+             WHERE sp.id_produto = %s AND s.id_loja = %s
+             LIMIT 1
+            """,
+            (id_produto, id_loja),
+        )
+        setor = cur.fetchone()
+        print("C")
+        embalagem = (row[2] or "").strip().upper()
+        return jsonify(
+            {
+                "cod_produto": row[0],
+                "descricao": row[1],
+                "tipo_embalagem": row[2] or "",
+                "unidade": "KG" if embalagem.startswith("KG") else "UN",
+                "preco_venda": float(row[3]) if row[3] is not None else 0,
+                "id_setor": setor[0] if setor else None,
+            }
+        )
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+    finally:
+        conn.close()
+
+
+def sincronizar_itens_pedido(cur_app, id_pedido, itens):
+    cur_app.execute(
+        """
+        SELECT id_produto, id_setor, observacao, id_produto_associado,
+               id_status, valor_unitario, peso
+          FROM pedido_itens
+         WHERE id_pedido = %s
+         ORDER BY id
+        """,
+        (id_pedido,),
+    )
+    antigos = {}
+    for r in cur_app.fetchall():
+        antigos.setdefault(int(r[0]), r)  # guarda o primeiro de cada produto
+
+    cur_app.execute("DELETE FROM pedido_itens WHERE id_pedido = %s", (id_pedido,))
+
+    for it in itens:
+        cod = int(it["cod_produto"])
+        old = antigos.get(cod)
+        preco = old[5] if old else to_decimal(it.get("preco_venda"))
+        id_setor = it.get("id_setor") or (old[1] if old else None) or 0
+
+        cur_app.execute(
+            """
+            INSERT INTO pedido_itens (
+                id_pedido, id_produto, id_setor, quantidade, quantidade_un,
+                peso, valor_unitario, observacao, id_produto_associado, id_status
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                id_pedido,
+                cod,
+                id_setor,
+                to_decimal(it.get("quantidade")),
+                to_decimal(it.get("quantidade_un")),
+                old[6] if old else 0,
+                preco,
+                old[2] if old else None,
+                old[3] if old else None,
+                old[4] if old else 0,
+            ),
+        )
+
+
 @app.route("/api/produtos")
 def api_produtos():
     try:
@@ -389,7 +491,6 @@ def buscar_pedido_edicao(id):
         cursor_app = conn_app.cursor()
         cursor_vr = conn_vr.cursor()
 
-        # Buscar dados do pedido (agora incluindo id_status)
         cursor_app.execute(
             """
             SELECT id_cliente, id_loja,
@@ -453,7 +554,6 @@ def buscar_pedido_edicao(id):
             "itens": [],
         }
 
-        # Buscar os itens do pedido
         cursor_app.execute(
             """
             SELECT id_produto, quantidade,
@@ -530,7 +630,7 @@ def buscar_pedido_edicao(id):
                     "desc_produto_associado": desc_produto_associado,
                 }
             )
-
+        print(jsonify(pedido))
         return jsonify(pedido)
 
     except Exception as e:
