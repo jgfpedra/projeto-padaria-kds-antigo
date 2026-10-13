@@ -1,6 +1,6 @@
 let _fin = null;
 let _filaFin = Promise.resolve();
-const qtdFin = (it) => (it.un > 0 ? it.peso : it.un);
+const qtdFin = (it) => (it.peso > 0 ? it.peso : it.un);
 
 const brl = (v) =>
   Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -23,7 +23,7 @@ async function abrirModalFinalizacao(idPedido, sistema, impresso) {
     const pedido = await response.json();
     if (!pedido || pedido.erro) {
       alert("Erro ao buscar pedido para finalização.");
-      return;
+        return;
     }
     _fin = {
       idPedido,
@@ -371,7 +371,8 @@ function removerItemFin(i) {
 }
 
 function atualizarTotalFin() {
-  const total = _fin.itens.reduce((acc, it) => acc + it.preco_venda * it.qtd, 0);
+  if (!_fin) return;
+  const total = _fin.itens.reduce((acc, it) => acc + it.preco_venda * qtdFin(it), 0);
   const el = document.getElementById("finTotal");
   if (el) el.textContent = "Valor Total: " + brl(total);
 }
@@ -381,7 +382,7 @@ function atualizarTotalFin() {
 function montarPayloadItensFin() {
   return _fin.itens.map((it) => ({
     cod_produto: it.cod_produto,
-    quantidade: it.qtd,
+    quantidade: it.peso,
     quantidade_un: it.un,
     preco_venda: it.preco_venda,
     id_setor: it.id_setor,
@@ -392,7 +393,7 @@ async function salvarFinalizacao() {
   if (!_fin) return;
 
   if (!_fin.itens.length) return alert("Adicione ao menos um item.");
-  if (_fin.itens.some((i) => !(i.qtd > 0))) return alert("Há itens com quantidade zerada.");
+  if (_fin.itens.some((i) => !(qtdFin(i) > 0))) return alert("Há itens com quantidade zerada.");
 
   const body = { id_pedido: _fin.idPedido, itens: montarPayloadItensFin() };
   let url = "/api/encomenda/finalizar_vrfood";

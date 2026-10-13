@@ -237,3 +237,96 @@ def buscar_itens(cursor_app, cursor_vr, id_pedido):
 
     itens.sort(key=lambda item: item["descricao"].casefold())
     return itens
+
+
+def buscar_cabecalho(cur, id_pedido):
+    cur.execute("SELECT id_loja, id_cliente FROM pedidos WHERE id = %s", (id_pedido,))
+    return cur.fetchone()
+
+
+def buscar_observacoes(cur, id_pedido):
+    cur.execute(
+        "SELECT id_produto, COALESCE(observacao,'') FROM pedido_itens WHERE id_pedido = %s",
+        (id_pedido,),
+    )
+    obs = {}
+    for pid, o in cur.fetchall():
+        obs.setdefault(str(pid), o)
+    return obs
+
+
+def substituir_itens(cur, id_pedido, itens):
+    """itens: lista de dicts já normalizados (ver services)."""
+    cur.execute("DELETE FROM pedido_itens WHERE id_pedido = %s", (id_pedido,))
+    for it in itens:
+        cur.execute(
+            """
+            INSERT INTO pedido_itens
+                (id_pedido, id_produto, quantidade, quantidade_un,
+                 valor_unitario, observacao, id_setor)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
+            (id_pedido, it["cod_produto"], it["quantidade"], it["quantidade_un"],
+             it["valor_unitario"], it["observacao"], it["id_setor"]),
+        )
+
+
+def buscar_itens_finalizacao(cur, id_pedido):
+    cur.execute(
+        """
+        SELECT id_produto, quantidade, valor_unitario,
+               COALESCE(observacao,''), id_setor
+          FROM pedido_itens WHERE id_pedido = %s
+        """,
+        (id_pedido,),
+    )
+    return cur.fetchall()
+
+
+def marcar_finalizado(cur, id_pedido, tipo):
+    cur.execute(
+        """
+        UPDATE pedidos
+           SET id_status = 7, data_finalizacao = NOW(), tipo_finalizacao = %s
+         WHERE id = %s
+        """,
+        (tipo, id_pedido),
+    )
+
+
+def proximo_id_venda(cur):
+    cur.execute("LOCK TABLE food.venda IN EXCLUSIVE MODE")
+    cur.execute("SELECT COALESCE(MAX(id),0) FROM food.venda")
+    return (cur.fetchone()[0] or 0) + 1
+
+
+def inserir_venda(cur, id_venda, id_loja, id_cliente, codigo):
+    cur.execute(
+        """
+        INSERT INTO food.venda (
+            id, id_loja, id_cliente, id_tipopagamento, datahora, tempoentrega,
+            troco, desconto, entrega, id_usuario, importado, id_situacaovenda,
+            codigo, id_ifood, json, isretirada, dataretirada, horaretirada,
+            id_entregador, id_vendedor
+        ) VALUES (
+            %s, %s, %s, 3, NOW(), '00:00:00',
+            0, 0, 0, 0, FALSE, 0,
+            %s, NULL, NULL, FALSE, NULL, NULL,
+            NULL, NULL
+        )
+        """,
+        (id_venda, id_loja, id_cliente, codigo),
+    )
+
+
+def inserir_item(cur, id_venda, it):
+    cur.execute(
+        """
+        INSERT INTO food.vendaitem
+            (id, id_venda, id_produto, quantidade, precovenda,
+             valortotal, observacao, id_setor)
+        VALUES (nextval('food.vendaitem_id_seq'), %s, %s, %s, %s, %s, %s, %s)
+        """,
+        (id_venda, it["id_produto"], it["quantidade"], it["precovenda"],
+         it["valortotal"], it["observacao"], it["id_setor"]),
+    )

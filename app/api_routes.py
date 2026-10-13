@@ -32,6 +32,10 @@ from app.services.usuario import (
     criar_usuario,
     editar_usuario,
 )
+from app.services.finalizar import (
+    finalizar_vrfood,
+    PedidoNaoEncontrado
+)
 from app.services.produto_composto import (
     calcular_componentes,
     montar_itens,
@@ -1340,129 +1344,21 @@ def api_finalizar_encomenda():
 @app.route("/api/encomenda/finalizar_vrfood", methods=["POST"])
 def api_finalizar_encomenda_vrfood():
     data = request.get_json()
-    id_pedido = data.get("id_pedido")
-    itens_editados = data.get("itens", [])
-
-    conn_app = conectar_app()
-    conn_vr = conectar_vr()
+    conn_app, conn_vr = conectar_app(), conectar_vr()
     if not conn_app or not conn_vr:
         return jsonify({"erro": "Erro ao conectar ao banco de dados"}), 500
-
     try:
-        cur_app = conn_app.cursor()
-        cur_vr = conn_vr.cursor()
-        for item in itens_editados:
-            cod_produto = item.get("cod_produto")
-            qtd_modal = to_decimal(item.get("quantidade"))
-            qtd_un = to_decimal(item.get("quantidade_un"))
-            cur_app.execute(
-                """
-                UPDATE pedido_itens
-                   SET quantidade   = %s,
-                       quantidade_un = %s
-                 WHERE id_pedido    = %s
-                   AND id_produto   = %s
-            """,
-                (qtd_modal, qtd_un, id_pedido, cod_produto),
-            )
-        conn_app.commit()
-        cur_app.execute(
-            """SELECT id_loja, id_cliente
-            FROM pedidos WHERE id = %s""",
-            (id_pedido,),
+        res = finalizar_vrfood(
+            conn_app.cursor(), conn_vr.cursor(),
+            data.get("id_pedido"), data.get("itens", []),
         )
-        row = cur_app.fetchone()
-        if not row:
-            return jsonify({"erro": "Pedido não encontrado."}), 400
-        id_loja, id_cliente = row
-        codigo_pedido = int(id_pedido)
-        # Itens já atualizados
-        cur_app.execute(
-            """
-            SELECT id_produto, quantidade,
-            valor_unitario, COALESCE(observacao,''), id_setor
-              FROM pedido_itens
-             WHERE id_pedido = %s
-        """,
-            (id_pedido,),
-        )
-        itens = cur_app.fetchall()
-        cur_vr.execute("LOCK TABLE food.venda IN EXCLUSIVE MODE")
-        cur_vr.execute("SELECT COALESCE(MAX(id),0) FROM food.venda")
-        id_venda = (cur_vr.fetchone()[0] or 0) + 1
-        cur_vr.execute(
-            """
-            INSERT INTO food.venda (
-                id, id_loja, id_cliente,
-                id_tipopagamento, datahora, tempoentrega,
-                troco, desconto, entrega,
-                id_usuario, importado, id_situacaovenda,
-                codigo, id_ifood, json, isretirada, dataretirada, horaretirada,
-                id_entregador, id_vendedor
-            ) VALUES (
-                %s, %s, %s, 3, NOW(), '00:00:00',
-                0, 0, 0, 0, FALSE, 0,
-                %s, NULL, NULL, FALSE, NULL, NULL,
-                NULL, NULL
-            )
-        """,
-            (id_venda, id_loja, id_cliente, codigo_pedido),
-        )
-
-        # 4) Itens
-        itens_inseridos = 0
-        for id_produto, quantidade, precovenda, observacao, id_setor in itens:
-            qtd = to_decimal(quantidade)
-            if qtd <= 0:
-                continue
-            pv = to_decimal(precovenda)
-            valortotal = pv * qtd
-            if valortotal > 0:
-                cur_vr.execute(
-                    """
-                    INSERT INTO food.vendaitem
-                        (id, id_venda, id_produto, quantidade, precovenda,
-                        valortotal, observacao, id_setor)
-                    VALUES
-                        (nextval('food.vendaitem_id_seq'), %s, %s, %s, %s, %s,
-                        %s, %s)
-                """,
-                    (
-                        id_venda,
-                        int(id_produto),
-                        float(qtd),
-                        float(pv),
-                        float(valortotal),
-                        observacao,
-                        int(id_setor),
-                    ),
-                )
-                itens_inseridos += 1
-
         conn_vr.commit()
-
-        # 5) Marca pedido como finalizado no Gestão
-        cur_app.execute(
-            """
-            UPDATE pedidos
-               SET id_status = 7,
-                   data_finalizacao = NOW(),
-                   tipo_finalizacao = 'vrfood'
-             WHERE id = %s;
-        """,
-            (id_pedido,),
-        )
         conn_app.commit()
-
-        return jsonify(
-            {
-                "mensagem": "Pedido finalizado no VRFood com sucesso.",
-                "id_venda": id_venda,
-                "codigo": codigo_pedido,
-                "itens_inseridos": itens_inseridos,
-            }
-        )
-
+        return jsonify({"mensagem": "Pedido finalizado no VRFood com sucesso.", **res})
+    except PedidoNaoEncontrado:
+        conn_app.rollback()
+        conn_vr.rollback()
+        return jsonify({"erro": "Pedido não encontrado."}), 400
     except Exception as e:
         conn_app.rollback()
         conn_vr.rollback()
