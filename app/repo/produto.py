@@ -25,7 +25,6 @@ def _preencher_descricoes(compostos: list[dict], nomes: dict[int, str]) -> None:
 
         for item in c["itens"] or []:
             item["descricao"] = nomes.get(item["id_produto"], "—")
-
         for grupo in c["grupos_opcionais"] or []:
             for item in grupo["itens"] or []:
                 item["descricao"] = nomes.get(item["id_produto"], "—")
