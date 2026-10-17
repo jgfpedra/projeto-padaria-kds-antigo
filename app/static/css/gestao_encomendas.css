@@ -222,15 +222,6 @@ body {
 }
 
 /* BOTÕES */
-.botoes {
-  padding: 10px 16px 14px;
-  display: flex;
-  gap: 8px;
-  margin-top: auto;
-  background: #2d2d4a;
-  border-radius: 0 0 12px 12px;
-}
-
 .botoes button {
   flex: 1;
   font-size: 13px;
@@ -248,3 +239,154 @@ body {
   border: none !important;
   color: white !important;
 }
+
+.card-meio-linha {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.card-meio-linha > .linha-info {
+  flex: 1 1 140px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.card-meio-linha > .linha-info .linha-status {
+  overflow-wrap: anywhere;
+}
+
+.linha-badges {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.linha-badges .badge {
+  white-space: normal;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+  .card-meio {
+    padding: 10px;
+  }
+
+  .card-meio-linha > .linha-info {
+    flex-basis: 100%;
+  }
+
+  .card-meio-linha > .linha-badges {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+  }
+}
+
+.botoes {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 0 0 8px 8px;
+  background: #17365d;
+}
+
+.info-pedido {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  color: #fff;
+  background: #2d2d4e;
+  font-size: 0.82rem;
+}
+
+.info-pedido span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.info-pedido span:last-child {
+  margin-left: auto;
+  text-align: right;
+}
+
+/* Botões encostados, ocupando toda a largura */
+.botoes-acoes {
+  display: flex;
+  width: 100%;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 0 0 8px 8px;
+}
+
+.botoes-acoes > .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 12px 8px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  border-radius: 0;
+  border: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.25);
+
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: normal;
+
+  transition:
+    filter 0.2s ease,
+    background-color 0.2s ease;
+}
+
+/* Remove a divisória do último botão */
+.botoes-acoes > .btn:last-child {
+  border-right: 0;
+}
+
+/* Hover uniforme */
+.botoes-acoes > .btn:hover {
+  filter: brightness(0.85);
+}
+
+/* Clique */
+.botoes-acoes > .btn:active {
+  filter: brightness(0.75);
+}
+
+/* Impressão */
+.botoes-acoes > .btn-imprimir {
+  background-color: #0D6EFD;
+  color: #fff;
+}
+
+.botoes-acoes > .btn-imprimir:hover {
+  background-color: #0B5ED7;
+  color: #fff;
+  filter: none;
+}
+

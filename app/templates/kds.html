@@ -1,360 +1,313 @@
 <!doctype html>
 <html lang="pt-br">
-  <head>
-    <meta charset="UTF-8" />
-    <title>KDS Gestão de Setores</title>
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/kds.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
-    />
-  </head>
 
-  <body>
-    <div class="filtros-bar">
-      <div class="input-group">
-        <span class="input-group-text"><i class="fa-solid fa-store"></i></span>
-        <select id="selectLoja" class="form-select" aria-label="Loja">
-          <option value="">Selecione a Loja</option>
-        </select>
-      </div>
+<head>
+  <meta charset="UTF-8" />
+  <title>KDS Gestão de Setores</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/kds.css') }}" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+</head>
 
-      <div class="input-group">
-        <span class="input-group-text"
-          ><i class="fa-solid fa-layer-group"></i
-        ></span>
-        <select id="selectSetor" class="form-select" aria-label="Setor">
-          <option value="">Selecione o Setor</option>
-        </select>
-      </div>
-
-      <button
-        class="btn btn-outline-secondary"
-        type="button"
-        onclick="atualizarPedidos()"
-        title="Atualizar agora"
-      >
-        <i class="fas fa-sync-alt"></i> Atualizar
-      </button>
-      <button
-        class="btn btn-outline-primary"
-        type="button"
-        onclick="abrirModalConfig()"
-        title="Configurar impressora"
-      >
-        <i class="fas fa-gear"></i> Configurar
-      </button>
+<body>
+  <div class="filtros-bar">
+    <div class="input-group">
+      <span class="input-group-text"><i class="fa-solid fa-store"></i></span>
+      <select id="selectLoja" class="form-select" aria-label="Loja">
+        <option value="">Selecione a Loja</option>
+      </select>
     </div>
 
-    <div class="kanban-board" id="kanban-board">
-      <!-- Coluna Aguardando -->
-      <div class="kanban-column" id="col-aguardando">
-        <div
-          class="kanban-title"
-          style="
+    <div class="input-group">
+      <span class="input-group-text"><i class="fa-solid fa-layer-group"></i></span>
+      <select id="selectSetor" class="form-select" aria-label="Setor">
+        <option value="">Selecione o Setor</option>
+      </select>
+    </div>
+
+    <button class="btn btn-outline-secondary" type="button" onclick="atualizarPedidos()" title="Atualizar agora">
+      <i class="fas fa-sync-alt"></i> Atualizar
+    </button>
+    <button class="btn btn-outline-primary" type="button" onclick="abrirModalConfig()" title="Configurar impressora">
+      <i class="fas fa-gear"></i> Configurar
+    </button>
+  </div>
+
+  <div class="kanban-board" id="kanban-board">
+    <!-- Coluna Aguardando -->
+    <div class="kanban-column" id="col-aguardando">
+      <div class="kanban-title" style="
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 8px;
-          "
-        >
-          <span>Aguardando</span>
-          <div class="d-flex" style="gap: 8px">
-            <button
-              class="btn btn-sm btn-secondary"
-              onclick="imprimirColuna('aguardando')"
-            >
-              <i class="fa fa-print"></i>
-              Imprimir
-            </button>
-            <button class="btn btn-sm btn-primary" onclick="produzirTodos()">
-              Produzir Todos
-            </button>
-          </div>
+          ">
+        <span>Aguardando</span>
+        <div class="d-flex" style="gap: 8px">
+          <button class="btn btn-sm btn-secondary" onclick="imprimirColuna('aguardando')">
+            <i class="fa fa-print"></i>
+            Imprimir
+          </button>
+          <button class="btn btn-sm btn-primary" onclick="produzirTodos()">
+            Produzir Todos
+          </button>
         </div>
-        <!-- JS INSERE OS CARDS AQUI -->
       </div>
+      <!-- JS INSERE OS CARDS AQUI -->
+    </div>
 
-      <!-- Coluna Em Produção -->
-      <div class="kanban-column" id="col-producao">
-        <div
-          class="kanban-title"
-          style="
+    <!-- Coluna Em Produção -->
+    <div class="kanban-column" id="col-producao">
+      <div class="kanban-title" style="
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 8px;
-          "
-        >
-          <span>Em Produção</span>
-          <div class="d-flex" style="gap: 8px">
-            <button
-              class="btn btn-sm btn-secondary"
-              onclick="imprimirColuna('producao')"
-            >
-              <i class="fa fa-print"></i>
-              Imprimir
-            </button>
-            <button class="btn btn-sm btn-success" onclick="finalizarTodos()">
-              Finalizar Todos
-            </button>
-          </div>
+          ">
+        <span>Em Produção</span>
+        <div class="d-flex" style="gap: 8px">
+          <button class="btn btn-sm btn-secondary" onclick="imprimirColuna('producao')">
+            <i class="fa fa-print"></i>
+            Imprimir
+          </button>
+          <button class="btn btn-sm btn-success" onclick="finalizarTodos()">
+            Finalizar Todos
+          </button>
         </div>
-        <!-- JS INSERE OS CARDS AQUI -->
       </div>
-
-      <!-- Coluna Finalizado -->
-      <div class="kanban-column" id="col-finalizado">
-        <div class="kanban-title">Finalizado</div>
-        <!-- JS INSERE OS CARDS AQUI -->
-      </div>
+      <!-- JS INSERE OS CARDS AQUI -->
     </div>
 
-    <!-- Modal Configuração Impressora -->
-    <div class="modal fade" id="modalConfig" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header py-2">
-            <h5 class="modal-title">Configurar Impressora</h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Fechar"
-            ></button>
+    <!-- Coluna Finalizado -->
+    <div class="kanban-column" id="col-finalizado">
+      <div class="kanban-title">Finalizado</div>
+      <!-- JS INSERE OS CARDS AQUI -->
+    </div>
+  </div>
+
+  <!-- Modal Configuração Impressora -->
+  <div class="modal fade" id="modalConfig" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h5 class="modal-title">Configurar Impressora</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label">Loja</label>
+            <select id="cfgLoja" class="form-select" disabled></select>
           </div>
-          <div class="modal-body">
-            <div class="mb-2">
-              <label class="form-label">Loja</label>
-              <select id="cfgLoja" class="form-select" disabled></select>
-            </div>
-            <div class="mb-2">
-              <label class="form-label">Setor</label>
-              <select id="cfgSetor" class="form-select" disabled></select>
-            </div>
-            <div class="mb-2">
-              <label class="form-label">Modo de visão dos cards</label>
-              <select id="cfgModoVisao" class="form-select">
-                <option value="produtos">Por Produtos (agrupado)</option>
-                <option value="pedidos">Por Pedidos</option>
-              </select>
-            </div>
-            <div class="mb-1">
-              <label class="form-label">Caminho Impressora</label>
-              <input
-                type="text"
-                id="cfgCaminho"
-                class="form-control"
-                placeholder="Ex.: \\\\SERVIDOR\\IMP_TERMICA"
-              />
-              <small class="text-muted"
-                >Ex.: \\SERVIDOR\IMP_TERMICA (Windows) — ou arquivo/pipe no
-                Linux</small
-              >
-            </div>
+          <div class="mb-2">
+            <label class="form-label">Setor</label>
+            <select id="cfgSetor" class="form-select" disabled></select>
           </div>
-          <div class="modal-footer py-2">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">
-              Fechar
-            </button>
-            <button class="btn btn-primary" onclick="salvarConfigImpressora()">
-              Salvar
-            </button>
+          <div class="mb-2">
+            <label class="form-label">Modo de visão dos cards</label>
+            <select id="cfgModoVisao" class="form-select">
+              <option value="produtos">Por Produtos (agrupado)</option>
+              <option value="pedidos">Por Pedidos</option>
+            </select>
           </div>
+          <div class="mb-1">
+            <label class="form-label">Caminho Impressora</label>
+            <input type="text" id="cfgCaminho" class="form-control" placeholder="Ex.: \\\\SERVIDOR\\IMP_TERMICA" />
+            <small class="text-muted">Ex.: \\SERVIDOR\IMP_TERMICA (Windows) — ou arquivo/pipe no
+              Linux</small>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">
+            Fechar
+          </button>
+          <button class="btn btn-primary" onclick="salvarConfigImpressora()">
+            Salvar
+          </button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div
-      id="toggle-finalizado"
-      title="Mostrar/ocultar Finalizados"
-      onclick="toggleFinalizado()"
-    >
-      <i class="fa-solid fa-chevron-left"></i>
-    </div>
+  <div id="toggle-finalizado" title="Mostrar/ocultar Finalizados" onclick="toggleFinalizado()">
+    <i class="fa-solid fa-chevron-left"></i>
+  </div>
 
-    <script>
-      let lojaSelecionada = null;
-      let setorSelecionado = null;
-      window.pedidos = [];
-      let idsSempreComHorario = []; // vindo de produto_exibir_horario
-      let snapshotUltimosPedidos = ""; // para detectar novos
-      let modoVisao = localStorage.getItem("kdsModoVisao") || "produtos";
+  <script>
+    let lojaSelecionada = null;
+    let setorSelecionado = null;
+    window.pedidos = [];
+    let idsSempreComHorario = []; // vindo de produto_exibir_horario
+    let snapshotUltimosPedidos = ""; // para detectar novos
+    let modoVisao = localStorage.getItem("kdsModoVisao") || "produtos";
 
-      // --- Utilitários de data ---
-      function getHojeObj() {
-        const hoje = new Date();
-        return new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+    // --- Utilitários de data ---
+    function getHojeObj() {
+      const hoje = new Date();
+      return new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+    }
+    function getDataObj(dataIso) {
+      const [ano, mes, dia] = dataIso.split("-");
+      return new Date(Number(ano), Number(mes) - 1, Number(dia));
+    }
+    function isHoje(dataIso) {
+      const data = getDataObj(dataIso);
+      const hoje = getHojeObj();
+      return data.getTime() === hoje.getTime();
+    }
+    function isAmanha(dataIso) {
+      const data = getDataObj(dataIso);
+      const amanha = getHojeObj();
+      amanha.setDate(amanha.getDate() + 1);
+      return data.getTime() === amanha.getTime();
+    }
+    function setModoVisao(modo) {
+      modoVisao = modo;
+      localStorage.setItem("kdsModoVisao", modo);
+      renderCards();
+    }
+    function formatarDataBr(dataIso) {
+      if (!dataIso) return "";
+      const dias = [
+        "DOMINGO",
+        "SEGUNDA",
+        "TERÇA",
+        "QUARTA",
+        "QUINTA",
+        "SEXTA",
+        "SÁBADO",
+      ];
+      const [ano, mes, dia] = dataIso.split("-");
+      const dataObj = new Date(Number(ano), Number(mes) - 1, Number(dia));
+      const diaSemana = dias[dataObj.getDay()];
+      return `${dia}/${mes}/${ano} - ${diaSemana}`;
+    }
+    function formatarHora(hora) {
+      if (!hora) return "";
+      return hora.slice(0, 5);
+    }
+
+    // --- Sons ---
+    function tocarSomNovoPedido() {
+      const audio = document.getElementById("alertaAudio");
+      if (audio) {
+        audio.currentTime = 0;
+        audio.play();
       }
-      function getDataObj(dataIso) {
-        const [ano, mes, dia] = dataIso.split("-");
-        return new Date(Number(ano), Number(mes) - 1, Number(dia));
-      }
-      function isHoje(dataIso) {
-        const data = getDataObj(dataIso);
-        const hoje = getHojeObj();
-        return data.getTime() === hoje.getTime();
-      }
-      function isAmanha(dataIso) {
-        const data = getDataObj(dataIso);
-        const amanha = getHojeObj();
-        amanha.setDate(amanha.getDate() + 1);
-        return data.getTime() === amanha.getTime();
-      }
-      function setModoVisao(modo) {
-        modoVisao = modo;
-        localStorage.setItem("kdsModoVisao", modo);
+    }
+
+    // --- Carregamentos iniciais ---
+    async function carregarLojas() {
+      let res = await fetch("/api/lojas");
+      let lojas = await res.json();
+      const select = document.getElementById("selectLoja");
+      select.innerHTML = '<option value="">Selecione a Loja</option>';
+      lojas.forEach((loja) => {
+        select.innerHTML += `<option value="${loja.id}">${loja.descricao}</option>`;
+      });
+      select.onchange = async function () {
+        lojaSelecionada = this.value;
+        await carregarSetores();
+        setorSelecionado = null;
+        window.pedidos = [];
         renderCards();
-      }
-      function formatarDataBr(dataIso) {
-        if (!dataIso) return "";
-        const dias = [
-          "DOMINGO",
-          "SEGUNDA",
-          "TERÇA",
-          "QUARTA",
-          "QUINTA",
-          "SEXTA",
-          "SÁBADO",
-        ];
-        const [ano, mes, dia] = dataIso.split("-");
-        const dataObj = new Date(Number(ano), Number(mes) - 1, Number(dia));
-        const diaSemana = dias[dataObj.getDay()];
-        return `${dia}/${mes}/${ano} - ${diaSemana}`;
-      }
-      function formatarHora(hora) {
-        if (!hora) return "";
-        return hora.slice(0, 5);
-      }
+      };
+    }
+    async function carregarSetores() {
+      const selectSetor = document.getElementById("selectSetor");
+      selectSetor.innerHTML = '<option value="">Selecione o Setor</option>';
+      if (!lojaSelecionada) return;
+      const res = await fetch(`/api/loja/${lojaSelecionada}/setores`);
+      const setores = await res.json();
+      setores.forEach((setor) => {
+        selectSetor.innerHTML += `<option value="${setor.id}">${setor.descricao}</option>`;
+      });
+      selectSetor.onchange = function () {
+        setorSelecionado = this.value;
+        atualizarPedidos();
+      };
+    }
+    // --- Atualização dos pedidos ---
+    let timerAtualizacao = null;
+    function chegouNovoPedido(listaAtual) {
+      let novoSnapshot = listaAtual
+        .map((p) => p.id)
+        .sort()
+        .join("-");
+      return novoSnapshot !== snapshotUltimosPedidos;
+    }
 
-      // --- Sons ---
-      function tocarSomNovoPedido() {
-        const audio = document.getElementById("alertaAudio");
-        if (audio) {
-          audio.currentTime = 0;
-          audio.play();
-        }
-      }
-
-      // --- Carregamentos iniciais ---
-      async function carregarLojas() {
-        let res = await fetch("/api/lojas");
-        let lojas = await res.json();
-        const select = document.getElementById("selectLoja");
-        select.innerHTML = '<option value="">Selecione a Loja</option>';
-        lojas.forEach((loja) => {
-          select.innerHTML += `<option value="${loja.id}">${loja.descricao}</option>`;
-        });
-        select.onchange = async function () {
-          lojaSelecionada = this.value;
-          await carregarSetores();
-          setorSelecionado = null;
-          window.pedidos = [];
-          renderCards();
-        };
-      }
-      async function carregarSetores() {
-        const selectSetor = document.getElementById("selectSetor");
-        selectSetor.innerHTML = '<option value="">Selecione o Setor</option>';
-        if (!lojaSelecionada) return;
-        const res = await fetch(`/api/loja/${lojaSelecionada}/setores`);
-        const setores = await res.json();
-        setores.forEach((setor) => {
-          selectSetor.innerHTML += `<option value="${setor.id}">${setor.descricao}</option>`;
-        });
-        selectSetor.onchange = function () {
-          setorSelecionado = this.value;
-          atualizarPedidos();
-        };
-      }
-      // --- Atualização dos pedidos ---
-      let timerAtualizacao = null;
-      function chegouNovoPedido(listaAtual) {
-        let novoSnapshot = listaAtual
-          .map((p) => p.id)
-          .sort()
-          .join("-");
-        return novoSnapshot !== snapshotUltimosPedidos;
-      }
-      async function atualizarPedidos(auto = false) {
-        const loja = document.getElementById("selectLoja").value;
-        const setor = document.getElementById("selectSetor").value;
-        if (!loja || !setor) {
-          window.pedidos = [];
-          renderCards();
-          return;
-        }
-        const res = await fetch(`/api/kds/pedidos?loja=${loja}&setor=${setor}`);
-        const novosPedidos = await res.json();
-        if (auto && chegouNovoPedido(novosPedidos)) {
-          tocarSomNovoPedido();
-        }
-        window.pedidos = novosPedidos;
+    async function atualizarPedidos(auto = false) {
+      const loja = document.getElementById("selectLoja").value;
+      const setor = document.getElementById("selectSetor").value;
+      if (!loja || !setor) {
+        window.pedidos = [];
         renderCards();
-        snapshotUltimosPedidos = pedidos
-          .map((p) => p.id)
-          .sort()
-          .join("-");
+        return;
       }
-      function agendarAtualizacaoAutomatica() {
-        if (timerAtualizacao) clearInterval(timerAtualizacao);
-        timerAtualizacao = setInterval(() => atualizarPedidos(true), 60000);
+      const res = await fetch(`/api/kds/pedidos?loja=${loja}&setor=${setor}`);
+      const novosPedidos = await res.json();
+      if (auto && chegouNovoPedido(novosPedidos)) {
+        tocarSomNovoPedido();
       }
+      window.pedidos = novosPedidos;
+      renderCards();
+      snapshotUltimosPedidos = pedidos
+        .map((p) => p.id)
+        .sort()
+        .join("-");
+    }
+    function agendarAtualizacaoAutomatica() {
+      if (timerAtualizacao) clearInterval(timerAtualizacao);
+      timerAtualizacao = setInterval(() => atualizarPedidos(true), 60000);
+    }
 
-      function toggleFinalizado() {
-        const visivel = document.body.classList.toggle("mostrar-finalizado");
-        localStorage.setItem("kdsMostrarFinalizado", visivel ? "1" : "0");
-        atualizarSetaFinalizado();
-      }
+    function toggleFinalizado() {
+      const visivel = document.body.classList.toggle("mostrar-finalizado");
+      localStorage.setItem("kdsMostrarFinalizado", visivel ? "1" : "0");
+      atualizarSetaFinalizado();
+    }
 
-      function atualizarSetaFinalizado() {
-        const icone = document.querySelector("#toggle-finalizado i");
-        const visivel = document.body.classList.contains("mostrar-finalizado");
-        // seta aponta para a direita quando aberto (clicar recolhe)
-        icone.className = visivel
-          ? "fa-solid fa-chevron-right"
-          : "fa-solid fa-chevron-left";
-      }
+    function atualizarSetaFinalizado() {
+      const icone = document.querySelector("#toggle-finalizado i");
+      const visivel = document.body.classList.contains("mostrar-finalizado");
+      // seta aponta para a direita quando aberto (clicar recolhe)
+      icone.className = visivel
+        ? "fa-solid fa-chevron-right"
+        : "fa-solid fa-chevron-left";
+    }
 
-      function escHtml(s) {
-        return String(s ?? "")
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#39;");
-      }
+    function escHtml(s) {
+      return String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
 
-      function montarTooltipPedidos(pedidosCard) {
-        const codigos = [...new Set(pedidosCard.map((p) => p.id))]
-          .sort((a, b) => Number(a) - Number(b))
-          .map((id) => "#" + escHtml(id))
-          .join(", ");
+    function montarTooltipPedidos(pedidosCard) {
+      const codigos = [...new Set(pedidosCard.map((p) => p.id))]
+        .sort((a, b) => Number(a) - Number(b))
+        .map((id) => "#" + escHtml(id))
+        .join(", ");
 
-        return escHtml(`<div><b>Pedidos:</b> ${codigos}</div>`);
-      }
+      return escHtml(`<div><b>Pedidos:</b> ${codigos}</div>`);
+    }
 
-      function iniciarTooltips() {
-        document
-          .querySelectorAll('[data-bs-toggle="tooltip"]')
-          .forEach((el) => {
-            new bootstrap.Tooltip(el, { container: "body" });
-          });
-      }
+    function iniciarTooltips() {
+      document
+        .querySelectorAll('[data-bs-toggle="tooltip"]')
+        .forEach((el) => {
+          new bootstrap.Tooltip(el, {container: "body"});
+        });
+    }
 
-      // --- Renderização de cards ---
-      let agrupadosGlobal = {};
-      function renderCards() {
-        document.querySelectorAll(".tooltip").forEach((t) => t.remove());
-        // limpa colunas
-        document.getElementById("col-aguardando").innerHTML = `
+    // --- Renderização de cards ---
+    let agrupadosGlobal = {};
+    function renderCards() {
+      document.querySelectorAll(".tooltip").forEach((t) => t.remove());
+      // limpa colunas
+      document.getElementById("col-aguardando").innerHTML = `
       <div class="kanban-title" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
       <span>Aguardando</span>
       <div class="d-flex" style="gap:8px;">
@@ -364,7 +317,7 @@
       <button class="btn btn-sm btn-primary" onclick="produzirTodos()">Produzir Todos</button>
       </div>
       </div>`;
-        document.getElementById("col-producao").innerHTML = `
+      document.getElementById("col-producao").innerHTML = `
       <div class="kanban-title" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
       <span>Em Produção</span>
       <div class="d-flex" style="gap:8px;">
@@ -374,134 +327,135 @@
       <button class="btn btn-sm btn-success" onclick="finalizarTodos()">Finalizar Todos</button>
       </div>
       </div>`;
-        document.getElementById("col-finalizado").innerHTML =
-          `<div class="kanban-title">Finalizado</div>`;
+      document.getElementById("col-finalizado").innerHTML =
+        `<div class="kanban-title">Finalizado</div>`;
 
-        if (!pedidos || pedidos.length === 0) {
-          document.getElementById("col-aguardando").innerHTML +=
-            '<div class="text-center text-muted mt-3">Sem pedidos para este setor/loja.</div>';
-          agrupadosGlobal = {};
-          return;
-        }
+      if (!pedidos || pedidos.length === 0) {
+        document.getElementById("col-aguardando").innerHTML +=
+          '<div class="text-center text-muted mt-3">Sem pedidos para este setor/loja.</div>';
+        agrupadosGlobal = {};
+        return;
+      }
+      let agrupados = {};
+      pedidos.forEach((p) => {
+        const chave =
+          (p.descricao || p.produto || p.id_produto) +
+          "|" +
+          (p.observacao || "");
+        if (!agrupados[chave]) agrupados[chave] = [];
+        agrupados[chave].push(p);
+      });
 
-        // agrupa por produto + observação
-        let agrupados = {};
-        pedidos.forEach((p) => {
-          const chave =
-            (p.descricao || p.produto || p.id_produto) +
-            "|" +
-            (p.observacao || "");
-          if (!agrupados[chave]) agrupados[chave] = [];
-          agrupados[chave].push(p);
-        });
+      // visão por pedidos
+      if (modoVisao === "pedidos") {
+        agrupadosGlobal = agrupados;
+        renderCardsPorPedido();
+        return;
+      }
 
-        // visão por pedidos
-        if (modoVisao === "pedidos") {
-          agrupadosGlobal = agrupados; // mantém "Produzir Todos", "Finalizar Todos" e "Imprimir" funcionando
-          renderCardsPorPedido();
-          return;
-        }
+      const coll = new Intl.Collator("pt-BR", {
+        sensitivity: "base",
+        numeric: true,
+      });
 
-        const coll = new Intl.Collator("pt-BR", {
-          sensitivity: "base",
-          numeric: true,
-        });
+      const cardsPorStatus = {0: [], 1: [], 2: []};
 
-        const cardsPorStatus = { 0: [], 1: [], 2: [] };
+      Object.keys(agrupados).forEach((chave) => {
+        const lista = agrupados[chave];
+        const produto =
+          lista[0].descricao || lista[0].produto || lista[0].id_produto;
+        const observacao = lista[0].observacao || "";
+        const idProduto = lista[0].id_produto;
 
-        Object.keys(agrupados).forEach((chave) => {
-          const lista = agrupados[chave];
-          const produto =
-            lista[0].descricao || lista[0].produto || lista[0].id_produto;
-          const observacao = lista[0].observacao || "";
-          const idProduto = lista[0].id_produto;
+        const chaveSafe = String(chave)
+          .replace(/\\/g, "\\\\") // escapa barra invertida
+          .replace(/'/g, "\\'"); // escapa aspas simples
 
-          const chaveSafe = String(chave)
-            .replace(/\\/g, "\\\\") // escapa barra invertida
-            .replace(/'/g, "\\'"); // escapa aspas simples
+        [0, 1, 2].forEach((status) => {
+          const pedidosHoje = lista.filter(
+            (p) => p.id_status == status && isHoje(p.data),
+          );
+          const pedidosAmanha = lista.filter(
+            (p) => p.id_status == status && isAmanha(p.data),
+          );
+          if (!pedidosHoje.length && !pedidosAmanha.length) return;
 
-          [0, 1, 2].forEach((status) => {
-            const pedidosHoje = lista.filter(
-              (p) => p.id_status == status && isHoje(p.data),
-            );
-            const pedidosAmanha = lista.filter(
-              (p) => p.id_status == status && isAmanha(p.data),
-            );
-            if (!pedidosHoje.length && !pedidosAmanha.length) return;
+          const total = [...pedidosHoje, ...pedidosAmanha].reduce(
+            (s, p) => s + parseFloat(p.quantidade || 0),
+            0,
+          );
+          const totalFormatado = total.toLocaleString("pt-BR", {
+            minimumFractionDigits: 3,
+            maximumFractionDigits: 3,
+          });
+          const horariosHoje = pedidosHoje
+            .sort((a, b) => (a.hora > b.hora ? 1 : -1))
+            .map((item) => {
+              const etiquetaBalcao =
+                item.tipo_entrega?.toLowerCase() === "balcao"
+                  ? '<span class="badge bg-purple text-white ms-2">BALCÃO</span>'
+                  : "";
 
-            const total = [...pedidosHoje, ...pedidosAmanha].reduce(
-              (s, p) => s + parseFloat(p.quantidade || 0),
-              0,
-            );
-            const totalFormatado = total.toLocaleString("pt-BR", {
-              minimumFractionDigits: 3,
-              maximumFractionDigits: 3,
-            });
-            const horariosHoje = pedidosHoje
-              .sort((a, b) => (a.hora > b.hora ? 1 : -1))
-              .map((item) => {
-                const etiquetaBalcao =
-                  item.tipo_entrega?.toLowerCase() === "balcao"
-                    ? '<span class="badge bg-purple text-white ms-2">BALCÃO</span>'
-                    : "";
+              const q = Math.trunc(Number(item.quantidade)).toLocaleString(
+                "pt-BR",
+              );
+              const qp = Number(item.peso).toLocaleString("pt-BR", {
+                minimumFractionDigits: 3,
+                maximumFractionDigits: 3,
+              });
+              const quantidade =
+                Number(item.quantidade) !== 0 ? `${q} UN - ` : "";
+              return `<div style="font-size:1.05em;"><b>${formatarHora(item.hora)}</b> - ${quantidade}${qp} Kg ${etiquetaBalcao}</div>`;
+            })
+            .join("");
 
-                const q = Math.trunc(Number(item.quantidade)).toLocaleString(
-                  "pt-BR",
-                );
-                const qp = Number(item.peso).toLocaleString("pt-BR", {
-                  minimumFractionDigits: 3,
-                  maximumFractionDigits: 3,
-                });
-                const quantidade =
-                  Number(item.quantidade) !== 0 ? `${q} UN - ` : "";
-                return `<div style="font-size:1.05em;"><b>${formatarHora(item.hora)}</b> - ${quantidade}${qp} Kg ${etiquetaBalcao}</div>`;
-              })
-              .join("");
+          const horariosAmanha = pedidosAmanha
+            .sort((a, b) => (a.hora > b.hora ? 1 : -1))
+            .map((item) => {
+              const etiquetaBalcao =
+                item.tipo_entrega?.toLowerCase() === "balcao"
+                  ? '<span class="badge bg-purple text-white ms-2">BALCÃO</span>'
+                  : "";
+              const q = Math.trunc(Number(item.quantidade)).toLocaleString(
+                "pt-BR",
+              );
+              const qp = Number(item.peso).toLocaleString("pt-BR", {
+                minimumFractionDigits: 3,
+                maximumFractionDigits: 3,
+              });
+              const quantidade =
+                Number(item.quantidade) !== 0 ? `${q} UN - ` : "";
+              const op = item.nome_operador
+                ? ` <i class="fa-solid fa-user kds-operador" title="${escHtml(item.nome_operador)}"></i>`
+                : "";
+              return `<div style="font-size:1.05em;"><b>${formatarHora(item.hora)}</b> - ${quantidade}${qp} Kg ${etiquetaBalcao}${op}</div>`;
+            })
+            .join("");
 
-            const horariosAmanha = pedidosAmanha
-              .sort((a, b) => (a.hora > b.hora ? 1 : -1))
-              .map((item) => {
-                const etiquetaBalcao =
-                  item.tipo_entrega?.toLowerCase() === "balcao"
-                    ? '<span class="badge bg-purple text-white ms-2">BALCÃO</span>'
-                    : "";
-                const q = Math.trunc(Number(item.quantidade)).toLocaleString(
-                  "pt-BR",
-                );
-                const qp = Number(item.peso).toLocaleString("pt-BR", {
-                  minimumFractionDigits: 3,
-                  maximumFractionDigits: 3,
-                });
-                const quantidade =
-                  Number(item.quantidade) !== 0 ? `${q} UN - ` : "";
-                return `<div style="font-size:1.05em;"><b>${formatarHora(item.hora)}</b> - ${quantidade}${qp} Kg ${etiquetaBalcao}</div>`;
-              })
-              .join("");
+          const hojeLabel = pedidosHoje.length
+            ? `${formatarDataBr(pedidosHoje[0].data)} - <span style="color:#d00;font-weight:bold;">HOJE</span>`
+            : "";
+          const amanhaLabel = pedidosAmanha.length
+            ? `${formatarDataBr(pedidosAmanha[0].data)} - <span style="color:#d00;font-weight:bold;">AMANHÃ</span>`
+            : "";
 
-            const hojeLabel = pedidosHoje.length
-              ? `${formatarDataBr(pedidosHoje[0].data)} - <span style="color:#d00;font-weight:bold;">HOJE</span>`
-              : "";
-            const amanhaLabel = pedidosAmanha.length
-              ? `${formatarDataBr(pedidosAmanha[0].data)} - <span style="color:#d00;font-weight:bold;">AMANHÃ</span>`
-              : "";
+          let blocos = "";
+          const btnHoje = pedidosHoje.length
+            ? status == 0
+              ? `<button class="btn btn-sm btn-primary mt-2 w-100" onclick="produzirPedidosDia('${chaveSafe}','hoje')"><i class="fa-solid fa-play"></i> Produzir</button>`
+              : status == 1
+                ? `<button class="btn btn-sm btn-success mt-2 w-100" onclick="finalizarPedidosDia('${chaveSafe}','hoje')"><i class="fa-solid fa-check"></i> Finalizar</button>`
+                : ""
+            : "";
+          const btnAmanha = pedidosAmanha.length
+            ? status == 0
+              ? `<button class="btn btn-sm btn-primary mt-2 w-100" onclick="produzirPedidosDia('${chaveSafe}','amanha')"><i class="fa-solid fa-play"></i> Produzir</button>`
+              : status == 1
+                ? `<button class="btn btn-sm btn-success mt-2 w-100" onclick="finalizarPedidosDia('${chaveSafe}','amanha')"><i class="fa-solid fa-check"></i> Finalizar</button>`
+                : ""
+            : "";
 
-            let blocos = "";
-            const btnHoje = pedidosHoje.length
-              ? status == 0
-                ? `<button class="btn btn-sm btn-primary mt-2 w-100" onclick="produzirPedidosDia('${chaveSafe}','hoje')"><i class="fa-solid fa-play"></i> Produzir</button>`
-                : status == 1
-                  ? `<button class="btn btn-sm btn-success mt-2 w-100" onclick="finalizarPedidosDia('${chaveSafe}','hoje')"><i class="fa-solid fa-check"></i> Finalizar</button>`
-                  : ""
-              : "";
-            const btnAmanha = pedidosAmanha.length
-              ? status == 0
-                ? `<button class="btn btn-sm btn-primary mt-2 w-100" onclick="produzirPedidosDia('${chaveSafe}','amanha')"><i class="fa-solid fa-play"></i> Produzir</button>`
-                : status == 1
-                  ? `<button class="btn btn-sm btn-success mt-2 w-100" onclick="finalizarPedidosDia('${chaveSafe}','amanha')"><i class="fa-solid fa-check"></i> Finalizar</button>`
-                  : ""
-              : "";
-
-            blocos = `
+          blocos = `
                  <div style="display:flex; gap:16px;">
                  <div style="flex:1; border:1px solid #222; border-radius:6px; min-height:70px; padding:7px; background:#f5fff5;">
                  ${hojeLabel ? `<div style="font-weight:500; margin-bottom:3px; color:#333;">${hojeLabel}</div>` : ""}
@@ -514,14 +468,14 @@
                  ${btnAmanha}
                  </div>
                  </div>`;
-            let cardClass = "kds-card novo";
-            if (status == 1) cardClass = "kds-card emproducao";
-            if (status == 2) cardClass = "kds-card finalizado";
-            if (observacao) cardClass += " card-observacao";
-            // Botões por card (usando chaveSafe):
-            let botoesCard = "";
-            if (status == 0) {
-              botoesCard = `
+          let cardClass = "kds-card novo";
+          if (status == 1) cardClass = "kds-card emproducao";
+          if (status == 2) cardClass = "kds-card finalizado";
+          if (observacao) cardClass += " card-observacao";
+          // Botões por card (usando chaveSafe):
+          let botoesCard = "";
+          if (status == 0) {
+            botoesCard = `
                     <div class="kds-card-actions">
                       <button class="btn btn-primary"
                         title="Produzir todos os itens deste produto/observação"
@@ -529,8 +483,8 @@
                         <i class="fa-solid fa-play"></i> Produzir Todos
                       </button>
                     </div>`;
-            } else if (status == 1) {
-              botoesCard = `
+          } else if (status == 1) {
+            botoesCard = `
                     <div class="kds-card-actions">
                       <button class="btn btn-success"
                         title="Finalizar todos os itens deste produto/observação"
@@ -538,14 +492,14 @@
                         <i class="fa-solid fa-check"></i> Finalizar Todos
                       </button>
                     </div>`;
-            }
+          }
 
-            const infoPedidos = montarTooltipPedidos([
-              ...pedidosHoje,
-              ...pedidosAmanha,
-            ]);
+          const infoPedidos = montarTooltipPedidos([
+            ...pedidosHoje,
+            ...pedidosAmanha,
+          ]);
 
-            const card = `
+          const card = `
                      <div class="${cardClass}">
                      <div class="quantidade-total">
                      <span class="produto-nome">${escHtml(produto)}</span>
@@ -556,123 +510,126 @@
                         title="${infoPedidos}"></i>
                      <span class="badge bg-success ms-2">TOTAL: ${totalFormatado} UN</span>
                      </div>
-                     ${observacao ? `<div class="mt-1"><span class="badge bg-warning text-dark" style="font-size:0.93em; font-weight:400; padding:3px 10px;">${observacao}</span></div>` : ""}
+                     ${observacao ? `<div class="mt-1"><span class="badge bg-warning text-dark kds-obs" style="font-size:0.93em; font-weight:400; padding:3px 10px;">${escHtml(observacao)}</span></div>` : ""}                               
                      ${blocos}
                      ${botoesCard}
                      </div>`;
 
-            const sortKey = (() => {
-              if (pedidosHoje.length) {
-                return (
-                  "0_" + pedidosHoje.map((p) => p.hora || "99:99").sort()[0]
-                );
-              }
-              if (pedidosAmanha.length) {
-                return (
-                  "1_" + pedidosAmanha.map((p) => p.hora || "99:99").sort()[0]
-                );
-              }
-              return "2_99:99";
-            })();
+          const sortKey = (() => {
+            if (pedidosHoje.length) {
+              return (
+                "0_" + pedidosHoje.map((p) => p.hora || "99:99").sort()[0]
+              );
+            }
+            if (pedidosAmanha.length) {
+              return (
+                "1_" + pedidosAmanha.map((p) => p.hora || "99:99").sort()[0]
+              );
+            }
+            return "2_99:99";
+          })();
 
-            cardsPorStatus[status].push({
-              sortKey,
-              produto: String(produto).trim(),
-              html: card,
-            });
+          cardsPorStatus[status].push({
+            sortKey,
+            produto: String(produto).trim(),
+            html: card,
           });
         });
+      });
 
-        const destinos = {
-          0: "col-aguardando",
-          1: "col-producao",
-          2: "col-finalizado",
-        };
+      const destinos = {
+        0: "col-aguardando",
+        1: "col-producao",
+        2: "col-finalizado",
+      };
 
-        [0, 1, 2].forEach((status) => {
-          cardsPorStatus[status]
-            .sort((a, b) => {
-              if (a.sortKey !== b.sortKey)
-                return a.sortKey < b.sortKey ? -1 : 1;
-              return coll.compare(a.produto, b.produto);
-            })
-            .forEach((c) => {
-              document.getElementById(destinos[status]).innerHTML += c.html;
+      [0, 1, 2].forEach((status) => {
+        cardsPorStatus[status]
+          .sort((a, b) => {
+            if (a.sortKey !== b.sortKey)
+              return a.sortKey < b.sortKey ? -1 : 1;
+            return coll.compare(a.produto, b.produto);
+          })
+          .forEach((c) => {
+            document.getElementById(destinos[status]).innerHTML += c.html;
+          });
+      });
+
+      iniciarTooltips();
+      agrupadosGlobal = agrupados;
+    }
+
+    // --- Renderização por PEDIDO ---
+    function renderCardsPorPedido() {
+      // agrupa por pedido + status (um pedido pode ter itens em status diferentes)
+      const grupos = {};
+      pedidos.forEach((p) => {
+        if (!(isHoje(p.data) || isAmanha(p.data))) return;
+        const st = p.id_status == null ? 0 : Number(p.id_status);
+        const k = p.id + "|" + st;
+        if (!grupos[k]) grupos[k] = {id: p.id, status: st, itens: []};
+        grupos[k].itens.push(p);
+      });
+
+      const cardsPorStatus = {0: [], 1: [], 2: []};
+
+      Object.values(grupos).forEach((g) => {
+        const itens = g.itens.sort((a, b) =>
+          String(a.descricao || a.produto || "").localeCompare(
+            String(b.descricao || b.produto || ""),
+            "pt-BR",
+          ),
+        );
+        const ref = itens[0];
+        const hoje = isHoje(ref.data);
+        const diaLabel = `${formatarDataBr(ref.data)} - <span style="color:#d00;font-weight:bold;">${hoje ? "HOJE" : "AMANHÃ"}</span>`;
+        const etiquetaBalcao =
+          ref.tipo_entrega?.toLowerCase() === "balcao"
+            ? '<span class="badge bg-purple text-white ms-2">BALCÃO</span>'
+            : "";
+
+        const linhas = itens
+          .map((item) => {
+            const nome = item.descricao || item.produto || item.id_produto;
+            const q = Math.trunc(Number(item.quantidade)).toLocaleString("pt-BR");
+            const qp = Number(item.peso).toLocaleString("pt-BR", {
+              minimumFractionDigits: 3,
+              maximumFractionDigits: 3,
             });
-        });
-
-        iniciarTooltips();
-        agrupadosGlobal = agrupados;
-      }
-
-      // --- Renderização por PEDIDO ---
-      function renderCardsPorPedido() {
-        // agrupa por pedido + status (um pedido pode ter itens em status diferentes)
-        const grupos = {};
-        pedidos.forEach((p) => {
-          if (!(isHoje(p.data) || isAmanha(p.data))) return;
-          const st = p.id_status == null ? 0 : Number(p.id_status);
-          const k = p.id + "|" + st;
-          if (!grupos[k]) grupos[k] = { id: p.id, status: st, itens: [] };
-          grupos[k].itens.push(p);
-        });
-
-        const cardsPorStatus = { 0: [], 1: [], 2: [] };
-
-        Object.values(grupos).forEach((g) => {
-          const itens = g.itens.sort((a, b) =>
-            String(a.descricao || a.produto || "").localeCompare(
-              String(b.descricao || b.produto || ""),
-              "pt-BR",
-            ),
-          );
-          const ref = itens[0];
-          const hoje = isHoje(ref.data);
-          const diaLabel = `${formatarDataBr(ref.data)} - <span style="color:#d00;font-weight:bold;">${hoje ? "HOJE" : "AMANHÃ"}</span>`;
-          const etiquetaBalcao =
-            ref.tipo_entrega?.toLowerCase() === "balcao"
-              ? '<span class="badge bg-purple text-white ms-2">BALCÃO</span>'
+            const quantidade = Number(item.quantidade) !== 0 ? `${q} UN - ` : "";
+            const obs = item.observacao
+            ? `<div><span class="badge bg-warning text-dark kds-obs" style="font-weight:400;">${escHtml(item.observacao)}</span></div>`
+            : "";      
+            const op = item.nome_operador
+              ? ` <i class="fa-solid fa-user kds-operador" title="${escHtml(item.nome_operador)}"></i>`
               : "";
+            return `
+              <div style="padding:5px 0; border-bottom:1px dashed #bbb;">
+                <div style="font-size:1.05em;"><b>${escHtml(nome)}</b>${op}</div>
+                <div>${quantidade}${qp} Kg</div>
+                ${obs}
+              </div>`;
+          })
+          .join("");
 
-          const linhas = itens
-            .map((item) => {
-              const nome = item.descricao || item.produto || item.id_produto;
-              const q = Math.trunc(Number(item.quantidade)).toLocaleString("pt-BR");
-              const qp = Number(item.peso).toLocaleString("pt-BR", {
-                minimumFractionDigits: 3,
-                maximumFractionDigits: 3,
-              });
-              const quantidade = Number(item.quantidade) !== 0 ? `${q} UN - ` : "";
-              const obs = item.observacao
-                ? `<div><span class="badge bg-warning text-dark" style="font-weight:400;">${escHtml(item.observacao)}</span></div>`
-                : "";
-              return `
-                <div style="padding:5px 0; border-bottom:1px dashed #bbb;">
-                  <div style="font-size:1.05em;"><b>${escHtml(nome)}</b></div>
-                  <div>${quantidade}${qp} Kg</div>
-                  ${obs}
-                </div>`;
-            })
-            .join("");
+        let cardClass = "kds-card novo";
+        if (g.status == 1) cardClass = "kds-card emproducao";
+        if (g.status == 2) cardClass = "kds-card finalizado";
 
-          let cardClass = "kds-card novo";
-          if (g.status == 1) cardClass = "kds-card emproducao";
-          if (g.status == 2) cardClass = "kds-card finalizado";
-
-          let botao = "";
-          if (g.status == 0) {
-            botao = `<div class="kds-card-actions">
+        let botao = "";
+        if (g.status == 0) {
+          botao = `<div class="kds-card-actions">
               <button class="btn btn-primary" onclick="acaoPedido('${escHtml(g.id)}', 0)">
                 <i class="fa-solid fa-play"></i> Produzir Pedido
               </button></div>`;
-          } else if (g.status == 1) {
-            botao = `<div class="kds-card-actions">
+        } else if (g.status == 1) {
+          botao = `<div class="kds-card-actions">
               <button class="btn btn-success" onclick="acaoPedido('${escHtml(g.id)}', 1)">
                 <i class="fa-solid fa-check"></i> Finalizar Pedido
               </button></div>`;
-          }
+        }
 
-          const html = `
+        const html = `
             <div class="${cardClass}">
               <div class="quantidade-total">
                 <span class="produto-nome">Pedido #${escHtml(g.id)}</span>
@@ -688,327 +645,328 @@
               ${botao}
             </div>`;
 
-          cardsPorStatus[g.status].push({
-            sortKey: (hoje ? "0_" : "1_") + (ref.hora || "99:99"),
-            id: Number(g.id),
-            html,
-          });
+        cardsPorStatus[g.status].push({
+          sortKey: (hoje ? "0_" : "1_") + (ref.hora || "99:99"),
+          id: Number(g.id),
+          html,
         });
+      });
 
-        const destinos = { 0: "col-aguardando", 1: "col-producao", 2: "col-finalizado" };
-        [0, 1, 2].forEach((status) => {
-          cardsPorStatus[status]
-            .sort((a, b) =>
-              a.sortKey !== b.sortKey
-                ? a.sortKey < b.sortKey ? -1 : 1
-                : a.id - b.id,
-            )
-            .forEach((c) => {
-              document.getElementById(destinos[status]).innerHTML += c.html;
-            });
-        });
-      }
-      // Produzir / Finalizar todos os itens de UM pedido (no status informado)
-      async function acaoPedido(idPedido, statusAtual) {
-        try {
-          const ids = pedidos
-            .filter(
-              (p) =>
-                String(p.id) === String(idPedido) &&
-                (p.id_status == null ? 0 : Number(p.id_status)) === statusAtual,
-            )
-            .map((p) => p.id_item);
-          if (!ids.length) return;
-          const url =
-            statusAtual === 0 ? "/api/kds/item/produzir" : "/api/kds/item/finalizar";
-          const res = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ids }),
+      const destinos = {0: "col-aguardando", 1: "col-producao", 2: "col-finalizado"};
+      [0, 1, 2].forEach((status) => {
+        cardsPorStatus[status]
+          .sort((a, b) =>
+            a.sortKey !== b.sortKey
+              ? a.sortKey < b.sortKey ? -1 : 1
+              : a.id - b.id,
+          )
+          .forEach((c) => {
+            document.getElementById(destinos[status]).innerHTML += c.html;
           });
-          const ret = await res.json();
-          if (ret.success) await atualizarPedidos();
-          else alert("Falha ao atualizar itens do pedido!");
-        } catch (e) {
-          console.error("Erro em acaoPedido:", e);
-          alert("Erro ao atualizar o pedido.");
-        }
-      }
-      // --- Ações em massa (reutilizadas pelos botões por card) ---
-      async function produzirPedidos(chave) {
-        try {
-          let lista = [];
-          pedidos.forEach((p) => {
-            const k =
-              (p.descricao || p.produto || p.id_produto) +
-              "|" +
-              (p.observacao || "");
-            if (k === chave && (p.id_status == null || p.id_status == 0)) {
-              lista.push(p.id_item);
-            }
-          });
-          if (!lista.length) return;
-          const res = await fetch("/api/kds/item/produzir", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ids: lista }),
-          });
-          const ret = await res.json();
-          if (ret.success) await atualizarPedidos();
-          else alert("Falha ao atualizar itens!");
-        } catch (e) {
-          console.error("Erro em produzirPedidos:", e);
-          alert("Erro ao produzir itens do card.");
-        }
-      }
-      async function finalizarPedidos(chave) {
-        try {
-          let lista = [];
-          pedidos.forEach((p) => {
-            const k =
-              (p.descricao || p.produto || p.id_produto) +
-              "|" +
-              (p.observacao || "");
-            if (k === chave && p.id_status == 1) {
-              lista.push(p.id_item);
-            }
-          });
-          if (!lista.length) return;
-          const res = await fetch("/api/kds/item/finalizar", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ids: lista }),
-          });
-          const ret = await res.json();
-          if (ret.success) await atualizarPedidos();
-          else alert("Falha ao finalizar itens!");
-        } catch (e) {
-          console.error("Erro em finalizarPedidos:", e);
-          alert("Erro ao finalizar itens do card.");
-        }
-      }
-      async function produzirTodos() {
-        const chaves = Object.keys(agrupadosGlobal).filter((chave) => {
-          const lista = agrupadosGlobal[chave];
-          return lista.some((item) => item.id_status == 0);
-        });
-        for (const chave of chaves) {
-          await produzirPedidos(chave);
-        }
-        await atualizarPedidos();
-      }
-      async function finalizarTodos() {
-        const chaves = Object.keys(agrupadosGlobal).filter((chave) => {
-          const lista = agrupadosGlobal[chave];
-          return lista.some((item) => item.id_status == 1);
-        });
-        for (const chave of chaves) {
-          await finalizarPedidos(chave);
-        }
-        await atualizarPedidos();
-      }
-
-      // --- Impressão por coluna ---
-      function coletarItensParaImpressao(coluna) {
-        const statusAlvo = coluna === "aguardando" ? 0 : 1;
-        const result = [];
-        Object.keys(agrupadosGlobal).forEach((chave) => {
-          const lista = agrupadosGlobal[chave];
-          const doStatus = lista.filter(
+      });
+    }
+    // Produzir / Finalizar todos os itens de UM pedido (no status informado)
+    async function acaoPedido(idPedido, statusAtual) {
+      try {
+        const ids = pedidos
+          .filter(
             (p) =>
-              p.id_status == statusAlvo && (isHoje(p.data) || isAmanha(p.data)),
-          );
-          if (!doStatus.length) return;
-          const produto =
-            doStatus[0].descricao ||
-            doStatus[0].produto ||
-            doStatus[0].id_produto;
-          const observacao = doStatus[0].observacao || "";
-          const total = doStatus.reduce(
-            (s, p) => s + parseFloat(p.quantidade || 0),
-            0,
-          );
-          result.push({
-            produto: String(produto).trim(),
-            observacao: String(observacao).trim(),
-            quantidade_formatada: total.toLocaleString("pt-BR", {
-              minimumFractionDigits: 3,
-              maximumFractionDigits: 3,
-            }),
-          });
-        });
-
-        const coll = new Intl.Collator("pt-BR", {
-          sensitivity: "base",
-          numeric: true,
-        });
-        result.sort((a, b) => {
-          const cmpProd = coll.compare(a.produto, b.produto);
-          return cmpProd !== 0
-            ? cmpProd
-            : coll.compare(a.observacao, b.observacao);
-        });
-
-        return result;
-      }
-
-      async function imprimirColuna(coluna) {
-        const loja = document.getElementById("selectLoja").value;
-        const setor = document.getElementById("selectSetor").value;
-        if (!loja || !setor) {
-          alert("Selecione Loja e Setor.");
-          return;
-        }
-        const itens = coletarItensParaImpressao(coluna);
-        if (!itens.length) {
-          alert("Nenhum item para imprimir.");
-          return;
-        }
-        const r = await fetch("/api/kds/imprimir", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id_loja: Number(loja),
-            id_setor: Number(setor),
-            coluna,
-            itens,
-          }),
-        });
-        const j = await r.json();
-        if (j.ok) alert("Impressão enviada!");
-        else alert(j.erro || "Falha ao imprimir");
-      }
-
-      // --- Modal Configuração Impressora ---
-      let modalConfig;
-      function abrirModalConfig() {
-        if (!modalConfig)
-          modalConfig = new bootstrap.Modal(
-            document.getElementById("modalConfig"),
-          );
-        const lojaSel = document.getElementById("selectLoja");
-        const setorSel = document.getElementById("selectSetor");
-        const cfgLoja = document.getElementById("cfgLoja");
-        const cfgSetor = document.getElementById("cfgSetor");
-
-        // clona opções atuais
-        cfgLoja.innerHTML = lojaSel.innerHTML;
-        cfgSetor.innerHTML = setorSel.innerHTML;
-        cfgLoja.value = lojaSel.value || "";
-        cfgSetor.value = setorSel.value || "";
-
-        // busca config existente por loja/setor
-        const loja = lojaSel.value;
-        const setor = setorSel.value;
-        const inputCaminho = document.getElementById("cfgCaminho");
-        inputCaminho.value = "";
-        if (loja && setor) {
-          fetch(`/api/impressora/setor?loja=${loja}&setor=${setor}`)
-            .then((r) => r.json())
-            .then((j) => {
-              inputCaminho.value = j.caminho_impressora || "";
-            })
-            .catch(() => {});
-        }
-        document.getElementById("cfgModoVisao").value = modoVisao;
-        modalConfig.show();
-      }
-      async function salvarConfigImpressora() {
-        const novoModo = document.getElementById("cfgModoVisao").value;
-        if (novoModo !== modoVisao) setModoVisao(novoModo);
-        const loja = document.getElementById("selectLoja").value;
-        const setor = document.getElementById("selectSetor").value;
-        const caminho = document.getElementById("cfgCaminho").value.trim();
-        if (!caminho) {
-          modalConfig.hide();
-          return;
-        }
-        if (!loja || !setor) {
-          alert("Selecione Loja e Setor para salvar a impressora.");
-          return;
-        }
-        const r = await fetch("/api/impressora/setor", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id_loja: Number(loja),
-            id_setor: Number(setor),
-            caminho_impressora: caminho,
-          }),
-        });
-        const j = await r.json();
-        if (j.ok) {
-          alert("Configuração salva!");
-          modalConfig.hide();
-        } else alert(j.erro || "Erro ao salvar");
-      }
-      let alertaCarregado = false;
-      window.onload = async function () {
-        if (localStorage.getItem("kdsMostrarFinalizado") === "1") {
-          document.body.classList.add("mostrar-finalizado");
-        }
-        atualizarSetaFinalizado();
-        await carregarLojas();
-        agendarAtualizacaoAutomatica();
-        atualizarPedidos();
-        // carrega áudio
-        if (!alertaCarregado) {
-          const a = document.createElement("audio");
-          a.id = "alertaAudio";
-          a.src = "/static/som_alerta.mp3";
-          document.body.appendChild(a);
-          alertaCarregado = true;
-        }
-      };
-      async function produzirPedidosDia(chave, dia) {
-        const filtroDia = dia === "hoje" ? isHoje : isAmanha;
-        const lista = pedidos
-          .filter((p) => {
-            const k =
-              (p.descricao || p.produto || p.id_produto) +
-              "|" +
-              (p.observacao || "");
-            return (
-              k === chave &&
-              (p.id_status == null || p.id_status == 0) &&
-              filtroDia(p.data)
-            );
-          })
+              String(p.id) === String(idPedido) &&
+              (p.id_status == null ? 0 : Number(p.id_status)) === statusAtual,
+          )
           .map((p) => p.id_item);
+        if (!ids.length) return;
+        const url =
+          statusAtual === 0 ? "/api/kds/item/produzir" : "/api/kds/item/finalizar";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ids}),
+        });
+        const ret = await res.json();
+        if (ret.success) await atualizarPedidos();
+        else alert("Falha ao atualizar itens do pedido!");
+      } catch (e) {
+        console.error("Erro em acaoPedido:", e);
+        alert("Erro ao atualizar o pedido.");
+      }
+    }
+    // --- Ações em massa (reutilizadas pelos botões por card) ---
+    async function produzirPedidos(chave) {
+      try {
+        let lista = [];
+        pedidos.forEach((p) => {
+          const k =
+            (p.descricao || p.produto || p.id_produto) +
+            "|" +
+            (p.observacao || "");
+          if (k === chave && (p.id_status == null || p.id_status == 0)) {
+            lista.push(p.id_item);
+          }
+        });
         if (!lista.length) return;
         const res = await fetch("/api/kds/item/produzir", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ids: lista }),
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ids: lista}),
         });
         const ret = await res.json();
         if (ret.success) await atualizarPedidos();
         else alert("Falha ao atualizar itens!");
+      } catch (e) {
+        console.error("Erro em produzirPedidos:", e);
+        alert("Erro ao produzir itens do card.");
       }
-
-      async function finalizarPedidosDia(chave, dia) {
-        const filtroDia = dia === "hoje" ? isHoje : isAmanha;
-        const lista = pedidos
-          .filter((p) => {
-            const k =
-              (p.descricao || p.produto || p.id_produto) +
-              "|" +
-              (p.observacao || "");
-            return k === chave && p.id_status == 1 && filtroDia(p.data);
-          })
-          .map((p) => p.id_item);
+    }
+    async function finalizarPedidos(chave) {
+      try {
+        let lista = [];
+        pedidos.forEach((p) => {
+          const k =
+            (p.descricao || p.produto || p.id_produto) +
+            "|" +
+            (p.observacao || "");
+          if (k === chave && p.id_status == 1) {
+            lista.push(p.id_item);
+          }
+        });
         if (!lista.length) return;
         const res = await fetch("/api/kds/item/finalizar", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ids: lista }),
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ids: lista}),
         });
         const ret = await res.json();
         if (ret.success) await atualizarPedidos();
         else alert("Falha ao finalizar itens!");
+      } catch (e) {
+        console.error("Erro em finalizarPedidos:", e);
+        alert("Erro ao finalizar itens do card.");
       }
-    </script>
-    <script src="{{ url_for('static', filename='js/kds-acougue.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  </body>
+    }
+    async function produzirTodos() {
+      const chaves = Object.keys(agrupadosGlobal).filter((chave) => {
+        const lista = agrupadosGlobal[chave];
+        return lista.some((item) => item.id_status == 0);
+      });
+      for (const chave of chaves) {
+        await produzirPedidos(chave);
+      }
+      await atualizarPedidos();
+    }
+    async function finalizarTodos() {
+      const chaves = Object.keys(agrupadosGlobal).filter((chave) => {
+        const lista = agrupadosGlobal[chave];
+        return lista.some((item) => item.id_status == 1);
+      });
+      for (const chave of chaves) {
+        await finalizarPedidos(chave);
+      }
+      await atualizarPedidos();
+    }
+
+    // --- Impressão por coluna ---
+    function coletarItensParaImpressao(coluna) {
+      const statusAlvo = coluna === "aguardando" ? 0 : 1;
+      const result = [];
+      Object.keys(agrupadosGlobal).forEach((chave) => {
+        const lista = agrupadosGlobal[chave];
+        const doStatus = lista.filter(
+          (p) =>
+            p.id_status == statusAlvo && (isHoje(p.data) || isAmanha(p.data)),
+        );
+        if (!doStatus.length) return;
+        const produto =
+          doStatus[0].descricao ||
+          doStatus[0].produto ||
+          doStatus[0].id_produto;
+        const observacao = doStatus[0].observacao || "";
+        const total = doStatus.reduce(
+          (s, p) => s + parseFloat(p.quantidade || 0),
+          0,
+        );
+        result.push({
+          produto: String(produto).trim(),
+          observacao: String(observacao).trim(),
+          quantidade_formatada: total.toLocaleString("pt-BR", {
+            minimumFractionDigits: 3,
+            maximumFractionDigits: 3,
+          }),
+        });
+      });
+
+      const coll = new Intl.Collator("pt-BR", {
+        sensitivity: "base",
+        numeric: true,
+      });
+      result.sort((a, b) => {
+        const cmpProd = coll.compare(a.produto, b.produto);
+        return cmpProd !== 0
+          ? cmpProd
+          : coll.compare(a.observacao, b.observacao);
+      });
+
+      return result;
+    }
+
+    async function imprimirColuna(coluna) {
+      const loja = document.getElementById("selectLoja").value;
+      const setor = document.getElementById("selectSetor").value;
+      if (!loja || !setor) {
+        alert("Selecione Loja e Setor.");
+        return;
+      }
+      const itens = coletarItensParaImpressao(coluna);
+      if (!itens.length) {
+        alert("Nenhum item para imprimir.");
+        return;
+      }
+      const r = await fetch("/api/kds/imprimir", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          id_loja: Number(loja),
+          id_setor: Number(setor),
+          coluna,
+          itens,
+        }),
+      });
+      const j = await r.json();
+      if (j.ok) alert("Impressão enviada!");
+      else alert(j.erro || "Falha ao imprimir");
+    }
+
+    // --- Modal Configuração Impressora ---
+    let modalConfig;
+    function abrirModalConfig() {
+      if (!modalConfig)
+        modalConfig = new bootstrap.Modal(
+          document.getElementById("modalConfig"),
+        );
+      const lojaSel = document.getElementById("selectLoja");
+      const setorSel = document.getElementById("selectSetor");
+      const cfgLoja = document.getElementById("cfgLoja");
+      const cfgSetor = document.getElementById("cfgSetor");
+
+      // clona opções atuais
+      cfgLoja.innerHTML = lojaSel.innerHTML;
+      cfgSetor.innerHTML = setorSel.innerHTML;
+      cfgLoja.value = lojaSel.value || "";
+      cfgSetor.value = setorSel.value || "";
+
+      // busca config existente por loja/setor
+      const loja = lojaSel.value;
+      const setor = setorSel.value;
+      const inputCaminho = document.getElementById("cfgCaminho");
+      inputCaminho.value = "";
+      if (loja && setor) {
+        fetch(`/api/impressora/setor?loja=${loja}&setor=${setor}`)
+          .then((r) => r.json())
+          .then((j) => {
+            inputCaminho.value = j.caminho_impressora || "";
+          })
+          .catch(() => { });
+      }
+      document.getElementById("cfgModoVisao").value = modoVisao;
+      modalConfig.show();
+    }
+    async function salvarConfigImpressora() {
+      const novoModo = document.getElementById("cfgModoVisao").value;
+      if (novoModo !== modoVisao) setModoVisao(novoModo);
+      const loja = document.getElementById("selectLoja").value;
+      const setor = document.getElementById("selectSetor").value;
+      const caminho = document.getElementById("cfgCaminho").value.trim();
+      if (!caminho) {
+        modalConfig.hide();
+        return;
+      }
+      if (!loja || !setor) {
+        alert("Selecione Loja e Setor para salvar a impressora.");
+        return;
+      }
+      const r = await fetch("/api/impressora/setor", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          id_loja: Number(loja),
+          id_setor: Number(setor),
+          caminho_impressora: caminho,
+        }),
+      });
+      const j = await r.json();
+      if (j.ok) {
+        alert("Configuração salva!");
+        modalConfig.hide();
+      } else alert(j.erro || "Erro ao salvar");
+    }
+    let alertaCarregado = false;
+    window.onload = async function () {
+      if (localStorage.getItem("kdsMostrarFinalizado") === "1") {
+        document.body.classList.add("mostrar-finalizado");
+      }
+      atualizarSetaFinalizado();
+      await carregarLojas();
+      agendarAtualizacaoAutomatica();
+      atualizarPedidos();
+      // carrega áudio
+      if (!alertaCarregado) {
+        const a = document.createElement("audio");
+        a.id = "alertaAudio";
+        a.src = "/static/som_alerta.mp3";
+        document.body.appendChild(a);
+        alertaCarregado = true;
+      }
+    };
+    async function produzirPedidosDia(chave, dia) {
+      const filtroDia = dia === "hoje" ? isHoje : isAmanha;
+      const lista = pedidos
+        .filter((p) => {
+          const k =
+            (p.descricao || p.produto || p.id_produto) +
+            "|" +
+            (p.observacao || "");
+          return (
+            k === chave &&
+            (p.id_status == null || p.id_status == 0) &&
+            filtroDia(p.data)
+          );
+        })
+        .map((p) => p.id_item);
+      if (!lista.length) return;
+      const res = await fetch("/api/kds/item/produzir", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ids: lista}),
+      });
+      const ret = await res.json();
+      if (ret.success) await atualizarPedidos();
+      else alert("Falha ao atualizar itens!");
+    }
+
+    async function finalizarPedidosDia(chave, dia) {
+      const filtroDia = dia === "hoje" ? isHoje : isAmanha;
+      const lista = pedidos
+        .filter((p) => {
+          const k =
+            (p.descricao || p.produto || p.id_produto) +
+            "|" +
+            (p.observacao || "");
+          return k === chave && p.id_status == 1 && filtroDia(p.data);
+        })
+        .map((p) => p.id_item);
+      if (!lista.length) return;
+      const res = await fetch("/api/kds/item/finalizar", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ids: lista}),
+      });
+      const ret = await res.json();
+      if (ret.success) await atualizarPedidos();
+      else alert("Falha ao finalizar itens!");
+    }
+  </script>
+  <script src="{{ url_for('static', filename='js/kds-acougue.js') }}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
 </html>

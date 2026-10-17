@@ -628,7 +628,6 @@
         return Number.MAX_SAFE_INTEGER;
       }
 
-      // ===== ORDENAR =====
       pedidos.sort((a, b) => {
         const ordenarPor = document.getElementById("ordenar_por").value;
         const ordem = document.getElementById("ordem").value; // 'asc' | 'desc'
@@ -665,6 +664,19 @@
         const hoje = new Date();
         hoje.setHours(0, 0, 0, 0);
         const dataEntrega = new Date(pedido.data_entrega);
+        const nomeOperador = Array.isArray(pedido.operador)
+          ? pedido.operador[1]
+          : "";
+
+        const dataPedido = pedido.data_pedido
+          ? new Date(pedido.data_pedido).toLocaleString("pt-BR", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "Data não informada";
 
         let faixa = "";
         if (pedido.data_entrega === new Date().toISOString().split("T")[0]) {
@@ -748,21 +760,41 @@
                  </div>`}
             </div>
 
+            
             <div class="card-meio">
               <div class="card-meio-linha">
-                <div class="linha-info" style="min-width:0;">
-                  <i class="bi bi-shop"></i> ${pedido.nome_loja}
-                  ${pedido.status_descricao ? `<span class="sep">—</span><span class="linha-status ${statusClasse}">${pedido.status_descricao}</span>` : ""}
+                <div class="linha-info">
+                  <i class="bi bi-shop"></i>
+                  <span>${pedido.nome_loja || ""}</span>
+                  ${
+                    pedido.status_descricao
+                      ? `<span class="sep">—</span>
+                         <span class="linha-status ${statusClasse}">
+                           ${pedido.status_descricao}
+                         </span>`
+                      : ""
+                  }
                 </div>
                 <div class="linha-badges">
-                  <div class="linha-badges">
                   <span class="badge bg-primary">#${pedido.id}</span>
-                  ${pedido.pago
-                    ? `<span class="badge bg-success"><i class="bi bi-cash-coin"></i> PAGO</span>`
-                    : `<span class="badge bg-danger"><i class="bi bi-cash-coin"></i> NÃO PAGO</span>`}
-                  ${pedido.impresso
-                    ? `<span class="badge bg-success"><i class="bi bi-printer"></i> Impresso</span>`
-                    : `<span class="badge bg-secondary"><i class="bi bi-printer"></i> Não impresso</span>`}
+                  ${
+                    pedido.pago
+                      ? `<span class="badge bg-success">
+                           <i class="bi bi-cash-coin"></i> PAGO
+                         </span>`
+                      : `<span class="badge bg-danger">
+                           <i class="bi bi-cash-coin"></i> NÃO PAGO
+                         </span>`
+                  }
+                  ${
+                    pedido.impresso
+                      ? `<span class="badge bg-success">
+                           <i class="bi bi-printer"></i> Impresso
+                         </span>`
+                      : `<span class="badge bg-secondary">
+                           <i class="bi bi-printer"></i> Não impresso
+                         </span>`
+                  }
                 </div>
               </div>
             </div>
@@ -776,17 +808,30 @@
               <i class="bi bi-check2-circle"></i> Finalizado em ${formatarDataHora(pedido.data_finalizacao)}
               <span>${compararDatasIso(pedido.data_finalizacao, pedido.data_entrega)}</span>
             </div>` : ""}
-
             <div class="botoes">
-              ${btnStatus}
-              ${btnFinalizar}
-              <button class="btn btn-sm btn-success" onclick="imprimirPedido(${pedido.id})">
-                <i class="bi bi-printer-fill"></i> Imprimir
-              </button>
-            </div>
+              <div class="info-pedido">
+                <span>
+                  <i class="bi bi-person"></i>
+                  ${nomeOperador}
+                </span>
+                <span>
+                  <i class="bi bi-calendar-event"></i>
+                  ${dataPedido}
+                </span>
+              </div>
 
-          </div>
-        </div>`;
+              <div class="botoes-acoes">
+                ${btnStatus}
+                ${btnFinalizar}
+                <button
+                  class="btn btn-sm btn-imprimir"
+                  onclick="imprimirPedido(${pedido.id})"
+                >
+                  <i class="bi bi-printer-fill"></i> Imprimir
+                </button>
+              </div>
+            </div>
+          </div>`;
 
         requestAnimationFrame(() => {
           window.scrollTo({

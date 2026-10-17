@@ -244,9 +244,18 @@ def buscar_cabecalho(cur, id_pedido):
     return cur.fetchone()
 
 
+def buscar_operador(cur, id_pedido):
+    cur.execute("""SELECT p.id_operador, u.nome FROM pedidos p
+                JOIN usuarios u ON u.id = p.id_operador
+                WHERE p.id = %s""", (id_pedido,))
+    return cur.fetchone()
+
+
 def buscar_observacoes(cur, id_pedido):
     cur.execute(
-        "SELECT id_produto, COALESCE(observacao,'') FROM pedido_itens WHERE id_pedido = %s",
+        """SELECT id_produto,
+        COALESCE(observacao,'')
+        FROM pedido_itens WHERE id_pedido = %s""",
         (id_pedido,),
     )
     obs = {}
@@ -261,13 +270,15 @@ def substituir_itens(cur, id_pedido, itens):
     for it in itens:
         cur.execute(
             """
-            INSERT INTO pedido_itens
-                (id_pedido, id_produto, quantidade, quantidade_un,
-                 valor_unitario, observacao, id_setor)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """,
-            (id_pedido, it["cod_produto"], it["quantidade"], it["quantidade_un"],
-             it["valor_unitario"], it["observacao"], it["id_setor"]),
+    INSERT INTO pedido_itens
+        (id_pedido, id_produto, id_setor, quantidade, quantidade_un,
+         peso, valor_unitario, observacao, id_produto_associado, id_status)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """,
+            (id_pedido, it["cod_produto"], it["id_setor"] or 0, it["quantidade"],
+             it["quantidade_un"], it.get("peso_bruto") or 0, it["valor_unitario"],
+                it["observacao"], it.get("cod_produto_associado") or None,
+                it.get("id_status", 0)),
         )
 
 
@@ -277,6 +288,7 @@ def buscar_itens_finalizacao(cur, id_pedido):
         SELECT id_produto, quantidade, valor_unitario,
                COALESCE(observacao,''), id_setor
           FROM pedido_itens WHERE id_pedido = %s
+         ORDER BY id
         """,
         (id_pedido,),
     )
@@ -329,4 +341,66 @@ def inserir_item(cur, id_venda, it):
         """,
         (id_venda, it["id_produto"], it["quantidade"], it["precovenda"],
          it["valortotal"], it["observacao"], it["id_setor"]),
+    )
+
+
+def buscar_ficha(cur, numero_ficha, id_loja):
+    cur.execute(
+        "SELECT id FROM pdv.ficha WHERE numeroficha = %s AND id_loja = %s",
+        (numero_ficha, id_loja),
+    )
+    row = cur.fetchone()
+    return row[0] if row else None
+
+
+def atualizar_ficha(cur, id_ficha, numero_ficha):
+    cur.execute(
+        """
+        UPDATE pdv.ficha
+           SET data = CURRENT_DATE, datahora = NOW(), numeroficha = %s
+         WHERE id = %s
+        """,
+        (numero_ficha, id_ficha),
+    )
+
+
+def remover_itens(cur, id_ficha):
+    cur.execute("DELETE FROM pdv.fichaitem WHERE id_ficha = %s", (id_ficha,))
+
+
+def inserir_ficha(cur, id_loja, numero_ficha):
+    cur.execute("SELECT nextval('ficha.ficha_id_seq')")
+    id_ficha = cur.fetchone()[0]
+    cur.execute(
+        """
+        INSERT INTO pdv.ficha (id, id_loja,
+        numeroficha, data, datahora, id_mesa, cliente)
+        VALUES (%s, %s, %s, CURRENT_DATE, NOW(), %s, %s)
+        """,
+        (id_ficha, id_loja, numero_ficha, 1, None),
+    )
+    return id_ficha
+
+
+def buscar_codigobarras(cur, id_produto):
+    cur.execute(
+        "SELECT codigobarras FROM produtoautomacao WHERE id_produto = %s LIMIT 1",
+        (id_produto,),
+    )
+    row = cur.fetchone()
+    return row[0] if row else None
+
+
+def inserir_item_ficha(cur, id_ficha, sequencia, codigobarras, quantidade, preco):
+    cur.execute("SELECT nextval('ficha.fichaitem_id_seq')")
+    id_fichaitem = cur.fetchone()[0]
+    cur.execute(
+        """
+        INSERT INTO pdv.fichaitem (
+            id, id_ficha, sequencia, codigobarras, quantidade,
+            precovenda, id_atendente, iscancelado, isimpresso
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """,
+        (id_fichaitem, id_ficha, sequencia,
+         codigobarras, quantidade, preco, -1, False, False),
     )

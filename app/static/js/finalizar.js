@@ -1,5 +1,6 @@
 let _fin = null;
 let _filaFin = Promise.resolve();
+const totalItemFin = (it) => it.preco_venda * (it.peso || 0);
 const qtdFin = (it) => (it.peso > 0 ? it.peso : it.un);
 
 const brl = (v) =>
@@ -39,7 +40,9 @@ async function abrirModalFinalizacao(idPedido, sistema, impresso) {
           id_setor: it.id_setor || null,
           peso,
           un,
-          pesoUn: parseFloat(it.peso_unitario) || (un > 0 ? (peso * 1000) / un : 0),
+          pesoUn: parseFloat(it.peso_bruto) || (un > 0 ? peso / un : 0),
+          observacao: it.observacao || "",
+          cod_produto_associado: it.cod_produto_associado || "",
         };
       }),
     };
@@ -190,12 +193,8 @@ function parseEtiquetaBalanca(raw) {
 
 async function buscarProdutoFin(cod) {
   const r = await fetch(
-    `/api/produto/${encodeURIComponent(cod)}?id_loja=${_fin.idLoja}`,
+    `/api/produto/${encodeURIComponent(cod)}?id_pedido=${_fin.idPedido}`,
   );
-  if (!_fin?.idLoja) {
-    setMsgFin("Loja do pedido não identificada.");
-    return null;
-  }
   if (!r.ok) return null;
   const p = await r.json();
   if (!p || p.erro) return null;
@@ -204,6 +203,9 @@ async function buscarProdutoFin(cod) {
     descricao: p.descricao,
     preco_venda: parseFloat(p.preco_venda) || 0,
     id_setor: p.id_setor || null,
+    setor: p.descricao_setor || "",
+    tipo_embalagem: p.tipo_embalagem || "",
+    peso_unitario: parseFloat(p.peso_unitario) || 0,
     unidade: p.unidade || "UN",
   };
 }
@@ -219,15 +221,14 @@ async function adicionarPorEtiquetaFin(raw) {
   if (!prod.preco_venda) return setMsgFin("Produto sem preço de venda.");
 
   const peso = +(et.valor / prod.preco_venda).toFixed(3);
-  const pesoUn = prod.pesoUn || 0;
-  const un = pesoUn > 0 ? Math.max(1, Math.round((peso * 1000) / pesoUn)) : 1;
+  const pesoUn = prod.pesoUn ?? prod.peso_unitario ?? 0;
 
   const jaSubstituiu = doProduto.some((i) => i.etiqueta);
   const alvo = jaSubstituiu ? null : doProduto.find((i) => !i.etiqueta);
 
   if (alvo) {
     alvo.peso = peso;
-    alvo.un = un;
+    alvo.un = 0;
     alvo.etiqueta = true;
   } else {
     _fin.itens.push({
@@ -236,9 +237,11 @@ async function adicionarPorEtiquetaFin(raw) {
       preco_venda: prod.preco_venda,
       id_setor: prod.id_setor,
       peso,
-      un,
+      un: 0,
       pesoUn,
       etiqueta: true,
+      observacao: "",
+      cod_produto_associado: "",
     });
   }
   renderTabelaFin();
@@ -253,59 +256,153 @@ async function adicionarPorCodigoFin(cod) {
 // ---------- componente de adicionar item (PROVISÓRIO) ----------
 // Quando você enviar o outro arquivo, substituímos esta função
 // pelos mesmos componentes da tela de pedido.
-function mostrarFormAdicionarFin(prod) {
-  document.getElementById("finAddArea").innerHTML = `
-    <div class="border rounded p-2 bg-light">
-      <div class="mb-2"><strong>${prod.cod_produto}</strong> - ${prod.descricao}
-        <span class="text-muted">(${brl(prod.preco_venda)})</span></div>
-      <div class="row g-2 align-items-end">
-        <div class="col-4">
-          <label class="form-label mb-0">Quantidade</label>
-          <input type="number" step="0.001" min="0" id="finAddQtd" class="form-control form-control-sm" value="1">
+async function mostrarFormAdicionarFin(prod) {
+  const area = document.getElementById("finAddArea");
+  const num = (v) => parseFloat(String(v ?? "").replace(",", ".")) || 0;
+
+  let associados = [];
+  try {
+    const r = await fetch(
+      `/api/produtos/opcoes_associadas/${encodeURIComponent(prod.cod_produto)}`,
+    );
+    if (r.ok) associados = await r.json();
+  } catch (_) {}
+
+  const optsAssoc = associados.length
+    ? `<option value="">Selecione...</option>` +
+      associados.map((a) => `<option value="${a.id}">${a.nome}</option>`).join("")
+    : "";
+
+  area.innerHTML = `
+    <div class="border rounded p-3 bg-light">
+      <div class="row g-2">
+        <div class="col-md-2">
+          <label class="form-label mb-0">ID Produto</label>
+          <input type="text" class="form-control form-control-sm" value="${prod.cod_produto}" readonly>
         </div>
-        <div class="col-3">
-          <label class="form-label mb-0">Peso (kg)</label>
-          <input type="number" step="0.001" min="0" id="finAddPeso" class="form-control form-control-sm" value="0">
+        <div class="col-md-${associados.length ? 4 : 6}">
+          <label class="form-label mb-0">Descrição Produto</label>
+          <input type="text" class="form-control form-control-sm" value="${prod.descricao}" readonly>
         </div>
-        <div class="col-3">
-          <label class="form-label mb-0">Unidade</label>
-          <input type="number" step="1" min="0" id="finAddUn" class="form-control form-control-sm" value="0">
+        ${
+          associados.length
+            ? `<div class="col-md-4">
+                 <label class="form-label mb-0">Item Produção</label>
+                 <select id="finAddAssoc" class="form-select form-select-sm">${optsAssoc}</select>
+               </div>`
+            : ""
+        }
+        <div class="col-md-2">
+          <label class="form-label mb-0">Embalagem</label>
+          <input type="text" class="form-control form-control-sm" value="${prod.tipo_embalagem || ""}" readonly>
         </div>
-        <div class="col-5 d-flex gap-2">
-          <button type="button" class="btn btn-primary btn-sm" id="finAddBtn">Adicionar</button>
-          <button type="button" class="btn btn-outline-secondary btn-sm" id="finAddCancel">Cancelar</button>
+      </div>
+
+      <div class="row g-2 mt-1">
+        <div class="col-md-2">
+          <label class="form-label mb-0">Peso Unitário</label>
+          <input type="text" id="finAddPesoUn" class="form-control form-control-sm" value="${prod.peso_unitario || ""}" placeholder="0,000">
         </div>
+        <div class="col-md-2">
+          <label class="form-label mb-0">Setor</label>
+          <input type="text" class="form-control form-control-sm" value="${prod.setor || ""}" readonly>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label mb-0">Peso Total</label>
+          <input type="number" step="any" id="finAddPeso" class="form-control form-control-sm" placeholder="0,000">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label mb-0">Unidades</label>
+          <input type="number" step="any" id="finAddUn" class="form-control form-control-sm" placeholder="0">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label mb-0">Preço Venda</label>
+          <input type="text" class="form-control form-control-sm" value="${prod.preco_venda.toFixed(2)}" readonly>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label mb-0">Total</label>
+          <input type="text" id="finAddTotal" class="form-control form-control-sm" value="0.00" readonly>
+        </div>
+      </div>
+
+      <div class="row g-2 mt-1">
+        <div class="col-12">
+          <label class="form-label mb-0">Observação</label>
+          <input type="text" id="finAddObs" class="form-control form-control-sm" placeholder="Detalhes do item...">
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="finAddCancel">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm" id="finAddBtn">Adicionar Produto</button>
       </div>
     </div>`;
 
-  const qtdEl = document.getElementById("finAddQtd");
-  qtdEl.focus();
-  qtdEl.select();
-  document.getElementById("finAddTipo").value = prod.unidade || "UN";
+  const elPesoUn = document.getElementById("finAddPesoUn");
+  const elPeso = document.getElementById("finAddPeso");
+  const elUn = document.getElementById("finAddUn");
+  const elTotal = document.getElementById("finAddTotal");
+
+  const calcTotal = () => {
+    elTotal.value = (num(elPeso.value) * prod.preco_venda).toFixed(2);
+  };
+  elUn.addEventListener("input", () => {
+    const un = num(elUn.value);
+    const pu = num(elPesoUn.value);
+    if (un > 0 && pu > 0) elPeso.value = (un * pu).toFixed(3);
+    calcTotal();
+  });
+  elPeso.addEventListener("input", calcTotal);
+  elPesoUn.addEventListener("input", () => {
+    const un = num(elUn.value);
+    const pu = num(elPesoUn.value);
+    if (un > 0 && pu > 0) elPeso.value = (un * pu).toFixed(3);
+    calcTotal();
+  });
+
+  const fechar = () => {
+    area.innerHTML = "";
+    document.getElementById("finCodigo")?.focus();
+  };
+
   const confirmar = () => {
-    const qtd = parseFloat(qtdEl.value) || 0;
-    if (qtd <= 0) return alert("Informe uma quantidade válida.");
+    const un = num(elUn.value);
+    const peso = num(elPeso.value);
+    const selAssoc = document.getElementById("finAddAssoc");
+
+    if (selAssoc && !selAssoc.value) return alert("Selecione o item associado!");
+    if (un <= 0 && peso <= 0) return alert("Informe uma quantidade válida.");
+
+    const pesoUn = num(elPesoUn.value);
     _fin.itens.push({
       cod_produto: prod.cod_produto,
       descricao: prod.descricao,
       preco_venda: prod.preco_venda,
-      tipo: document.getElementById("finAddTipo").value,
       id_setor: prod.id_setor,
-      qtd,
-    });
-    document.getElementById("finAddArea").innerHTML = "";
+      peso: peso > 0 ? peso : +(un * pesoUn).toFixed(3),
+      un: un > 0 ? un : 0,
+      pesoUn,
+      observacao: document.getElementById("finAddObs").value.trim(),
+      cod_produto_associado: selAssoc ? selAssoc.value : "",
+    });  
+    fechar();
     renderTabelaFin();
-    document.getElementById("finCodigo")?.focus();
   };
+
   document.getElementById("finAddBtn").onclick = confirmar;
-  qtdEl.onkeydown = (ev) => ev.key === "Enter" && (ev.preventDefault(), confirmar());
-  document.getElementById("finAddCancel").onclick = () => {
-    document.getElementById("finAddArea").innerHTML = "";
-    document.getElementById("finCodigo")?.focus();
-  };
+  document.getElementById("finAddCancel").onclick = fechar;
+  area.querySelectorAll("input:not([readonly])").forEach((inp) =>
+    inp.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") {
+        ev.preventDefault();
+        confirmar();
+      }
+    }),
+  );
+
+  (prod.unidade === "KG" ? elPeso : elUn).focus();
 }
 
-// ---------- tabela editável ----------
 function renderTabelaFin() {
   const tbody = document.getElementById("finTbody");
   if (!tbody || !_fin) return;
@@ -318,15 +415,15 @@ function renderTabelaFin() {
         <td>${it.cod_produto}</td>
         <td>${it.descricao}</td>
         <td>
-          <input type="number" step="0.001" min="0" class="form-control form-control-sm"
+          <input type="number" step="0.001" min="0" id="finPeso-${i}" class="form-control form-control-sm"
                  value="${it.peso}" onchange="alterarCampoFin(${i}, 'peso', this.value)">
         </td>
         <td>
-          <input type="number" step="1" min="0" class="form-control form-control-sm"
+          <input type="number" step="1" min="0" id="finUn-${i}" class="form-control form-control-sm"
                  value="${it.un}" onchange="alterarCampoFin(${i}, 'un', this.value)">
         </td>
         <td>${brl(it.preco_venda)}</td>
-        <td id="finLinhaTotal-${i}">${brl(it.preco_venda * qtdFin(it))}</td>
+        <td id="finLinhaTotal-${i}">${brl(totalItemFin(it))}</td>
         <td class="text-center">
           <button type="button" class="btn btn-sm btn-outline-danger" onclick="removerItemFin(${i})">&times;</button>
         </td>
@@ -340,41 +437,50 @@ function renderTabelaFin() {
 
 function alterarCampoFin(i, campo, valor) {
   const it = _fin.itens[i];
-  it[campo] = campo === "un" ? Math.round(parseFloat(valor) || 0) : parseFloat(valor) || 0;
-  const cel = document.getElementById(`finLinhaTotal-${i}`);
-  if (cel) cel.textContent = brl(it.preco_venda * qtdFin(it));
+  const v = parseFloat(valor) || 0;
+  if (campo === "peso") {
+    it.peso = v;
+    if (it.un > 0 && it.pesoUn > 0) it.un = Math.round(v / it.pesoUn);
+  } else {
+    it.un = v;
+    if (v > 0 && it.pesoUn > 0) it.peso = +(v * it.pesoUn).toFixed(3);
+  }
+  const elPeso = document.getElementById(`finPeso-${i}`);
+  const elUn = document.getElementById(`finUn-${i}`);
+  const elTot = document.getElementById(`finLinhaTotal-${i}`);
+  if (elPeso) elPeso.value = it.peso;
+  if (elUn) elUn.value = it.un;
+  if (elTot) elTot.textContent = brl(totalItemFin(it));
   atualizarTotalFin();
 }
 
 function atualizarTotalFin() {
-  const total = _fin.itens.reduce((acc, it) => acc + it.preco_venda * qtdFin(it), 0);
+  if (!_fin) return;
+  const total = _fin.itens.reduce((acc, it) => acc + totalItemFin(it), 0);
   const el = document.getElementById("finTotal");
   if (el) el.textContent = "Valor Total: " + brl(total);
 }
+
+// ---------- tabela editável ----------
 function alterarQtdFin(i, valor) {
   const it = _fin.itens[i];
   it.qtd = parseFloat(valor) || 0;
-  // atualiza só as células de total (sem re-renderizar, para não perder o foco)
+  if (it.tipo === "KG") it.kg = it.qtd;
+  else if (it.peso_bruto > 0) it.kg = +(it.qtd * it.peso_bruto).toFixed(3);
   const cel = document.getElementById(`finLinhaTotal-${i}`);
-  if (cel) cel.textContent = brl(it.preco_venda * it.qtd);
+  if (cel) cel.textContent = brl(totalItemFin(it));
   atualizarTotalFin();
 }
 
-function alterarTipoFin(i, tipo) {
-  _fin.itens[i].tipo = tipo;
-  renderTabelaFin();
+function atualizarTotalFin() {
+  const total = _fin.itens.reduce((acc, it) => acc + totalItemFin(it), 0);
+  const el = document.getElementById("finTotal");
+  if (el) el.textContent = "Valor Total: " + brl(total);
 }
 
 function removerItemFin(i) {
   _fin.itens.splice(i, 1);
   renderTabelaFin();
-}
-
-function atualizarTotalFin() {
-  if (!_fin) return;
-  const total = _fin.itens.reduce((acc, it) => acc + it.preco_venda * qtdFin(it), 0);
-  const el = document.getElementById("finTotal");
-  if (el) el.textContent = "Valor Total: " + brl(total);
 }
 
 // ---------- salvar ----------
@@ -383,9 +489,12 @@ function montarPayloadItensFin() {
   return _fin.itens.map((it) => ({
     cod_produto: it.cod_produto,
     quantidade: it.peso,
-    quantidade_un: it.un,
+    quantidade_un: Math.round(it.un),
     preco_venda: it.preco_venda,
     id_setor: it.id_setor,
+    peso_bruto: it.pesoUn || 0,
+    observacao: it.observacao || "",
+    cod_produto_associado: it.cod_produto_associado || "",
   }));
 }
 

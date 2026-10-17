@@ -33,6 +33,7 @@ from app.services.usuario import (
     editar_usuario,
 )
 from app.services.finalizar import (
+    finalizar_vrficha,
     finalizar_vrfood,
     PedidoNaoEncontrado
 )
@@ -99,22 +100,47 @@ def api_clientes():
         return jsonify({"error": str(e)}), 500
 
 
+def _loja_do_pedido(id_pedido):
+    conn = conectar_app()
+    if not conn:
+        return None
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT id_loja FROM pedidos WHERE id = %s", (id_pedido,))
+        row = cur.fetchone()
+        return row[0] if row else None
+    except Exception:
+        logger.exception("Erro ao buscar loja do pedido %s", id_pedido)
+        return None
+    finally:
+        conn.close()
+
+
 @app.route("/api/produto/<int:id_produto>", methods=["GET"])
 def api_produto_por_codigo(id_produto):
     id_loja = request.args.get("id_loja", type=int)
-    print(id_loja)
-    if not id_loja:
-        return jsonify({"erro": "Parâmetro 'id_loja' é obrigatório"}), 400
+    id_pedido = request.args.get("id_pedido", type=int)
 
-    conn = conectar_vr()
-    if not conn:
-        return jsonify({"erro": "Erro de conexão"}), 500
-    print("B")
+    if id_pedido:
+        id_loja = _loja_do_pedido(id_pedido)
+
+    if not id_loja:
+        logger.warning(
+            "Produto %s: loja não identificada (id_pedido=%r)", id_produto, id_pedido
+        )
+        return jsonify({"erro": "Loja não identificada (informe id_pedido ou id_loja)"}), 400
+
+    conn = None
+    cur = None
     try:
+        conn = conectar_vr()
+        if not conn:
+            return jsonify({"erro": "Erro de conexão"}), 500
         cur = conn.cursor()
+
         cur.execute(
             """
-            SELECT p.id, p.descricaocompleta, te.descricao, pc.precovenda
+            SELECT p.id, p.descricaocompleta, te.descricao, pc.precovenda, p.pesoliquido
               FROM produto p
               LEFT JOIN tipoembalagem te ON te.id = p.id_tipoembalagem
               LEFT JOIN produtocomplemento pc
@@ -127,18 +153,25 @@ def api_produto_por_codigo(id_produto):
         row = cur.fetchone()
         if not row:
             return jsonify({"erro": "Produto não encontrado"}), 404
-        cur.execute(
-            """
-            SELECT s.id
-              FROM ficha.setorproduto sp
-              JOIN ficha.setor s ON s.id = sp.id_setor
-             WHERE sp.id_produto = %s AND s.id_loja = %s
-             LIMIT 1
-            """,
-            (id_produto, id_loja),
-        )
-        setor = cur.fetchone()
-        print("C")
+
+        id_setor, descricao_setor = None, ""
+        try:
+            cur.execute(
+                """
+                SELECT s.id, s.descricao
+                  FROM ficha.setorproduto sp
+                  JOIN ficha.setor s ON s.id = sp.id_setor
+                 WHERE sp.id_produto = %s AND s.id_loja = %s
+                 LIMIT 1
+                """,
+                (id_produto, id_loja),
+            )
+            setor = cur.fetchone()
+            if setor:
+                id_setor, descricao_setor = setor[0], setor[1]
+        except Exception:
+            logger.exception("Erro ao buscar setor do produto %s", id_produto)
+
         embalagem = (row[2] or "").strip().upper()
         return jsonify(
             {
@@ -147,13 +180,25 @@ def api_produto_por_codigo(id_produto):
                 "tipo_embalagem": row[2] or "",
                 "unidade": "KG" if embalagem.startswith("KG") else "UN",
                 "preco_venda": float(row[3]) if row[3] is not None else 0,
-                "id_setor": setor[0] if setor else None,
+                "peso_unitario": float(row[4]) if row[4] is not None else 0,
+                "id_setor": id_setor,
+                "descricao_setor": descricao_setor,
             }
         )
     except Exception as e:
+        logger.exception("Erro inesperado em /api/produto/%s", id_produto)
         return jsonify({"erro": str(e)}), 500
     finally:
-        conn.close()
+        if cur:
+            try:
+                cur.close()
+            except Exception:
+                pass
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 def sincronizar_itens_pedido(cur_app, id_pedido, itens):
@@ -192,10 +237,10 @@ def sincronizar_itens_pedido(cur_app, id_pedido, itens):
                 id_setor,
                 to_decimal(it.get("quantidade")),
                 to_decimal(it.get("quantidade_un")),
-                old[6] if old else 0,
+                old[6] if old else to_decimal(it.get("peso_bruto")),
                 preco,
-                old[2] if old else None,
-                old[3] if old else None,
+                old[2] if old else (it.get("observacao") or None),
+                old[3] if old else (it.get("cod_produto_associado") or None),
                 old[4] if old else 0,
             ),
         )
@@ -307,7 +352,6 @@ def salvar_pedido():
             )
             pedido_existente = cursor.fetchone()
             if pedido_existente:
-                # Atualiza pedido existente
                 cursor.execute(
                     """
                     UPDATE pedidos SET
@@ -318,7 +362,8 @@ def salvar_pedido():
                         telefone = %s,
                         observacoes = %s,
                         tipo_entrega = %s,
-                        pago = %s
+                        pago = %s,
+                        id_operador = %s,
                     WHERE id = %s
                 """,
                     (
@@ -330,6 +375,7 @@ def salvar_pedido():
                         data["observacoes"],
                         data["tipo_entrega"],
                         pago,
+                        data["id_operador"],
                         id_pedido,
                     ),
                 )
@@ -346,8 +392,9 @@ def salvar_pedido():
             cursor.execute(
                 """
                 INSERT INTO pedidos (id_cliente, id_loja, data_entrega,
-                hora_entrega, telefone, observacoes, tipo_entrega, id_status, pago)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                hora_entrega, telefone, observacoes, tipo_entrega,
+                id_status, pago, id_operador)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """,
                 (
@@ -360,6 +407,7 @@ def salvar_pedido():
                     data["tipo_entrega"],
                     data.get("id_status", None),
                     pago,
+                    data["id_operador"],
                 ),
             )
             id_pedido = cursor.fetchone()[0]
@@ -1175,167 +1223,26 @@ def api_encomenda_editar():
 
 @app.route("/api/encomenda/finalizar", methods=["POST"])
 def api_finalizar_encomenda():
-    data = request.get_json()
-    id_pedido = data.get("id_pedido")
-    numero_ficha = data.get("numero_ficha")
-    itens_editados = data.get("itens", [])
-
-    conn_app = conectar_app()
-    conn_vr = conectar_vr()
-
+    data = request.get_json() or {}
+    conn_app, conn_vr = conectar_app(), conectar_vr()
     if not conn_app or not conn_vr:
         return jsonify({"erro": "Erro ao conectar ao banco de dados"}), 500
-
     try:
-        cursor_app = conn_app.cursor()
-        cursor_vr = conn_vr.cursor()
-
-        # Atualizar os itens editados no conecta_app
-        for item in itens_editados:
-            cod_produto = item.get("cod_produto")
-            quantidade = item.get("quantidade")
-            quantidade_un = item.get("quantidade_un")
-            cursor_app.execute(
-                """
-                UPDATE pedido_itens
-                SET quantidade = %s, quantidade_un = %s
-                WHERE id_pedido = %s AND id_produto = %s
-            """,
-                (quantidade, quantidade_un, id_pedido, cod_produto),
-            )
+        res = finalizar_vrficha(
+            conn_app.cursor(), conn_vr.cursor(),
+            data.get("id_pedido"), data.get("numero_ficha"), data.get("itens", []),
+        )
         conn_app.commit()
-
-        # Buscar id_loja do pedido
-        cursor_app.execute(
-            """SELECT id_loja
-                           FROM pedidos WHERE id = %s""",
-            (id_pedido,),
-        )
-        loja_row = cursor_app.fetchone()
-        id_loja = loja_row[0] if loja_row else None
-
-        if not id_loja:
-            return (
-                jsonify({"erro": """ID da loja não
-                            encontrado para o pedido."""}),
-                400,
-            )
-        cursor_vr.execute(
-            "SELECT id FROM pdv.ficha WHERE numeroficha = %s AND id_loja = %s",
-            (numero_ficha, id_loja),
-        )
-        row = cursor_vr.fetchone()
-        if row:
-            id_ficha = row[0]
-
-            # Atualiza a ficha existente
-            cursor_vr.execute(
-                """
-                UPDATE pdv.ficha
-                SET data = CURRENT_DATE, datahora = NOW(), numeroficha = %s
-                WHERE id = %s
-            """,
-                (numero_ficha, id_ficha),
-            )
-
-            # Remove os itens anteriores
-            cursor_vr.execute(
-                "DELETE FROM pdv.fichaitem WHERE id_ficha = %s", (id_ficha,)
-            )
-        else:
-            # Gera novo ID para ficha
-            cursor_vr.execute("SELECT nextval('ficha.ficha_id_seq')")
-            id_ficha = cursor_vr.fetchone()[0]
-
-            # Insere nova ficha
-            cursor_vr.execute(
-                """
-                INSERT INTO pdv.ficha (
-                    id, id_loja, numeroficha, data, datahora, id_mesa, cliente
-                )
-                VALUES (%s, %s, %s, CURRENT_DATE, NOW(), %s, %s)
-            """,
-                (id_ficha, id_loja, numero_ficha, 1, None),
-            )
-
-        # Buscar os itens atualizados do pedido
-        cursor_app.execute(
-            """
-            SELECT id_produto, quantidade, valor_unitario
-            FROM pedido_itens
-            WHERE id_pedido = %s
-        """,
-            (id_pedido,),
-        )
-        itens_pedido = cursor_app.fetchall()
-
-        # Inserir itens na pdv.fichaitem
-        sequencia = 1
-        for item in itens_pedido:
-            id_produto, quantidade, valor_unitario = item
-            if quantidade == 0:
-                continue
-
-            # Buscar codigobarras
-            cursor_vr.execute(
-                """
-                SELECT codigobarras
-                FROM produtoautomacao
-                WHERE id_produto = %s
-                LIMIT 1
-            """,
-                (id_produto,),
-            )
-            codigo_barras_row = cursor_vr.fetchone()
-            codigobarras = codigo_barras_row[0] if codigo_barras_row else None
-
-            # Gerar novo ID para fichaitem
-            cursor_vr.execute("SELECT nextval('ficha.fichaitem_id_seq')")
-            id_fichaitem = cursor_vr.fetchone()[0]
-            if valor_unitario > 0:
-                cursor_vr.execute(
-                    """
-                    INSERT INTO pdv.fichaitem (
-                        id, id_ficha, sequencia, codigobarras, quantidade,
-                        precovenda, id_atendente, iscancelado, isimpresso
-                    )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """,
-                    (
-                        id_fichaitem,
-                        id_ficha,
-                        sequencia,
-                        codigobarras,
-                        quantidade,
-                        valor_unitario,
-                        -1,
-                        False,
-                        False,
-                    ),
-                )
-
-                sequencia += 1
-
         conn_vr.commit()
-
-        # Atualiza o status do pedido
-        cursor_app.execute(
-            """
-            UPDATE pedidos
-               SET id_status = 7,
-                   data_finalizacao = NOW(),
-                   tipo_finalizacao = 'vrficha'
-             WHERE id = %s;
-        """,
-            (id_pedido,),
-        )
-        conn_app.commit()
-
-        return jsonify({"mensagem": "Pedido finalizado com sucesso."})
-
+        return jsonify({"mensagem": "Pedido finalizado com sucesso.", **res})
+    except PedidoNaoEncontrado:
+        conn_app.rollback()
+        conn_vr.rollback()
+        return jsonify({"erro": "Pedido não encontrado."}), 400
     except Exception as e:
+        conn_app.rollback()
+        conn_vr.rollback()
         return jsonify({"erro": str(e)}), 500
-
     finally:
         conn_app.close()
         conn_vr.close()
@@ -2124,9 +2031,11 @@ def api_kds_pedidos():
                p.tipo_entrega,
                p.id_status AS id_status_pedido,
                pi.quantidade,
-               p.id_cliente
+               p.id_cliente,
+               u.nome
           FROM pedidos p
           JOIN pedido_itens pi ON pi.id_pedido = p.id
+          LEFT JOIN usuarios u ON u.id = p.id_operador
          WHERE p.id_loja = %s
            AND pi.id_setor = %s
            AND (p.data_entrega = CURRENT_DATE
@@ -2182,6 +2091,7 @@ def api_kds_pedidos():
                 "id_status_pedido": row[11],
                 "peso": row[12],
                 "id_cliente": row[13],
+                "nome_operador": row[14],
             }
         )
 
@@ -2715,10 +2625,10 @@ def api_kds_imprimir_coluna():
 
     titulo = f"""KDS - Setor {id_setor}
     - {'AGUARDANDO' if coluna == 'aguardando' else 'EM PRODUÇÃO'}"""
-    texto = _montar_texto_impressao_kds(titulo, itens)
+    """texto = _montar_texto_impressao_kds(titulo, itens)
     ok, msg = _enviar_para_impressora_kds(row[0], texto)
     if not ok:
-        return jsonify({"erro": f"Falha ao imprimir: {msg}"}), 500
+        return jsonify({"erro": f"Falha ao imprimir: {msg}"}), 500"""
     return jsonify({"ok": True})
 
 
