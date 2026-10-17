@@ -5,8 +5,6 @@ from flask_login import login_required, login_user, logout_user
 from app import app, bcrypt
 from app.models import Usuario
 
-# Rotas
-
 
 @app.route("/")
 def home():
@@ -32,6 +30,7 @@ def login():
         if usuario and senha_valida:
             login_user(usuario)
             session["usuario_nome"] = usuario.nome
+            session["id_operador"] = usuario.id
             session["id_loja"] = usuario.id_loja
             return redirect(url_for("dashboard"))
         else:

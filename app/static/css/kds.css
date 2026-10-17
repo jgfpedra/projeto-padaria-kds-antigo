@@ -202,3 +202,18 @@ body.mostrar-finalizado #col-finalizado {
   background: #495057;
   opacity: 1;
 }
+
+.kds-operador {
+  font-size: 0.8rem;
+  color: #6c757d;
+  cursor: help;
+  margin-left: 6px;
+}
+.badge.kds-obs {
+  white-space: normal;
+  text-align: left;
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}

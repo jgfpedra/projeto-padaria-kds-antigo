@@ -10,47 +10,12 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
-    <!-- Icons opcional -->
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
     />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout_base.css') }}" />
     <link rel="icon" type="image/svg+xml" href="{{ url_for('favicon') }}" />
-    <style>
-      body {
-        background: #f7f8fa;
-      }
-      .sidebar {
-        height: 100vh;
-        position: fixed;
-        width: 240px;
-        background: #fff;
-        border-right: 1px solid #ececec;
-        transition: width 0.2s;
-        z-index: 100;
-      }
-      .sidebar .nav-link.active {
-        background: #f2f2f8;
-        font-weight: bold;
-        color: #0d6efd !important;
-      }
-      .main-content {
-        margin-left: 240px;
-        min-height: 100vh;
-        padding: 24px;
-      }
-      @media (max-width: 900px) {
-        .sidebar {
-          width: 60px;
-        }
-        .main-content {
-          margin-left: 60px;
-        }
-        .sidebar .sidebar-text {
-          display: none;
-        }
-      }
-    </style>
     <!-- jQuery (sempre antes do Bootstrap JS!) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Bootstrap JS -->
@@ -58,6 +23,9 @@
   </head>
   <body>
     <!-- Sidebar -->
+    <button type="button" id="sidebar-toggle" class="sidebar-toggle" title="Fechar menu">
+      <i class="bi bi-chevron-left"></i>
+    </button>
     <nav class="sidebar d-flex flex-column p-3">
       <div class="mb-4 text-center">
         <i class="bi bi-basket3" style="font-size: 2em; color: #0d6efd"></i>
@@ -163,6 +131,12 @@
             <i class="bi bi-display"></i> <span class="sidebar-text">KDS</span>
           </a>
         </li>
+        <li>
+          <a href="/logout" class="nav-link text-danger" id="menu-logout">
+            <i class="bi bi-box-arrow-right"></i>
+            <span class="sidebar-text">Sair</span>
+          </a>
+        </li>
       </ul>
       <hr />
       <div class="text-center small sidebar-text">
@@ -179,150 +153,54 @@
     <!-- Bootstrap 5 JS (opcional, para componentes) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-      document.querySelectorAll('.nav-link').forEach(btn => {
-          btn.addEventListener('click', function(e) {
-              e.preventDefault();
-              document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-              btn.classList.add('active');
-              let modulo = btn.textContent.trim();
-              document.getElementById('titulo-tela').textContent = modulo;
-              document.getElementById('conteudo-central').innerHTML = `<div class="alert alert-primary">Carregando módulo <b>${modulo}</b>...</div>`;
-          });
-      });
-      <script>
-      document.querySelectorAll('.nav-link').forEach(btn => {
-          btn.addEventListener('click', function(e) {
-              const href = btn.getAttribute('href');
-              // Só processa links que começam com /
-              if(href.startsWith('/')) {
-                  e.preventDefault();
-                  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-                  btn.classList.add('active');
-                  // Muda título do topo
-                  let modulo = btn.textContent.trim();
-                  document.getElementById('titulo-tela').textContent = modulo;
-                  // Busca conteúdo parcial via AJAX
-                  fetch(href)
-                      .then(resp => resp.text())
-                      .then(html => {
-                          // Extrai só o bloco central
-                          let parser = new DOMParser();
-                          let doc = parser.parseFromString(html, 'text/html');
-                          let conteudo = doc.querySelector('#conteudo-central');
-                          document.getElementById('conteudo-central').innerHTML = conteudo ? conteudo.innerHTML : html;
-                          // Executa os scripts do novo conteúdo, se houver
-                          let scripts = document.getElementById('conteudo-central').querySelectorAll('script');
-                          scripts.forEach(oldScript => {
-                              const newScript = document.createElement('script');
-                              if (oldScript.src) {
-                                  newScript.src = oldScript.src;
-                              } else {
-                                  newScript.innerHTML = oldScript.innerHTML;
-                              }
-                              document.body.appendChild(newScript);
-                              oldScript.parentNode.removeChild(oldScript);
-                          });
-                      })
-                      .catch(err => {
-                          document.getElementById('conteudo-central').innerHTML = `<div class="alert alert-danger">Erro ao carregar módulo!</div>`;
-                      });
-              }
-          });
-      });
-      function marcarMenuSidebarPorURL() {
-          // Mapeia cada id para parte da URL
-          const mapeamento = [
-              { id: 'menu-dashboard', path: '/dashboard' },
-              { id: 'menu-pedidos', path: '/pedidos' },
-              { id: 'menu-encomendas', path: '/encomendas' },
-              { id: 'menu-produtos', path: '/produtos' },
-              { id: 'menu-clientes', path: '/clientes' },
-              { id: 'menu-relatorios', path: '/relatorios' },
-          ];
+      (function () {
+        // ---------- Menu lateral: marcar item ativo pela URL ----------
+        function marcarMenuAtivo() {
+          const caminho = window.location.pathname.replace(/\/$/, "") || "/";
 
-          let achou = false;
-          mapeamento.forEach(menu => {
-              let el = document.getElementById(menu.id);
-              if(el) {
-                  el.classList.remove('active');
-                  // Se a URL atual contém o path desse menu, ativa
-                  if(window.location.pathname.indexOf(menu.path) !== -1) {
-                      el.classList.add('active');
-                      achou = true;
-                  }
-              }
-          });
-          // Se não achou nenhum, marca Dashboard por padrão
-          if(!achou && document.getElementById('menu-dashboard')) {
-              document.getElementById('menu-dashboard').classList.add('active');
+          document
+            .querySelectorAll('.sidebar a.nav-link[href^="/"]')
+            .forEach((link) => {
+              const destino =
+                new URL(link.href, window.location.origin).pathname.replace(
+                  /\/$/,
+                  "",
+                ) || "/";
+
+              if (destino !== caminho) return;
+
+              link.classList.add("active");
+
+              // se estiver dentro de um submenu, abre ele
+              const submenu = link.closest(".collapse");
+              if (submenu) submenu.classList.add("show");
+            });
+        }
+
+        // ---------- Menu lateral: abrir/fechar ----------
+        function iniciarToggleSidebar() {
+          const btn = document.getElementById("sidebar-toggle");
+          if (!btn) return;
+          document.body.appendChild(btn);
+          const icon = btn.querySelector("i");
+
+          function aplicar(fechada) {
+            document.body.classList.toggle("sidebar-closed", fechada);
+            icon.className = fechada ? "bi bi-chevron-right" : "bi bi-chevron-left";
+            btn.title = fechada ? "Abrir menu" : "Fechar menu";
+            localStorage.setItem("sidebarFechada", fechada ? "1" : "0");
           }
-      }
 
-      // Executa ao carregar
-      marcarMenuSidebarPorURL();
+          btn.addEventListener("click", () =>
+            aplicar(!document.body.classList.contains("sidebar-closed")),
+          );
 
-      // Mantém funcionalidade de AJAX do menu
-      document.querySelectorAll('.nav-link').forEach(btn => {
-          btn.addEventListener('click', function(e) {
-              const href = btn.getAttribute('href');
-              // Só processa links que começam com /
-              if(href && href.startsWith('/')) {
-                  e.preventDefault();
-                  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-                  btn.classList.add('active');
-                  // Muda título do topo
-                  let modulo = btn.textContent.trim();
-                  document.getElementById('titulo-tela').textContent = modulo;
-                  // Busca conteúdo parcial via AJAX
-                  fetch(href)
-                      .then(resp => resp.text())
-                      .then(html => {
-                          // Extrai só o bloco central
-                          let parser = new DOMParser();
-                          let doc = parser.parseFromString(html, 'text/html');
-                          let conteudo = doc.querySelector('#conteudo-central');
-                          document.getElementById('conteudo-central').innerHTML = conteudo ? conteudo.innerHTML : html;
-                          // Executa os scripts do novo conteúdo, se houver
-                          let scripts = document.getElementById('conteudo-central').querySelectorAll('script');
-                          scripts.forEach(oldScript => {
-                              const newScript = document.createElement('script');
-                              if (oldScript.src) {
-                                  newScript.src = oldScript.src;
-                              } else {
-                                  newScript.innerHTML = oldScript.innerHTML;
-                              }
-                              document.body.appendChild(newScript);
-                              oldScript.parentNode.removeChild(oldScript);
-                          });
-                      })
-                      .catch(err => {
-                          document.getElementById('conteudo-central').innerHTML = `<div class="alert alert-danger">Erro ao carregar módulo!</div>`;
-                      });
-              }
-          });
-      });
-      const mapeamento = [
-          { id: 'menu-dashboard', path: '/dashboard' },
-          { id: 'menu-cadastro', path: '/cadastro' },         // (opcional para expandir o collapse)
-          { id: 'menu-usuarios', path: '/usuarios' },
-          { id: 'menu-associados', path: '/associados' },
-          { id: 'menu-pedidos', path: '/pedidos' },
-          { id: 'menu-encomendas', path: '/encomendas' },
-          { id: 'menu-produtos', path: '/produtos' },
-          { id: 'menu-clientes', path: '/clientes' },
-          { id: 'menu-relatorios', path: '/relatorios' },
-      ];
-      const mapeamento = [
-          { id: 'menu-dashboard', path: '/dashboard' },
-          { id: 'menu-cadastro', path: '/cadastro' },
-          { id: 'menu-usuarios', path: '/usuarios' },
-          { id: 'menu-associados', path: '/consulta_associado' },
-          { id: 'menu-pedidos', path: '/pedidos' },
-          { id: 'menu-encomendas', path: '/encomendas' },
-          { id: 'menu-produtos', path: '/produtos' },
-          { id: 'menu-clientes', path: '/clientes' },
-          { id: 'menu-relatorios', path: '/relatorios' },
-      ];
+          aplicar(localStorage.getItem("sidebarFechada") === "1");
+        }
+
+        marcarMenuAtivo();
+        iniciarToggleSidebar();
+      })();
     </script>
   </body>
 </html>

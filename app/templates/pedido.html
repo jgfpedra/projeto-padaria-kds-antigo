@@ -869,6 +869,7 @@
       const tipo_entrega = document.querySelector(
         'input[name="tipo_entrega"]:checked',
       ).value;
+      const id_operador = {{ session.get('id_operador') | tojson }};
 
       if (!id_cliente) {
         alert("Selecione um cliente válido!");
@@ -907,6 +908,7 @@
         telefone,
         observacoes,
         tipo_entrega,
+        id_operador,
         pago: document.getElementById("pago").value === "1" ? 1 : 0,
         itens,
         id_status: idPedidoExistente ? undefined : 0,
@@ -915,7 +917,6 @@
       if (idPedidoExistente) {
         dadosPedido.id_pedido = idPedidoExistente;
       }
-
       try {
         const response = await fetch("/api/pedido/salvar", {
           method: "POST",
