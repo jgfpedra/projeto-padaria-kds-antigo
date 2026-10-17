@@ -7,6 +7,7 @@ from app.repo.pedido import (
     buscar_itens,
     buscar_impresso,
     buscar_pedidos,
+    buscar_pago,
 )
 from app.utils.monetary import formatar_valor
 
@@ -123,6 +124,11 @@ def consultar_encomendas(filtros, cursor_app, cursor_vr):
             pedido["id"],
         )
 
+        pago = buscar_pago(
+            cursor_app,
+            pedido["id"],
+        )
+
         pedidos.append(
             {
                 "id": pedido["id"],
@@ -147,6 +153,7 @@ def consultar_encomendas(filtros, cursor_app, cursor_vr):
                 "valor_total": valor_total,
                 "nome_loja": nome_loja,
                 "impresso": impresso,
+                "pago": pago,
                 "itens": itens,
             }
         )
